@@ -1,0 +1,7 @@
+{
+  "name": "Read Chinese Menu",
+  "description": "Know what’s on your plate. Translate, detect hidden fats/allergens, and communicate with ease.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
