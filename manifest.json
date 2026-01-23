@@ -1,3 +1,4 @@
+
 {
   "name": "Read Chinese Menu",
   "short_name": "ReadMenu",
@@ -8,8 +9,8 @@
   "theme_color": "#e11d48",
   "icons": [
     {
-      "src": "https://img.alicdn.com/imgextra/i2/O1CN01f4O86J25v8K9qB7oB_!!6000000007589-2-tps-1024-1024.png",
-      "sizes": "1024x1024",
+      "src": "https://cdn-icons-png.flaticon.com/512/3443/3443393.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     }
