@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { Dish, StoreResult } from "../types";
 
@@ -28,8 +27,10 @@ Identify:
 Format: JSON object.`;
 
 export async function processMenuImage(base64Image: string): Promise<Dish[]> {
-  // Create a new GoogleGenAI instance right before making an API call to ensure it uses the correct context.
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) throw new Error("Missing API Key configuration.");
+
+  const ai = new GoogleGenAI({ apiKey });
 
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
@@ -96,8 +97,10 @@ export async function processMenuImage(base64Image: string): Promise<Dish[]> {
 }
 
 export async function processStorefrontImage(base64Image: string): Promise<StoreResult> {
-  // Create a new GoogleGenAI instance right before making an API call to ensure it uses the correct context.
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) throw new Error("Missing API Key configuration.");
+
+  const ai = new GoogleGenAI({ apiKey });
 
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
