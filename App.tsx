@@ -12,6 +12,7 @@ import { Reviews } from './components/Reviews';
 import { PricingModule } from './components/PricingModule';
 
 const STORAGE_KEY = 'rmc_user_usage_v2';
+const A2HS_DISMISSED_KEY = 'rmc_a2hs_dismissed';
 
 const App: React.FC = () => {
   const [status, setStatus] = useState<AppStatus>(AppStatus.IDLE);
@@ -20,6 +21,7 @@ const App: React.FC = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [showPricing, setShowPricing] = useState(false);
   const [thankYouPlan, setThankYouPlan] = useState<string | null>(null);
+  const [showA2HSPrompt, setShowA2HSPrompt] = useState(false);
   
   const [usage, setUsage] = useState<UserUsage>(() => {
     const getBeijingDate = () => {
@@ -62,6 +64,23 @@ const App: React.FC = () => {
       console.error("Storage save error:", e);
     }
   }, [usage]);
+
+  // Check for mobile and standalone mode for A2HS prompt
+  useEffect(() => {
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
+    const isDismissed = localStorage.getItem(A2HS_DISMISSED_KEY);
+
+    if (isMobile && !isStandalone && !isDismissed) {
+      const timer = setTimeout(() => setShowA2HSPrompt(true), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  const dismissA2HS = () => {
+    setShowA2HSPrompt(false);
+    localStorage.setItem(A2HS_DISMISSED_KEY, 'true');
+  };
 
   const isUnlimited = () => {
     if (!usage.passExpiryDate) return false;
@@ -184,6 +203,32 @@ const App: React.FC = () => {
           )}
         </div>
 
+        {/* Add to Home Screen Prompt for Mobile */}
+        {showA2HSPrompt && (
+          <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[70] w-[90%] max-w-sm animate-in slide-in-from-bottom-10 fade-in duration-500">
+            <div className="bg-slate-900/95 backdrop-blur-md text-white p-4 rounded-2xl shadow-2xl border border-white/10 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-rose-600 p-2 rounded-xl">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                </div>
+                <p className="text-xs font-bold leading-tight">
+                  Add to Home Screen for quick access in restaurants.
+                </p>
+              </div>
+              <button 
+                onClick={dismissA2HS}
+                className="text-white/40 hover:text-white transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <header className="mb-16 space-y-6">
           <div className="flex items-center gap-4 mb-2">
@@ -194,12 +239,17 @@ const App: React.FC = () => {
             <div className="h-px bg-slate-200 flex-1"></div>
           </div>
           <div className="text-center">
-            <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter leading-none mb-6">
+            <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter leading-none mb-4">
               Read <span className="text-rose-600">Chinese Menu</span>
             </h1>
-            <p className="text-slate-500 max-w-xl mx-auto text-xl font-medium leading-relaxed tracking-tight">
-              Know what’s on your plate.
-            </p>
+            <div className="flex flex-col items-center gap-4">
+              <p className="text-rose-600 font-black uppercase tracking-[0.1em] text-[10px] sm:text-xs">
+                No App download required. No registration. Just scan and read.
+              </p>
+              <p className="text-slate-500 max-w-xl mx-auto text-xl font-medium leading-relaxed tracking-tight">
+                Know what’s on your plate.
+              </p>
+            </div>
           </div>
         </header>
 
@@ -315,18 +365,8 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {/* Support section at the bottom */}
+        {/* Support section at the bottom - Chef illustration removed */}
         <div className="max-w-2xl mx-auto pt-24 pb-12 text-center space-y-10 border-t border-slate-100 relative group overflow-visible">
-          {/* Chef Image - Files in public/ are served from the root path '/'. Adjusted positioning slightly. */}
-          <div className="absolute top-1/2 -translate-y-1/2 -right-4 md:-right-24 pointer-events-none select-none z-0">
-            <img 
-              src="/cook.png" 
-              alt="Chef illustration" 
-              className="w-48 md:w-64 h-auto drop-shadow-2xl"
-              style={{ transform: 'rotate(-15deg)' }}
-            />
-          </div>
-
           <div className="space-y-4 px-6 relative z-10">
             <h4 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Support our bridge</h4>
             <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] block mt-2 max-w-lg mx-auto leading-relaxed">
