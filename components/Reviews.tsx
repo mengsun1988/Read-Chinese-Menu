@@ -3,21 +3,21 @@ import { FeedbackType } from '../types';
 
 const REVIEWS = [
   {
-    name: "Alex Thompson",
+    name: "Alex",
     role: "Digital Nomad",
     text: "Literally a lifesaver in Chengdu. I could finally order something other than fried rice!",
     rating: 5,
     avatar: "🎒"
   },
   {
-    name: "Sarah Lee",
+    name: "Sarah",
     role: "Food Blogger",
     text: "The allergen detection is what impressed me most. It found peanuts in a dish I usually think is safe.",
     rating: 5,
     avatar: "🥘"
   },
   {
-    name: "Marco Rossi",
+    name: "Marco",
     role: "Backpacker",
     text: "The 'Speak to Waiter' feature is genius. No more awkward pointing and guessing.",
     rating: 4,

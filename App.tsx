@@ -266,7 +266,7 @@ const App: React.FC = () => {
                 <WarningIcon className="w-12 h-12" />
               </div>
               <h2 className="text-4xl font-black text-slate-900">Scan Failed</h2>
-              <p className="text-slate-500 max-w-sm mx-auto font-medium text-lg">{error}</p>
+              <p className="text-slate-500 max-sm mx-auto font-medium text-lg">{error}</p>
               <button onClick={reset} className="bg-rose-600 hover:bg-rose-700 text-white font-black py-4 px-12 rounded-2xl transition-all shadow-xl text-xl">
                 Try Again
               </button>
@@ -316,17 +316,14 @@ const App: React.FC = () => {
         )}
 
         {/* Support section at the bottom */}
-        <div className="max-w-2xl mx-auto pt-24 pb-12 text-center space-y-10 border-t border-slate-100 relative group">
-          {/* Easter Egg Chef Image - Subtle Line Art Illustration */}
-          <div className="absolute -bottom-16 -left-16 md:left-4 pointer-events-none select-none opacity-10 transition-opacity duration-1000 group-hover:opacity-30 z-0">
+        <div className="max-w-2xl mx-auto pt-24 pb-12 text-center space-y-10 border-t border-slate-100 relative group overflow-visible">
+          {/* Chef Image - Files in public/ are served from the root path '/'. Adjusted positioning slightly. */}
+          <div className="absolute top-1/2 -translate-y-1/2 -right-4 md:-right-24 pointer-events-none select-none z-0">
             <img 
-              src="https://img.alicdn.com/imgextra/i2/O1CN01f4O86J25v8K9qB7oB_!!6000000007589-2-tps-1024-1024.png" 
-              alt="Chef Easter Egg" 
-              className="w-48 md:w-80 h-auto rotate-[-8deg] grayscale brightness-110"
-              onError={(e) => {
-                // Fallback for image loading issues
-                (e.target as HTMLImageElement).style.display = 'none';
-              }}
+              src="/cook.png" 
+              alt="Chef illustration" 
+              className="w-48 md:w-64 h-auto drop-shadow-2xl"
+              style={{ transform: 'rotate(-15deg)' }}
             />
           </div>
 
