@@ -50,13 +50,13 @@ export const LoadingScreen: React.FC = () => {
           ></div>
         </div>
         <div className="flex justify-between items-center px-1">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Menu Analysis</span>
-          <span className="text-xs font-bold text-rose-600">{Math.floor(progress)}%</span>
+          <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">Menu Analysis</span>
+          <span className="text-xs font-medium text-rose-600">{Math.floor(progress)}%</span>
         </div>
       </div>
 
       <div className="text-center space-y-4">
-        <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight">Processing Menu</h3>
+        <h3 className="text-3xl font-semibold text-slate-900 tracking-tight">Processing Menu</h3>
         <p className="text-slate-500 font-medium italic transition-all h-6">
           {messages[msgIdx]}
         </p>

@@ -42,9 +42,9 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ dish, onClose,
           </button>
           
           <div className="space-y-1">
-            <h2 className="text-3xl font-extrabold tracking-tight">{dish.dish_name_en}</h2>
+            <h2 className="text-3xl font-semibold tracking-tight">{dish.dish_name_en}</h2>
             <div className="flex items-center gap-4">
-              <p className="chinese-font text-5xl font-black">{dish.dish_name_cn}</p>
+              <p className="chinese-font text-5xl font-bold">{dish.dish_name_cn}</p>
               <button 
                 onClick={speakDishName}
                 className="bg-white/20 hover:bg-white/30 p-2 rounded-xl transition-colors active:scale-90"
@@ -56,10 +56,10 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ dish, onClose,
             {(dish.pinyin || dish.pronunciation_guide) && (
               <div className="mt-3 bg-white/10 rounded-xl p-3 inline-block">
                 {dish.pinyin && (
-                  <p className="text-sm font-bold tracking-wide text-white/90 italic">{dish.pinyin}</p>
+                  <p className="text-sm font-medium tracking-wide text-white/90 italic">{dish.pinyin}</p>
                 )}
                 {dish.pronunciation_guide && (
-                  <p className="text-[10px] font-black uppercase tracking-widest text-yellow-300 mt-0.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-yellow-300 mt-0.5">
                     Sounds like: {dish.pronunciation_guide}
                   </p>
                 )}
@@ -69,13 +69,13 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ dish, onClose,
 
           <div className="absolute -bottom-6 left-8 right-8 flex justify-between items-center">
              {dish.price && (
-               <span className="bg-yellow-400 text-red-900 px-5 py-2 rounded-2xl font-black text-xl shadow-xl">
+               <span className="bg-yellow-400 text-red-900 px-5 py-2 rounded-2xl font-semibold text-xl shadow-xl">
                  {dish.price}
                </span>
              )}
              <button 
                onClick={handleImageSearch}
-               className="bg-white text-slate-900 hover:bg-slate-100 px-4 py-2 rounded-2xl font-bold text-sm shadow-xl flex items-center gap-2 transition-all active:scale-95"
+               className="bg-white text-slate-900 hover:bg-slate-100 px-4 py-2 rounded-2xl font-medium text-sm shadow-xl flex items-center gap-2 transition-all active:scale-95"
              >
                🔍 Search Photos
              </button>
@@ -87,7 +87,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ dish, onClose,
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex gap-3 animate-pulse">
               <AnimalFatIcon className="w-6 h-6 text-amber-600 shrink-0" />
               <div>
-                <h5 className="text-amber-900 font-black text-xs uppercase tracking-wider">Hidden Animal Fat Warning</h5>
+                <h5 className="text-amber-900 font-semibold text-xs uppercase tracking-wider">Hidden Animal Fat Warning</h5>
                 <p className="text-amber-800 text-xs font-medium leading-normal mt-1">
                   This dish is often cooked with <strong>Lard (猪油)</strong> or <strong>Tallow (牛油)</strong>. It may not be strictly vegetarian or vegan even without meat chunks.
                 </p>
@@ -96,20 +96,20 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ dish, onClose,
           )}
 
           <section>
-            <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Chef's Description</h4>
+            <h4 className="text-[11px] font-semibold text-slate-400 uppercase tracking-[0.2em] mb-3">Chef's Description</h4>
             <p className="text-slate-700 leading-relaxed text-lg font-medium">
               {dish.description}
             </p>
           </section>
 
           <section>
-            <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Ingredients (Tap to show Waiter)</h4>
+            <h4 className="text-[11px] font-semibold text-slate-400 uppercase tracking-[0.2em] mb-4">Ingredients (Tap to show Waiter)</h4>
             <div className="flex flex-wrap gap-3">
               {dish.classic_ingredients.map((ing, i) => (
                 <button 
                   key={i} 
                   onClick={() => onIngredientClick(ing)}
-                  className="group px-4 py-3 bg-slate-50 hover:bg-red-600 hover:text-white text-slate-800 rounded-2xl text-base font-bold border-2 border-slate-100 transition-all active:scale-95 flex flex-col items-start gap-0.5"
+                  className="group px-4 py-3 bg-slate-50 hover:bg-red-600 hover:text-white text-slate-800 rounded-2xl text-base font-medium border-2 border-slate-100 transition-all active:scale-95 flex flex-col items-start gap-0.5"
                 >
                   <span className="text-sm">{ing.name_en}</span>
                   <span className="chinese-font text-xl group-hover:text-yellow-300">{ing.name_cn}</span>
@@ -119,7 +119,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ dish, onClose,
                 <button 
                   key={`pot-${i}`} 
                   onClick={() => onIngredientClick(ing)}
-                  className="group px-4 py-3 bg-amber-50/50 hover:bg-red-600 hover:text-white text-amber-900 rounded-2xl text-base font-bold border-2 border-amber-100 transition-all active:scale-95 flex flex-col items-start gap-0.5 italic"
+                  className="group px-4 py-3 bg-amber-50/50 hover:bg-red-600 hover:text-white text-amber-900 rounded-2xl text-base font-medium border-2 border-amber-100 transition-all active:scale-95 flex flex-col items-start gap-0.5 italic"
                 >
                   <span className="text-sm">{ing.name_en}?</span>
                   <span className="chinese-font text-xl group-hover:text-yellow-300">{ing.name_cn}</span>
@@ -133,7 +133,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ dish, onClose,
               onClick={onSpicyClick}
               className="bg-slate-50 p-5 rounded-[2rem] border-2 border-slate-100 text-left hover:bg-red-50 hover:border-red-200 transition-colors group"
             >
-              <h4 className="text-[10px] font-black text-slate-400 uppercase mb-3 group-hover:text-red-500">Spiciness (Ask Staff)</h4>
+              <h4 className="text-[10px] font-semibold text-slate-400 uppercase mb-3 group-hover:text-red-500">Spiciness (Ask Staff)</h4>
               <div className="flex gap-1.5">
                 {[...Array(5)].map((_, i) => (
                   <ChiliIcon 
@@ -145,14 +145,14 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ dish, onClose,
               </div>
             </button>
             <div className="bg-slate-50 p-5 rounded-[2rem] border-2 border-slate-100 flex flex-col justify-center">
-              <h4 className="text-[10px] font-black text-slate-400 uppercase mb-2">Allergens Detected</h4>
+              <h4 className="text-[10px] font-semibold text-slate-400 uppercase mb-2">Allergens Detected</h4>
               <div className="flex flex-wrap gap-1.5">
                 {dish.allergens.length > 0 ? (
                   dish.allergens.map((a, i) => (
-                    <span key={i} className="text-red-700 font-bold text-xs bg-red-100 px-2 py-1 rounded-lg border border-red-200">{a}</span>
+                    <span key={i} className="text-red-700 font-medium text-xs bg-red-100 px-2 py-1 rounded-lg border border-red-200">{a}</span>
                   ))
                 ) : (
-                  <span className="text-green-700 font-bold text-xs flex items-center gap-1">
+                  <span className="text-green-700 font-medium text-xs flex items-center gap-1">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
                       <path fillRule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clipRule="evenodd" />
                     </svg>
@@ -165,7 +165,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ dish, onClose,
 
           <div className="p-5 bg-slate-900 text-slate-300 rounded-[2rem] flex gap-4">
             <WarningIcon className="w-6 h-6 text-yellow-400 shrink-0 mt-0.5" />
-            <p className="text-xs font-bold leading-normal uppercase tracking-wider italic">
+            <p className="text-xs font-medium leading-normal uppercase tracking-wider italic">
               AI analysis is for reference only. Ingredients vary by establishment. Always confirm with your waiter.
             </p>
           </div>

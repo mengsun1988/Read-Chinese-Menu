@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { RefundModal } from './RefundModal';
 
 interface Plan {
   id: string;
@@ -10,16 +11,18 @@ interface Plan {
 }
 
 export const PricingModule: React.FC<{ onPurchase: (plan: Plan) => void }> = ({ onPurchase }) => {
+  const [isRefundModalOpen, setIsRefundModalOpen] = useState(false);
+
   const PLANS: Plan[] = [
     { id: 'starter', name: 'Starter Pack', price: '$4.99', amount: 4.99, description: '60 Credits' },
-    { id: 'traveler', name: 'Traveler Pass', price: '$9.99', amount: 9.99, description: '7 Days Pass', highlight: true },
+    { id: 'traveler', name: 'Traveler Pass', price: '$8.99', amount: 8.99, description: '7 Days Pass', highlight: true },
     { id: 'foodie', name: 'Foodie Pass', price: '$24.99', amount: 24.99, description: '30 Days Pass' }
   ];
 
   return (
     <div className="py-4 md:py-8 space-y-6 md:space-y-10">
       <div className="text-center space-y-2 px-4">
-        <h3 className="text-2xl md:text-4xl font-black text-slate-900 uppercase tracking-tight">Upgrade Your Journey</h3>
+        <h3 className="text-2xl md:text-4xl font-semibold text-slate-900 uppercase tracking-tight">Upgrade Your Journey</h3>
         <p className="text-slate-500 max-w-lg mx-auto text-sm font-medium">Get unlimited access to hidden fat detection & pronunciation guides.</p>
       </div>
 
@@ -34,19 +37,19 @@ export const PricingModule: React.FC<{ onPurchase: (plan: Plan) => void }> = ({ 
             }`}
           >
             {plan.highlight && (
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[7px] md:text-[10px] font-black uppercase tracking-widest px-2 md:px-4 py-1 rounded-full shadow-lg whitespace-nowrap">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[7px] md:text-[10px] font-semibold uppercase tracking-widest px-2 md:px-4 py-1 rounded-full shadow-lg whitespace-nowrap">
                 Most Popular
               </div>
             )}
             
             <div className="space-y-1 md:space-y-3 text-center mb-4 md:mb-8">
-              <h4 className={`font-black text-[8px] md:text-xs uppercase tracking-widest ${plan.highlight ? 'text-white/80' : 'text-slate-400'}`}>
+              <h4 className={`font-semibold text-[8px] md:text-xs uppercase tracking-widest ${plan.highlight ? 'text-white/80' : 'text-slate-400'}`}>
                 {plan.name}
               </h4>
-              <div className={`text-base md:text-4xl font-black leading-tight ${plan.highlight ? 'text-white' : 'text-slate-900'}`}>
+              <div className={`text-base md:text-4xl font-semibold leading-tight ${plan.highlight ? 'text-white' : 'text-slate-900'}`}>
                 {plan.description}
               </div>
-              <div className={`text-xl md:text-7xl font-black ${plan.highlight ? 'text-white' : 'text-rose-600'}`}>
+              <div className={`text-xl md:text-7xl font-semibold ${plan.highlight ? 'text-white' : 'text-rose-600'}`}>
                 {plan.price}
               </div>
             </div>
@@ -54,7 +57,7 @@ export const PricingModule: React.FC<{ onPurchase: (plan: Plan) => void }> = ({ 
             <div className="space-y-2">
               <button 
                 onClick={() => onPurchase(plan)}
-                className={`w-full py-4 rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest transition-all shadow-md active:scale-95 ${
+                className={`w-full py-4 rounded-2xl font-semibold text-[10px] md:text-xs uppercase tracking-widest transition-all shadow-md active:scale-95 ${
                   plan.highlight 
                     ? 'bg-white text-rose-600 hover:bg-slate-50' 
                     : 'bg-slate-900 text-white hover:bg-slate-800'
@@ -66,6 +69,21 @@ export const PricingModule: React.FC<{ onPurchase: (plan: Plan) => void }> = ({ 
           </div>
         ))}
       </div>
+
+      {/* Refund Policy Trigger */}
+      <div className="text-center pt-4">
+        <button 
+          onClick={() => setIsRefundModalOpen(true)}
+          className="text-[10px] font-semibold text-slate-400 hover:text-rose-600 uppercase tracking-[0.2em] transition-colors underline decoration-slate-200 underline-offset-4 decoration-2"
+        >
+          Refund Policy
+        </button>
+      </div>
+
+      <RefundModal 
+        isOpen={isRefundModalOpen} 
+        onClose={() => setIsRefundModalOpen(false)} 
+      />
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { AppStatus, Dish, Ingredient, UserUsage } from './types';
-import { processMenuImage } from './services/geminiService';
+import { AppStatus, Dish, Ingredient, UserUsage, RecognitionMode, StoreResult } from './types';
+import { processMenuImage, processStorefrontImage } from './services/geminiService';
 import { DishCard } from './components/DishCard';
 import { LoadingScreen } from './components/LoadingScreen';
 import { CameraIcon, WarningIcon } from './components/Icons';
@@ -10,42 +10,48 @@ import { WordCloudMarquee } from './components/WordCloudMarquee';
 import { AboutUs } from './components/AboutUs';
 import { Reviews } from './components/Reviews';
 import { PricingModule } from './components/PricingModule';
+import { A2HSManager } from './components/A2HSManager';
+import { StoreCard } from './components/StoreCard';
+import { StaffHelperModal } from './components/StaffHelperModal';
 
 const STORAGE_KEY = 'rmc_user_usage_v2';
-const A2HS_DISMISSED_KEY = 'rmc_a2hs_dismissed';
+const TIP_STORAGE_KEY = 'rmc_hide_app_tip';
+
+const getBeijingDate = () => {
+  const d = new Date();
+  // Adjust to UTC+8 (Beijing Time)
+  const beijingTime = new Date(d.getTime() + (8 * 60 * 60 * 1000));
+  return beijingTime.toISOString().split('T')[0];
+};
 
 const App: React.FC = () => {
   const [status, setStatus] = useState<AppStatus>(AppStatus.IDLE);
+  const [mode, setMode] = useState<RecognitionMode>(RecognitionMode.MENU);
   const [dishes, setDishes] = useState<Dish[]>([]);
+  const [storeResult, setStoreResult] = useState<StoreResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [showPricing, setShowPricing] = useState(false);
   const [thankYouPlan, setThankYouPlan] = useState<string | null>(null);
-  const [showA2HSPrompt, setShowA2HSPrompt] = useState(false);
+  const [showAppTip, setShowAppTip] = useState(false);
+  const [showStaffHelper, setShowStaffHelper] = useState(false);
   
   const [usage, setUsage] = useState<UserUsage>(() => {
-    const getBeijingDate = () => {
-      const d = new Date();
-      // Adjust to UTC+8 (Beijing Time)
-      const beijingTime = new Date(d.getTime() + (8 * 60 * 60 * 1000));
-      return beijingTime.toISOString().split('T')[0];
-    };
-
     const todayStr = getBeijingDate();
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored) as UserUsage;
         if (parsed.lastResetDate !== todayStr) {
-          // Daily refresh: 11 free credits
-          return { ...parsed, freeCredits: 11, lastResetDate: todayStr };
+          // Daily refresh: 15 free credits
+          return { ...parsed, freeCredits: 15, lastResetDate: todayStr };
         }
         return parsed;
       }
     } catch (e) {
       console.warn("Usage parsing failed, using defaults", e);
     }
-    return { freeCredits: 11, paidCredits: 0, lastResetDate: todayStr };
+    return { freeCredits: 15, paidCredits: 0, lastResetDate: todayStr };
   });
 
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
@@ -65,21 +71,20 @@ const App: React.FC = () => {
     }
   }, [usage]);
 
-  // Check for mobile and standalone mode for A2HS prompt
+  // Handle Smart App Tip Visibility
   useEffect(() => {
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
-    const isDismissed = localStorage.getItem(A2HS_DISMISSED_KEY);
+    const isDismissed = localStorage.getItem(TIP_STORAGE_KEY) === 'true';
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
     if (isMobile && !isStandalone && !isDismissed) {
-      const timer = setTimeout(() => setShowA2HSPrompt(true), 3000);
-      return () => clearTimeout(timer);
+      setShowAppTip(true);
     }
   }, []);
 
-  const dismissA2HS = () => {
-    setShowA2HSPrompt(false);
-    localStorage.setItem(A2HS_DISMISSED_KEY, 'true');
+  const handleDismissTip = () => {
+    setShowAppTip(false);
+    localStorage.setItem(TIP_STORAGE_KEY, 'true');
   };
 
   const isUnlimited = () => {
@@ -108,6 +113,39 @@ const App: React.FC = () => {
     return true;
   };
 
+  const handleDailyShare = async () => {
+    const today = getBeijingDate();
+    if (usage.lastShareDate === today) {
+      alert("You've already claimed your reward today! Come back tomorrow.");
+      return;
+    }
+
+    const shareData = {
+      title: 'Read Chinese Menu',
+      text: 'Translate Chinese menus and decode ingredients instantly! No app download required.',
+      url: window.location.origin
+    };
+
+    try {
+      if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(window.location.origin);
+        alert("Link copied to clipboard! Share it with your friends to support us.");
+      }
+      
+      // Reward logic
+      setUsage(prev => ({
+        ...prev,
+        freeCredits: prev.freeCredits + 5,
+        lastShareDate: today
+      }));
+      alert("Reward Claimed! +5 Free Credits added to your account.");
+    } catch (err) {
+      console.error("Share failed", err);
+    }
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -129,12 +167,17 @@ const App: React.FC = () => {
         r.readAsDataURL(file);
       });
 
-      const results = await processMenuImage(base64String);
-      setDishes(results);
+      if (mode === RecognitionMode.MENU) {
+        const results = await processMenuImage(base64String);
+        setDishes(results);
+      } else {
+        const result = await processStorefrontImage(base64String);
+        setStoreResult(result);
+      }
       setStatus(AppStatus.SUCCESS);
     } catch (err: any) {
       console.error(err);
-      setError(err?.message || "Recognition failed. Please ensure the menu is flat and well-lit.");
+      setError(err?.message || "Recognition failed. Please ensure the target is clear and well-lit.");
       setStatus(AppStatus.ERROR);
     }
   };
@@ -149,10 +192,12 @@ const App: React.FC = () => {
   const reset = () => {
     setStatus(AppStatus.IDLE);
     setDishes([]);
+    setStoreResult(null);
     setError(null);
     setPreviewUrl(null);
     setSelectedDish(null);
     setWaiterContext(null);
+    setShowStaffHelper(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -184,66 +229,75 @@ const App: React.FC = () => {
     setShowPricing(false);
   };
 
+  const hasSharedToday = usage.lastShareDate === getBeijingDate();
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const isAndroid = /Android/i.test(navigator.userAgent);
+
   return (
     <div className="min-h-screen selection:bg-rose-600 selection:text-white pb-0 overflow-x-hidden">
+      {/* Smart App Tip Bar */}
+      {showAppTip && (
+        <div className="w-full bg-rose-50 border-b border-rose-100 px-6 py-3 flex items-center justify-between gap-4 animate-in slide-in-from-top duration-500 sticky top-0 z-[100]">
+          <div className="flex items-center gap-3">
+            <span className="text-xl shrink-0" role="img" aria-label="smartphone">
+              {isIOS ? '📱' : '💡'}
+            </span>
+            <p className="text-[11px] sm:text-xs font-medium text-slate-700 leading-tight">
+              {isIOS ? (
+                <>Pro Tip: Tap your browser's <strong>'Share'</strong> icon and select <strong>'Add to Home Screen'</strong> to keep this tool as an App!</>
+              ) : isAndroid ? (
+                <>Pro Tip: Tap the <strong>⋮ menu</strong> and select <strong>'Install app'</strong> to save this tool to your home screen.</>
+              ) : (
+                <>Pro Tip: Bookmark or install this app to your home screen for quick access while dining!</>
+              )}
+            </p>
+          </div>
+          <button 
+            onClick={handleDismissTip}
+            className="p-1 hover:bg-rose-100 rounded-full transition-colors text-slate-400 hover:text-rose-600"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-4 h-4">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
+
+      {/* PWA Install Manager Handles its own visibility based on browser support and OS */}
+      <A2HSManager />
+
       <div className="max-w-5xl mx-auto px-6 py-16 md:py-24">
         {/* Floating Credit Counter - Bottom Right */}
         <div className="fixed bottom-6 right-6 z-[60] flex items-center gap-2 bg-white/95 backdrop-blur-md px-4 py-3 rounded-2xl border border-slate-200 shadow-2xl hover:scale-105 transition-transform cursor-default select-none group">
           <div className={`w-2.5 h-2.5 rounded-full ${isUnlimited() ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-slate-900">
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-900">
             {isUnlimited() ? 'Unlimited Access' : `Remaining Credits: ${totalCredits}`}
           </span>
           {!isUnlimited() && totalCredits <= 3 && (
             <button 
               onClick={() => setShowPricing(true)}
-              className="ml-2 px-2 py-0.5 bg-rose-600 text-white text-[8px] rounded-lg font-bold group-hover:bg-rose-700 transition-colors"
+              className="ml-2 px-2 py-0.5 bg-rose-600 text-white text-[8px] rounded-lg font-medium group-hover:bg-rose-700 transition-colors"
             >
               Top Up
             </button>
           )}
         </div>
 
-        {/* Add to Home Screen Prompt for Mobile */}
-        {showA2HSPrompt && (
-          <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[70] w-[90%] max-w-sm animate-in slide-in-from-bottom-10 fade-in duration-500">
-            <div className="bg-slate-900/95 backdrop-blur-md text-white p-4 rounded-2xl shadow-2xl border border-white/10 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="bg-rose-600 p-2 rounded-xl">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                  </svg>
-                </div>
-                <p className="text-xs font-bold leading-tight">
-                  Add to Home Screen for quick access in restaurants.
-                </p>
-              </div>
-              <button 
-                onClick={dismissA2HS}
-                className="text-white/40 hover:text-white transition-colors"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Header */}
         <header className="mb-16 space-y-6">
           <div className="flex items-center gap-4 mb-2">
             <div className="h-px bg-slate-200 flex-1"></div>
-            <div className="px-5 py-1.5 border border-slate-200 text-slate-500 text-[10px] font-bold uppercase tracking-[0.4em] rounded-full flex items-center gap-2">
+            <div className="px-5 py-1.5 border border-slate-200 text-slate-500 text-[10px] font-semibold uppercase tracking-[0.4em] rounded-full flex items-center gap-2">
               <span>Global Explorer Edition</span>
             </div>
             <div className="h-px bg-slate-200 flex-1"></div>
           </div>
           <div className="text-center">
-            <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter leading-none mb-4">
+            <h1 className="text-5xl md:text-7xl font-semibold text-slate-900 tracking-tighter leading-none mb-4">
               Read <span className="text-rose-600">Chinese Menu</span>
             </h1>
             <div className="flex flex-col items-center gap-4">
-              <p className="text-rose-600 font-black uppercase tracking-[0.1em] text-[10px] sm:text-xs">
+              <p className="text-rose-600 font-semibold uppercase tracking-[0.1em] text-[10px] sm:text-xs text-center">
                 No App download required. No registration. Just scan and read.
               </p>
               <p className="text-slate-500 max-w-xl mx-auto text-xl font-medium leading-relaxed tracking-tight">
@@ -257,35 +311,68 @@ const App: React.FC = () => {
         <main className="mb-20">
           {status === AppStatus.IDLE && (
             <>
+              {/* Mode Toggle */}
+              <div className="flex justify-center mb-8">
+                <div className="bg-slate-100 p-1.5 rounded-2xl flex gap-1 shadow-inner">
+                  <button 
+                    onClick={() => setMode(RecognitionMode.MENU)}
+                    className={`px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${mode === RecognitionMode.MENU ? 'bg-white text-rose-600 shadow-md scale-105' : 'text-slate-400 hover:text-slate-600'}`}
+                  >
+                    Scan Menu
+                  </button>
+                  <button 
+                    onClick={() => setMode(RecognitionMode.STREET)}
+                    className={`px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${mode === RecognitionMode.STREET ? 'bg-slate-900 text-white shadow-md scale-105' : 'text-slate-400 hover:text-slate-600'}`}
+                  >
+                    Scan Storefront
+                  </button>
+                </div>
+              </div>
+
               <div className="modern-card p-12 md:p-20 text-center flex flex-col items-center shadow-xl mb-10">
                 <input type="file" accept="image/*" className="hidden" id="menu-upload" ref={fileInputRef} onChange={handleFileChange} />
                 
                 <button 
                   onClick={triggerUpload}
-                  className="w-24 h-24 bg-rose-600 rounded-3xl flex items-center justify-center mb-10 shadow-2xl shadow-rose-200 rotate-3 transition-transform active:scale-90 hover:scale-105"
+                  className={`w-24 h-24 rounded-3xl flex items-center justify-center mb-10 shadow-2xl rotate-3 transition-transform active:scale-90 hover:scale-105 ${mode === RecognitionMode.MENU ? 'bg-rose-600 shadow-rose-200' : 'bg-slate-900 shadow-slate-200'}`}
                   aria-label="Take Photo or Select Image"
                 >
                   <CameraIcon className="w-12 h-12 text-white" />
                 </button>
                 
-                <h2 className="text-4xl font-extrabold text-slate-900 mb-2 tracking-tight">Ready to Order?</h2>
-                <p className="text-slate-400 mb-10 font-bold uppercase tracking-[0.2em] text-xs">
-                  {totalCredits > 0 || isUnlimited() ? "Tap the icon to scan or upload" : "Daily free credits exhausted"}
+                <h2 className="text-4xl font-semibold text-slate-900 mb-2 tracking-tight">
+                  {mode === RecognitionMode.MENU ? "What's on the Menu?" : "What's this Store?"}
+                </h2>
+                <p className="text-slate-400 mb-10 font-medium uppercase tracking-[0.2em] text-xs">
+                  {totalCredits > 0 || isUnlimited() ? `Tap the icon to scan ${mode === RecognitionMode.MENU ? 'menu' : 'storefront'}` : "Daily free credits exhausted"}
                 </p>
                 
                 <div className="w-full max-w-xs space-y-4">
                    <button 
                      onClick={triggerUpload}
-                     className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-5 px-8 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-3 text-lg shadow-lg"
+                     className="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-5 px-8 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-3 text-lg shadow-lg"
                    >
                      📁 Upload From Album
                    </button>
                 </div>
               </div>
 
+              {/* Daily Share Reward Button */}
+              {!hasSharedToday && (
+                <div className="max-w-xs mx-auto mb-10">
+                  <button 
+                    onClick={handleDailyShare}
+                    className="w-full group bg-emerald-50 hover:bg-emerald-100 border-2 border-emerald-200 rounded-2xl p-4 transition-all active:scale-95 flex flex-col items-center gap-1 shadow-sm"
+                  >
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-emerald-600">Daily Reward</span>
+                    <span className="text-sm font-semibold text-slate-900">📢 Share to friends & Get +5 Free Credits</span>
+                  </button>
+                </div>
+              )}
+
               <button 
                 onClick={() => setShowPricing(true)}
-                className="block mx-auto mb-10 text-xs font-black text-rose-600 uppercase tracking-widest underline decoration-2 underline-offset-4"
+                className="block mx-auto mb-10 text-xs font-semibold text-rose-600 uppercase tracking-widest underline decoration-2 underline-offset-4"
               >
                 View Premium Plans
               </button>
@@ -295,9 +382,11 @@ const App: React.FC = () => {
                    <WarningIcon className="w-5 h-5 text-white" />
                  </div>
                  <div>
-                   <h4 className="font-extrabold text-slate-900 text-sm">Better Recognition Tips</h4>
+                   <h4 className="font-semibold text-slate-900 text-sm">Better Recognition Tips</h4>
                    <p className="text-slate-500 text-xs mt-1 leading-normal font-medium">
-                     For complex menus, try scanning in <strong>smaller sections</strong>. Ensure there is no glare on the paper and the Chinese text is sharp and legible.
+                     {mode === RecognitionMode.MENU ? 
+                       "For complex menus, try scanning in smaller sections. Ensure the Chinese text is sharp and legible." :
+                       "Ensure the main sign is clearly visible. Glare from windows can sometimes confuse the AI."}
                    </p>
                  </div>
               </div>
@@ -315,9 +404,9 @@ const App: React.FC = () => {
               <div className="inline-flex items-center justify-center w-24 h-24 bg-rose-50 text-rose-600 rounded-full">
                 <WarningIcon className="w-12 h-12" />
               </div>
-              <h2 className="text-4xl font-black text-slate-900">Scan Failed</h2>
+              <h2 className="text-4xl font-semibold text-slate-900">Scan Failed</h2>
               <p className="text-slate-500 max-sm mx-auto font-medium text-lg">{error}</p>
-              <button onClick={reset} className="bg-rose-600 hover:bg-rose-700 text-white font-black py-4 px-12 rounded-2xl transition-all shadow-xl text-xl">
+              <button onClick={reset} className="bg-rose-600 hover:bg-rose-700 text-white font-semibold py-4 px-12 rounded-2xl transition-all shadow-xl text-xl">
                 Try Again
               </button>
             </div>
@@ -328,23 +417,31 @@ const App: React.FC = () => {
               <div className="flex flex-col md:flex-row justify-between items-center gap-8 bg-slate-900 p-8 rounded-[2.5rem] shadow-2xl border border-white/5 sticky top-6 z-20">
                 <div className="flex items-center gap-6">
                   {previewUrl && (
-                    <img src={previewUrl} className="w-24 h-24 object-cover rounded-2xl border-2 border-white/10" alt="Menu Preview" />
+                    <img src={previewUrl} className="w-24 h-24 object-cover rounded-2xl border-2 border-white/10" alt="Preview" />
                   )}
                   <div>
-                    <h3 className="font-extrabold text-3xl text-white tracking-tight">Dish List</h3>
-                    <p className="text-sm font-bold text-rose-400 uppercase tracking-widest">{dishes.length} Matches Found</p>
+                    <h3 className="font-semibold text-3xl text-white tracking-tight">
+                      {mode === RecognitionMode.MENU ? "Dish List" : "Shop Guide"}
+                    </h3>
+                    <p className="text-sm font-medium text-rose-400 uppercase tracking-widest">
+                      {mode === RecognitionMode.MENU ? `${dishes.length} Matches Found` : 'Storefront Identified'}
+                    </p>
                   </div>
                 </div>
-                <button onClick={reset} className="bg-white text-slate-900 hover:bg-rose-600 hover:text-white font-black py-5 px-10 rounded-2xl transition-all active:scale-95 shadow-xl text-lg">
+                <button onClick={reset} className="bg-white text-slate-900 hover:bg-rose-600 hover:text-white font-semibold py-5 px-10 rounded-2xl transition-all active:scale-95 shadow-xl text-lg">
                   New Scan
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {dishes.map((dish, index) => (
-                  <DishCard key={index} dish={dish} onClick={() => handleDishClick(dish)} />
-                ))}
-              </div>
+              {mode === RecognitionMode.MENU ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {dishes.map((dish, index) => (
+                    <DishCard key={index} dish={dish} onClick={() => handleDishClick(dish)} />
+                  ))}
+                </div>
+              ) : (
+                storeResult && <StoreCard store={storeResult} onShowStaff={() => setShowStaffHelper(true)} />
+              )}
               
               <div className="mt-20">
                 <AboutUs />
@@ -359,25 +456,45 @@ const App: React.FC = () => {
         
         {status !== AppStatus.SUCCESS && (
           <div className="space-y-20">
+            {/* Inline Share Promotion before Pricing */}
+            {!hasSharedToday && status === AppStatus.IDLE && (
+              <div className="max-w-4xl mx-auto px-6">
+                <div className="bg-emerald-600 rounded-[2rem] p-8 md:p-12 text-white flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl shadow-emerald-100 overflow-hidden relative">
+                   <div className="space-y-2 relative z-10 text-center md:text-left">
+                     <h3 className="text-3xl font-semibold tracking-tight">Free Daily Reward</h3>
+                     <p className="text-emerald-100 font-medium uppercase tracking-widest text-[10px]">Spread the word and keep exploring for free</p>
+                   </div>
+                   <button 
+                     onClick={handleDailyShare}
+                     className="bg-white text-emerald-600 font-semibold py-5 px-10 rounded-2xl shadow-xl transition-all active:scale-95 whitespace-nowrap relative z-10 hover:bg-emerald-50 text-lg"
+                   >
+                     📢 Get +5 Free Credits
+                   </button>
+                   {/* Decorative circle */}
+                   <div className="absolute -right-20 -bottom-20 w-64 h-64 bg-white/10 rounded-full"></div>
+                </div>
+              </div>
+            )}
+            
             <PricingModule onPurchase={onPurchase} />
             <AboutUs />
             <Reviews />
           </div>
         )}
 
-        {/* Support section at the bottom - Chef illustration removed */}
+        {/* Support section at the bottom */}
         <div className="max-w-2xl mx-auto pt-24 pb-12 text-center space-y-10 border-t border-slate-100 relative group overflow-visible">
           <div className="space-y-4 px-6 relative z-10">
-            <h4 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Support our bridge</h4>
-            <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] block mt-2 max-w-lg mx-auto leading-relaxed">
+            <h4 className="text-2xl font-semibold text-slate-900 uppercase tracking-tight">Support our bridge</h4>
+            <p className="text-slate-500 font-medium uppercase tracking-widest text-[10px] block mt-2 max-w-lg mx-auto leading-relaxed">
               If you love this site or it has truly helped you navigate the flavors of China, please consider giving me a treat. Your support keeps this bridge between cultures alive.
             </p>
           </div>
           
           <div className="flex flex-wrap justify-center gap-4 px-6 relative z-10">
-            <button onClick={() => handleCoffee(2)} className="bg-white border border-slate-200 px-6 py-3 rounded-2xl font-black text-slate-800 hover:border-rose-400 hover:text-rose-600 shadow-sm transition-all active:scale-95 text-[10px] uppercase tracking-widest">Buy me a Coke ($2)</button>
-            <button onClick={() => handleCoffee(5)} className="bg-white border border-slate-200 px-6 py-3 rounded-2xl font-black text-slate-800 hover:border-rose-400 hover:text-rose-600 shadow-sm transition-all active:scale-95 text-[10px] uppercase tracking-widest">Buy me a Coffee ($5)</button>
-            <button onClick={() => handleCoffee(9)} className="bg-white border border-slate-200 px-6 py-3 rounded-2xl font-black text-slate-800 hover:border-rose-400 hover:text-rose-600 shadow-sm transition-all active:scale-95 text-[10px] uppercase tracking-widest">Buy me a Cheesecake ($9)</button>
+            <button onClick={() => handleCoffee(2)} className="bg-white border border-slate-200 px-6 py-3 rounded-2xl font-semibold text-slate-800 hover:border-rose-400 hover:text-rose-600 shadow-sm transition-all active:scale-95 text-[10px] uppercase tracking-widest">Buy me a Coke ($2)</button>
+            <button onClick={() => handleCoffee(5)} className="bg-white border border-slate-200 px-6 py-3 rounded-2xl font-semibold text-slate-800 hover:border-rose-400 hover:text-rose-600 shadow-sm transition-all active:scale-95 text-[10px] uppercase tracking-widest">Buy me a Coffee ($5)</button>
+            <button onClick={() => handleCoffee(9)} className="bg-white border border-slate-200 px-6 py-3 rounded-2xl font-semibold text-slate-800 hover:border-rose-400 hover:text-rose-600 shadow-sm transition-all active:scale-95 text-[10px] uppercase tracking-widest">Buy me a Cheesecake ($9)</button>
           </div>
         </div>
       </div>
@@ -390,7 +507,7 @@ const App: React.FC = () => {
              <div className="h-1.5 w-1.5 bg-rose-600 rounded-full"></div>
              <div className="h-1.5 w-1.5 bg-rose-600 rounded-full"></div>
           </div>
-          <p className="max-w-2xl mx-auto text-[10px] font-black text-slate-300 leading-relaxed uppercase tracking-[0.4em]">
+          <p className="max-w-2xl mx-auto text-[10px] font-semibold text-slate-300 leading-relaxed uppercase tracking-[0.4em]">
             Bridging Cultures Through Flavors • 2025 Edition
           </p>
         </div>
@@ -407,15 +524,28 @@ const App: React.FC = () => {
              
              {totalCredits === 0 && !isUnlimited() && (
                <div className="text-center mb-8 space-y-2 mt-4">
-                 <h4 className="text-2xl md:text-3xl font-black text-rose-600">You've used your free credits for today.</h4>
-                 <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Want to see more?</p>
+                 <h4 className="text-2xl md:text-3xl font-semibold text-rose-600">You've used your free credits for today.</h4>
+                 <p className="text-slate-500 font-medium uppercase tracking-widest text-xs">Want to see more?</p>
+               </div>
+             )}
+
+             {/* Daily Share Reward Button in Modal */}
+             {!hasSharedToday && (
+               <div className="max-w-md mx-auto mb-8 text-center">
+                 <button 
+                   onClick={handleDailyShare}
+                   className="w-full group bg-emerald-600 text-white rounded-[2rem] p-6 transition-all active:scale-95 flex flex-col items-center gap-1 shadow-xl hover:bg-emerald-700"
+                 >
+                   <span className="text-[10px] font-semibold uppercase tracking-widest opacity-80">One-time Daily Bonus</span>
+                   <span className="text-xl font-semibold">📢 Share & Get +5 Free Credits</span>
+                 </button>
                </div>
              )}
              
              <PricingModule onPurchase={onPurchase} />
 
              <div className="mt-8 text-center border-t border-slate-100 pt-8">
-                <button onClick={() => handleCoffee(2)} className="text-sm font-black text-slate-400 hover:text-rose-600 underline underline-offset-4 uppercase tracking-widest transition-colors">
+                <button onClick={() => handleCoffee(2)} className="text-sm font-semibold text-slate-400 hover:text-rose-600 underline underline-offset-4 uppercase tracking-widest transition-colors">
                   Or buy us a Coke ($2) to support the site
                 </button>
              </div>
@@ -427,14 +557,14 @@ const App: React.FC = () => {
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white p-12 rounded-[3rem] text-center max-w-sm space-y-6 shadow-2xl">
             <div className="w-20 h-20 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-4xl">✓</div>
-            <h3 className="text-3xl font-black text-slate-900 leading-tight">Thank You!</h3>
+            <h3 className="text-3xl font-semibold text-slate-900 leading-tight">Thank You!</h3>
             <p className="text-slate-500 font-medium leading-relaxed italic">
               "Whether it's a Coke in NY or a Baozi in Shanghai, your support keeps this bridge between cultures alive."
             </p>
-            <div className="bg-slate-50 p-4 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-400">
+            <div className="bg-slate-50 p-4 rounded-2xl text-[10px] font-semibold uppercase tracking-widest text-slate-400">
               {isUnlimited() ? `Expires: ${new Date(usage.passExpiryDate!).toLocaleDateString()}` : `${totalCredits} Credits Remaining`}
             </div>
-            <button onClick={() => setThankYouPlan(null)} className="w-full bg-slate-900 text-white font-black py-4 rounded-2xl shadow-lg transition-transform active:scale-95">Start Exploring</button>
+            <button onClick={() => setThankYouPlan(null)} className="w-full bg-slate-900 text-white font-semibold py-4 rounded-2xl shadow-lg transition-transform active:scale-95">Start Exploring</button>
           </div>
         </div>
       )}
@@ -455,6 +585,10 @@ const App: React.FC = () => {
           content_cn={waiterContext.cn}
           onClose={() => setWaiterContext(null)} 
         />
+      )}
+
+      {showStaffHelper && (
+        <StaffHelperModal onClose={() => setShowStaffHelper(false)} />
       )}
     </div>
   );

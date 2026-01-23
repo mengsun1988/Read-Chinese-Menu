@@ -50,8 +50,8 @@ const Row = ({ items, onItemClick, reverse = false, duration = "40s" }: { items:
             onClick={() => onItemClick({ dish_name_en: en, dish_name_cn: cn })}
             className="px-4 py-2 bg-white border border-slate-100 rounded-full shadow-sm flex items-center gap-3 hover:border-rose-400 hover:bg-rose-50 transition-all group active:scale-95"
           >
-            <span className="text-[10px] font-bold text-slate-400 group-hover:text-rose-600 uppercase tracking-tighter transition-colors">{en}</span>
-            <span className="chinese-font text-sm font-black text-slate-800">{cn}</span>
+            <span className="text-[10px] font-medium text-slate-400 group-hover:text-rose-600 uppercase tracking-tighter transition-colors">{en}</span>
+            <span className="chinese-font text-sm font-bold text-slate-800">{cn}</span>
           </button>
         );
       })}

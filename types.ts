@@ -19,6 +19,19 @@ export interface Dish {
   image_url?: string;
 }
 
+export interface StoreResult {
+  store_name: string;
+  cuisine_type: string;
+  specialty_dishes: string[];
+  average_price_range: string;
+  description: string;
+}
+
+export enum RecognitionMode {
+  MENU = 'MENU',
+  STREET = 'STREET'
+}
+
 export enum AppStatus {
   IDLE = 'IDLE',
   LOADING = 'LOADING',
@@ -30,6 +43,7 @@ export interface UserUsage {
   freeCredits: number;
   paidCredits: number;
   lastResetDate: string; // YYYY-MM-DD
+  lastShareDate?: string; // YYYY-MM-DD
   passExpiryDate?: string; // ISO string
 }
 

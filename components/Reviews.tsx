@@ -41,7 +41,7 @@ export const Reviews: React.FC = () => {
     <section className="space-y-16">
       <div className="space-y-10">
         <div className="flex items-center gap-6">
-          <h3 className="text-2xl font-black text-slate-900 tracking-tight shrink-0 uppercase">Gourmet Feed</h3>
+          <h3 className="text-2xl font-semibold text-slate-900 tracking-tight shrink-0 uppercase">Gourmet Feed</h3>
           <div className="h-px bg-slate-200 flex-1"></div>
         </div>
         
@@ -53,8 +53,8 @@ export const Reviews: React.FC = () => {
                   {rev.avatar}
                 </div>
                 <div>
-                  <h4 className="text-sm font-black text-slate-900">{rev.name}</h4>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{rev.role}</p>
+                  <h4 className="text-sm font-semibold text-slate-900">{rev.name}</h4>
+                  <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">{rev.role}</p>
                 </div>
               </div>
               
@@ -75,8 +75,8 @@ export const Reviews: React.FC = () => {
       {/* Leave a Comment Section */}
       <div className="bg-slate-900 p-10 md:p-16 rounded-[3rem] text-center space-y-8 shadow-2xl border border-white/5">
         <div className="space-y-2">
-          <h3 className="text-3xl font-black text-white tracking-tight">Enjoying the Experience?</h3>
-          <p className="text-slate-400 font-bold uppercase tracking-[0.2em] text-[10px]">Leave your feedback or share your story</p>
+          <h3 className="text-3xl font-semibold text-white tracking-tight">Enjoying the Experience?</h3>
+          <p className="text-slate-400 font-medium uppercase tracking-[0.2em] text-[10px]">Leave your feedback or share your story</p>
         </div>
 
         <div className="max-w-xl mx-auto space-y-6">
@@ -89,7 +89,7 @@ export const Reviews: React.FC = () => {
               <button
                 key={cat.id}
                 onClick={() => setFeedbackType(cat.id as FeedbackType)}
-                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                className={`px-4 py-2 rounded-xl text-[10px] font-semibold uppercase tracking-widest transition-all ${
                   feedbackType === cat.id 
                     ? 'bg-rose-600 text-white shadow-lg' 
                     : 'bg-white/10 text-white/50 hover:bg-white/20'
@@ -113,7 +113,7 @@ export const Reviews: React.FC = () => {
           
           <button 
             onClick={handleSendEmail}
-            className="bg-rose-600 hover:bg-rose-700 text-white font-black py-4 px-12 rounded-2xl transition-all active:scale-95 shadow-xl text-lg flex items-center justify-center gap-3 mx-auto"
+            className="bg-rose-600 hover:bg-rose-700 text-white font-semibold py-4 px-12 rounded-2xl transition-all active:scale-95 shadow-xl text-lg flex items-center justify-center gap-3 mx-auto"
           >
             <span>Send via Email</span>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
