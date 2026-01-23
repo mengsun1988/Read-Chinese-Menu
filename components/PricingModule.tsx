@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { RefundModal } from './RefundModal';
+import { PayPalButton } from './PayPalButton';
 
 interface Plan {
   id: string;
@@ -12,12 +13,19 @@ interface Plan {
 
 export const PricingModule: React.FC<{ onPurchase: (plan: Plan) => void }> = ({ onPurchase }) => {
   const [isRefundModalOpen, setIsRefundModalOpen] = useState(false);
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
 
   const PLANS: Plan[] = [
     { id: 'starter', name: 'Starter Pack', price: '$4.99', amount: 4.99, description: '60 Credits' },
     { id: 'traveler', name: 'Traveler Pass', price: '$8.99', amount: 8.99, description: '7 Days Pass', highlight: true },
     { id: 'foodie', name: 'Foodie Pass', price: '$24.99', amount: 24.99, description: '30 Days Pass' }
   ];
+
+  const handlePaymentSuccess = (plan: Plan, details: any) => {
+    alert(`Thank you, ${details.payer.name?.given_name || 'Explorer'}! Your ${plan.name} is now active.`);
+    onPurchase(plan);
+    setSelectedPlanId(null);
+  };
 
   return (
     <div className="py-4 md:py-8 space-y-6 md:space-y-10">
@@ -55,16 +63,32 @@ export const PricingModule: React.FC<{ onPurchase: (plan: Plan) => void }> = ({ 
             </div>
             
             <div className="space-y-2">
-              <button 
-                onClick={() => onPurchase(plan)}
-                className={`w-full py-4 rounded-2xl font-semibold text-[10px] md:text-xs uppercase tracking-widest transition-all shadow-md active:scale-95 ${
-                  plan.highlight 
-                    ? 'bg-white text-rose-600 hover:bg-slate-50' 
-                    : 'bg-slate-900 text-white hover:bg-slate-800'
-                }`}
-              >
-                Choose {plan.name}
-              </button>
+              {selectedPlanId === plan.id ? (
+                <div className="animate-in fade-in zoom-in duration-300">
+                  <PayPalButton 
+                    amount={plan.amount.toString()} 
+                    planName={plan.name} 
+                    onSuccess={(details) => handlePaymentSuccess(plan, details)} 
+                  />
+                  <button 
+                    onClick={() => setSelectedPlanId(null)}
+                    className={`w-full mt-3 text-[8px] md:text-[10px] font-bold uppercase tracking-widest underline decoration-2 underline-offset-4 ${plan.highlight ? 'text-white/60 hover:text-white' : 'text-slate-400 hover:text-rose-600'}`}
+                  >
+                    Cancel Selection
+                  </button>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => setSelectedPlanId(plan.id)}
+                  className={`w-full py-4 rounded-2xl font-semibold text-[10px] md:text-xs uppercase tracking-widest transition-all shadow-md active:scale-95 ${
+                    plan.highlight 
+                      ? 'bg-white text-rose-600 hover:bg-slate-50' 
+                      : 'bg-slate-900 text-white hover:bg-slate-800'
+                  }`}
+                >
+                  Choose {plan.name}
+                </button>
+              )}
             </div>
           </div>
         ))}
