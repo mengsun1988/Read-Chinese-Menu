@@ -6,7 +6,7 @@ import { PayPalScriptProvider } from "@paypal/react-paypal-js";
 
 /** 
  * --- ENVIRONMENT SETUP ---
- * Ensures process.env is populated for third-party SDKs
+ * Syncs platform environment variables into process.env for SDK compatibility
  */
 const syncEnvironment = () => {
   try {
@@ -14,16 +14,18 @@ const syncEnvironment = () => {
     if (!(window as any).process) (window as any).process = { env: {} };
     if (!(window as any).process.env) (window as any).process.env = {};
     
-    // Specifically map API_KEY for Gemini SDK
+    // Explicitly handle API_KEY for Google GenAI SDK
     if (envSource.VITE_GEMINI_API_KEY) {
       (window as any).process.env.API_KEY = envSource.VITE_GEMINI_API_KEY;
+    } else if (envSource.API_KEY) {
+      (window as any).process.env.API_KEY = envSource.API_KEY;
     }
 
     Object.keys(envSource).forEach(key => {
       (window as any).process.env[key] = String(envSource[key]);
     });
   } catch (e) {
-    console.warn("[Env] Sync failed:", e);
+    console.warn("[Env Sync] Failed:", e);
   }
 };
 
@@ -51,14 +53,19 @@ const paypalOptions = {
 
 const rootElement = document.getElementById('root');
 if (rootElement) {
-  const root = ReactDOM.createRoot(rootElement);
-  root.render(
-    <React.StrictMode>
-      <PayPalScriptProvider options={paypalOptions}>
-        <App />
-      </PayPalScriptProvider>
-    </React.StrictMode>
-  );
+  try {
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(
+      <React.StrictMode>
+        <PayPalScriptProvider options={paypalOptions}>
+          <App />
+        </PayPalScriptProvider>
+      </React.StrictMode>
+    );
+  } catch (err) {
+    console.error("React Mounting Failed:", err);
+    rootElement.innerHTML = `<div style="padding: 20px; color: red;">Failed to start application. Please refresh.</div>`;
+  }
 } else {
-  console.error("Fatal Error: Target container #root not found in DOM.");
+  console.error("Fatal Error: #root element not found.");
 }
