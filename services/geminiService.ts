@@ -1,42 +1,38 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Dish, StoreResult } from "../types";
 
-// 1. Unified API Key extraction from the environment
-const GEMINI_API_KEY = process.env.API_KEY;
-
 const MENU_SYSTEM_INSTRUCTION = `You are an elite culinary expert and professional translator specializing in Chinese cuisine. You MUST perform a deep, exhaustive OCR scan of the provided Chinese menu image.
 
 CRITICAL RULES:
 1. EXHAUSTIVE EXTRACTION: Do not skip ANY readable items. Extract every single dish and its price.
-2. ACCURATE TRANSLATION: Provide appetizing, clear English names.
+2. ACCURATE TRANSLATION: Provide appetizing, clear English names. For metaphorical names, provide the culinary description.
 3. BILINGUAL INGREDIENTS: List key ingredients with both English and Chinese names.
-4. HIDDEN ANIMAL FATS: Be extremely vigilant about LARD (猪油) or TALLOW (牛油).
-5. VEGETARIAN VS VEGAN: Identify if a dish is truly vegetarian.
+4. HIDDEN ANIMAL FATS: Be extremely vigilant. Many Chinese "vegetable" dishes use LARD (猪油) or TALLOW (牛油). If a dish is traditionally cooked with animal fat, set "has_animal_fats" to true.
+5. VEGETARIAN VS VEGAN: A dish is only "is_vegetarian" if it contains no chunks of meat. However, if it uses lard/animal fat, "is_vegetarian" can still be true but "has_animal_fats" MUST be true.
 6. SPICINESS & ALLERGENS: Identify heat levels (0-5) and potential allergens.
-7. NO CHINESE PRICES: Format prices using 'Yuan' or '¥'.
-8. PRONUNCIATION: Provide Hanyu Pinyin and a pronunciation_guide.
+7. NO CHINESE PRICES: Format prices using 'Yuan' or '¥'. NEVER use the character '元'.
+8. PRONUNCIATION: For each dish, provide the Hanyu Pinyin (e.g., "Gōngbǎo Jīdīng") and a "pronunciation_guide" which is a simulated phonetic reading for English speakers (e.g., "Gong-Pow Jee-Deeng").
 
 Format: JSON array of objects.`;
 
-const STREET_SYSTEM_INSTRUCTION = `You are a local street food guide in China. Analyze the storefront signage. 
-Identify store name, cuisine type, specialty dishes, price range, and a "Street Tip".
+const STREET_SYSTEM_INSTRUCTION = `You are a local street food guide and signage expert in China. Analyze the provided storefront or shop signage image. 
+
+Identify:
+1. The store name in Chinese and English.
+2. The type of cuisine (e.g., Sichuan, Cantonese, Noodles, BBQ).
+3. Specialty dishes mentioned on the sign or visible in context.
+4. Average price range (e.g., 20-50 Yuan).
+5. A brief "Street Tip" description: Is it a famous chain? Is it a local hole-in-the-wall? What should a traveler expect? Keep it concise and practical.
+
 Format: JSON object.`;
 
-/**
- * Ensures the API Key is present before calling the model.
- */
-function ensureInitialized() {
-  if (!GEMINI_API_KEY) {
-    throw new Error("Missing Gemini API Key. Please check your environment configuration.");
-  }
-}
-
 export async function processMenuImage(base64Image: string): Promise<Dish[]> {
-  ensureInitialized();
-  const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+  // Updated to use import.meta.env as requested
+  const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string);
+  const ai = new GoogleGenAI({ apiKey });
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-1.5-flash',
     contents: {
       parts: [
         {
@@ -45,7 +41,7 @@ export async function processMenuImage(base64Image: string): Promise<Dish[]> {
             data: base64Image,
           },
         },
-        { text: "Exhaustively analyze this Chinese menu. Detect hidden fats. Return detailed JSON." }
+        { text: "Exhaustively analyze this Chinese menu. Detect hidden lard/animal fats. Provide Hanyu Pinyin and a phonetic guide for English speakers for every dish. Return detailed JSON." }
       ],
     },
     config: {
@@ -94,21 +90,18 @@ export async function processMenuImage(base64Image: string): Promise<Dish[]> {
   });
 
   const text = response.text;
-  if (!text) throw new Error("The AI failed to generate a response. Please try again.");
+  if (!text) throw new Error("No response from AI engine");
   
-  try {
-    return JSON.parse(text);
-  } catch (e) {
-    throw new Error("Failed to parse menu data. Please ensure the image is clear.");
-  }
+  return JSON.parse(text);
 }
 
 export async function processStorefrontImage(base64Image: string): Promise<StoreResult> {
-  ensureInitialized();
-  const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+  // Updated to use import.meta.env as requested
+  const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string);
+  const ai = new GoogleGenAI({ apiKey });
 
   const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
+    model: 'gemini-1.5-flash',
     contents: {
       parts: [
         {
@@ -138,11 +131,7 @@ export async function processStorefrontImage(base64Image: string): Promise<Store
   });
 
   const text = response.text;
-  if (!text) throw new Error("The AI failed to identify the store.");
+  if (!text) throw new Error("No response from AI engine");
   
-  try {
-    return JSON.parse(text);
-  } catch (e) {
-    throw new Error("Invalid store data received.");
-  }
+  return JSON.parse(text);
 }

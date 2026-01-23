@@ -8,19 +8,13 @@ interface PayPalButtonProps {
 }
 
 export const PayPalButton: React.FC<PayPalButtonProps> = ({ amount, planName, onSuccess }) => {
-  // ✅ Using import.meta.env to read variables from .env or .env.local in a Vite environment
-  const clientId = (import.meta as any).env.VITE_PAYPAL_CLIENT_ID;
+  // ✅ 核心修改 1：使用 import.meta.env 读取你在 .env.local 定义的变量
+  const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
 
   return (
-    // ✅ Fallback to "sb" (sandbox) if clientId is not found, providing a warning for debugging
+    // ✅ 核心修改 2：如果 clientId 没读到，给一个控制台报错提示，方便调试
     <PayPalScriptProvider options={{ clientId: clientId || "sb" }}>
-      {!clientId && (
-        <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-xl">
-          <p className="text-rose-600 text-[10px] font-bold text-center uppercase tracking-wider">
-            ⚠️ Warning: VITE_PAYPAL_CLIENT_ID not found in environment!
-          </p>
-        </div>
-      )}
+      {!clientId && <p style={{color: 'red'}}>Warning: PayPal Client ID not found!</p>}
       
       <PayPalButtons
         style={{ layout: "vertical", shape: "pill", color: "blue" }}

@@ -6,10 +6,10 @@ import { LoadingScreen } from './components/LoadingScreen';
 import { CameraIcon, WarningIcon } from './components/Icons';
 import { DishDetailModal } from './components/DishDetailModal';
 import { WaiterCard } from './components/WaiterCard';
-import { WordCloudMarquee } from './components/WordCloudMarquee';
 import { AboutUs } from './components/AboutUs';
 import { Reviews } from './components/Reviews';
 import { PricingModule } from './components/PricingModule';
+import { SupportSection } from './components/SupportSection';
 import { A2HSManager } from './components/A2HSManager';
 import { StoreCard } from './components/StoreCard';
 import { StaffHelperModal } from './components/StaffHelperModal';
@@ -33,7 +33,6 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [showPricing, setShowPricing] = useState(false);
-  const [thankYouPlan, setThankYouPlan] = useState<string | null>(null);
   const [showAppTip, setShowAppTip] = useState(false);
   const [showStaffHelper, setShowStaffHelper] = useState(false);
   const [legalView, setLegalView] = useState<'privacy' | 'tos' | null>(null);
@@ -97,23 +96,39 @@ const App: React.FC = () => {
 
   const totalCredits = (usage.freeCredits || 0) + (usage.paidCredits || 0);
 
-  const spendCredit = (): boolean => {
-    if (isUnlimited()) return true;
+  const spendCredit = (): 'none' | 'free' | 'paid' | 'unlimited' => {
+    if (isUnlimited()) return 'unlimited';
     if (totalCredits <= 0) {
       setShowPricing(true);
-      return false;
+      return 'none';
     }
 
+    let type: 'free' | 'paid' = 'free';
     setUsage(prev => {
       const newUsage = { ...prev };
       if (newUsage.freeCredits > 0) {
         newUsage.freeCredits -= 1;
-      } else if (newUsage.paidCredits > 0) {
+        type = 'free';
+      } else {
         newUsage.paidCredits -= 1;
+        type = 'paid';
       }
       return newUsage;
     });
-    return true;
+    return type;
+  };
+
+  const refundCredit = (type: 'free' | 'paid') => {
+    setUsage(prev => {
+      const newUsage = { ...prev };
+      if (type === 'free') {
+        newUsage.freeCredits += 1;
+      } else {
+        newUsage.paidCredits += 1;
+      }
+      return newUsage;
+    });
+    console.log(`Credit Refunded: ${type}`);
   };
 
   const handleDailyShare = async () => {
@@ -124,7 +139,7 @@ const App: React.FC = () => {
     }
     const shareData = {
       title: 'Read Chinese Menu',
-      text: 'Scan Chinese menus and decoding shop signs instantly! Best tool for China travel.',
+      text: 'Decode Chinese menus instantly! Identify hidden ingredients and allergens.',
       url: window.location.origin
     };
     try {
@@ -132,7 +147,7 @@ const App: React.FC = () => {
         await navigator.share(shareData);
       } else {
         await navigator.clipboard.writeText(window.location.origin);
-        alert("Link copied to clipboard! Share it with your friends to support us.");
+        alert("Link copied! Share it with friends to support us.");
       }
       setUsage(prev => ({ ...prev, freeCredits: prev.freeCredits + 5, lastShareDate: today }));
       alert("Reward Claimed! +5 Free Credits added.");
@@ -146,7 +161,9 @@ const App: React.FC = () => {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!spendCredit()) return;
+
+    const spentType = spendCredit();
+    if (spentType === 'none') return;
 
     const reader = new FileReader();
     reader.onloadend = () => setPreviewUrl(reader.result as string);
@@ -170,7 +187,13 @@ const App: React.FC = () => {
       }
       setStatus(AppStatus.SUCCESS);
     } catch (err: any) {
-      setError(err?.message || "Recognition failed. Please ensure the target is clear.");
+      console.error("Scan Error:", err);
+      if (spentType === 'free' || spentType === 'paid') {
+        refundCredit(spentType);
+        setError(`${err?.message || "Recognition failed."} Your credit has been restored.`);
+      } else {
+        setError(err?.message || "Recognition failed. Please ensure the target is clear.");
+      }
       setStatus(AppStatus.ERROR);
     }
   };
@@ -195,56 +218,42 @@ const App: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleCoffee = (amount: number) => {
-    window.location.href = `https://www.paypal.com/paypalme/yourhandle/${amount}`;
-  };
-
   const onPurchase = (plan: any) => {
+    // Donation-only logic (Support Section)
+    if (plan.isDonation) {
+      console.log(`Donation received: ${plan.name}. No credits added per user request.`);
+      return;
+    }
+
     const now = new Date();
     setUsage(prev => {
       let updated = { ...prev };
-      if (plan.id === 'starter') updated.paidCredits = (updated.paidCredits || 0) + 60;
-      if (plan.id === 'traveler') updated.passExpiryDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
-      if (plan.id === 'foodie') updated.passExpiryDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      
+      // Paid Upgrade logic (Pricing Module)
+      if (plan.id === 'starter') {
+        updated.paidCredits = (updated.paidCredits || 0) + 60;
+      } else if (plan.id === 'traveler') {
+        const currentExpiry = updated.passExpiryDate ? new Date(updated.passExpiryDate) : now;
+        const baseDate = currentExpiry > now ? currentExpiry : now;
+        updated.passExpiryDate = new Date(baseDate.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      } else if (plan.id === 'foodie') {
+        const currentExpiry = updated.passExpiryDate ? new Date(updated.passExpiryDate) : now;
+        const baseDate = currentExpiry > now ? currentExpiry : now;
+        updated.passExpiryDate = new Date(baseDate.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      }
       return updated;
     });
-    setThankYouPlan(plan.name);
     setShowPricing(false);
   };
-
-  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-  const isAndroid = /Android/i.test(navigator.userAgent);
 
   return (
     <div className="min-h-screen selection:bg-rose-600 selection:text-white pb-0 overflow-x-hidden">
       {showAppTip && status === AppStatus.IDLE && (
-        <div className="fixed top-4 right-4 z-[110] flex flex-col items-end gap-3 pointer-events-none animate-in fade-in duration-500">
-          <div className="bg-rose-600 text-white px-5 py-3 rounded-2xl shadow-2xl relative pointer-events-auto border border-rose-500">
-            <button 
-              onClick={handleDismissTip}
-              className="absolute -top-2 -left-2 w-6 h-6 bg-slate-900 rounded-full flex items-center justify-center text-white/60 hover:text-white border border-white/20 transition-colors"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-            <p className="text-[11px] font-bold uppercase tracking-widest leading-tight text-center">
-              {isIOS ? <>Tap "Share" then<br/>"Add to Home Screen"</> : <>Tap "⋮" then<br/>"Install App"</>}
-            </p>
-            <div className="absolute top-0 right-6 -mt-2 w-4 h-4 bg-rose-600 rotate-45 border-l border-t border-rose-500"></div>
-          </div>
-          <div className="mr-8 animate-bounce">
-            <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-rose-600 drop-shadow-lg">
-              <path d="M5 35C5 35 15 32 20 25C25 18 22 8 22 8M22 8L15 12M22 8L28 15" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </div>
-        </div>
-      )}
-
-      {showAppTip && status === AppStatus.IDLE && (
         <div className="w-full bg-rose-50 border-b border-rose-100 px-6 py-3 flex items-center justify-between gap-4 animate-in slide-in-from-top duration-500 sticky top-0 z-[100]">
           <div className="flex items-center gap-3">
-            <span className="text-xl shrink-0">{isIOS ? '📱' : '💡'}</span>
+            <span className="text-xl shrink-0">💡</span>
             <p className="text-[11px] sm:text-xs font-medium text-slate-700 leading-tight">
-              {isIOS ? <>Pro Tip: Tap your browser's <strong>'Share'</strong> icon and select <strong>'Add to Home Screen'</strong> to keep this tool as an App!</> : <>Pro Tip: Tap the <strong>⋮ menu</strong> and select <strong>'Install app'</strong> to save this tool to your home screen.</>}
+              Pro Tip: Install this tool to your home screen for quick access during your trip!
             </p>
           </div>
           <button onClick={handleDismissTip} className="p-1 hover:bg-rose-100 rounded-full transition-colors text-slate-400 hover:text-rose-600">
@@ -264,22 +273,39 @@ const App: React.FC = () => {
           {!isUnlimited() && totalCredits <= 3 && <button onClick={() => setShowPricing(true)} className="ml-2 px-2 py-0.5 bg-rose-600 text-white text-[8px] rounded-lg font-medium group-hover:bg-rose-700 transition-colors">Top Up</button>}
         </div>
 
-        <header className="mb-16 space-y-6">
-          <div className="flex items-center gap-4 mb-2">
-            <div className="h-px bg-slate-200 flex-1"></div>
-            <div className="px-5 py-1.5 border border-slate-200 text-slate-500 text-[10px] font-semibold uppercase tracking-[0.4em] rounded-full">Global Explorer Edition</div>
-            <div className="h-px bg-slate-200 flex-1"></div>
+        <header className="mb-16 space-y-6 text-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-rose-50 border border-rose-100 rounded-full mb-4 animate-in fade-in zoom-in duration-1000">
+            <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse"></span>
+            <span className="text-[9px] font-bold text-rose-600 uppercase tracking-widest">Global Explorer Edition</span>
           </div>
-          <div className="text-center">
-            <h1 className="text-5xl md:text-7xl font-semibold text-slate-900 tracking-tighter leading-none mb-4">Read <span className="text-rose-600">Chinese Menu</span></h1>
-            <p className="text-rose-600 font-semibold uppercase tracking-[0.1em] text-[10px] sm:text-xs">No download required. No registration. Just scan and read.</p>
-            <p className="text-slate-500 max-w-xl mx-auto text-xl font-medium mt-4">Know what’s on your plate.</p>
-          </div>
+          <h1 className="text-5xl md:text-7xl font-semibold text-slate-900 tracking-tighter leading-none">
+            Read <span className="text-rose-600">Chinese Menu</span>
+          </h1>
+          <p className="text-slate-500 font-medium text-sm md:text-base tracking-wide max-w-xl mx-auto uppercase">
+            Know what’s on your plate • Translate & Communicate with ease
+          </p>
         </header>
 
         <main className="mb-20">
           {status === AppStatus.IDLE && (
             <>
+              {/* Daily Share Reward Card */}
+              <div className="max-w-xl mx-auto mb-10 animate-in slide-in-from-bottom duration-700">
+                <button 
+                  onClick={handleDailyShare}
+                  className="w-full bg-emerald-50 border border-emerald-100 p-6 rounded-[2rem] flex items-center justify-between group hover:border-emerald-200 transition-all active:scale-[0.98]"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-2xl shadow-sm group-hover:rotate-12 transition-transform">🎁</div>
+                    <div className="text-left">
+                      <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest leading-none mb-1">Daily Reward</p>
+                      <p className="text-sm font-semibold text-slate-900 leading-none">Share & Earn +5 Free Credits</p>
+                    </div>
+                  </div>
+                  <div className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-emerald-100 group-hover:bg-emerald-700 transition-colors">Claim Now</div>
+                </button>
+              </div>
+
               <div className="flex justify-center mb-8">
                 <div className="bg-slate-100 p-1.5 rounded-2xl flex gap-1 shadow-inner">
                   <button onClick={() => setMode(RecognitionMode.MENU)} className={`px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${mode === RecognitionMode.MENU ? 'bg-white text-rose-600 shadow-md scale-105' : 'text-slate-400'}`}>Scan Menu</button>
@@ -288,17 +314,11 @@ const App: React.FC = () => {
               </div>
               <div className="modern-card p-12 md:p-20 text-center flex flex-col items-center shadow-xl mb-10">
                 <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
-                <button onClick={triggerUpload} className={`w-24 h-24 rounded-3xl flex items-center justify-center mb-10 shadow-2xl rotate-3 transition-transform active:scale-90 hover:scale-105 ${mode === RecognitionMode.MENU ? 'bg-rose-600 shadow-rose-200' : 'bg-slate-900 shadow-slate-200'}`}>
+                <button onClick={triggerUpload} className={`w-24 h-24 rounded-3xl flex items-center justify-center mb-10 shadow-2xl transition-transform active:scale-90 hover:scale-105 ${mode === RecognitionMode.MENU ? 'bg-rose-600 shadow-rose-200' : 'bg-slate-900 shadow-slate-200'}`}>
                   <CameraIcon className="w-12 h-12 text-white" />
                 </button>
                 <h2 className="text-4xl font-semibold text-slate-900 mb-2">{mode === RecognitionMode.MENU ? "What's on the Menu?" : "What's this Store?"}</h2>
                 <button onClick={triggerUpload} className="w-full max-w-xs bg-slate-900 text-white font-semibold py-5 rounded-2xl shadow-lg mt-8">📁 Upload or Capture</button>
-              </div>
-              <div className="max-w-xs mx-auto mb-10">
-                <button onClick={handleDailyShare} className="w-full group bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-4 transition-all flex flex-col items-center gap-1 shadow-sm">
-                  <span className="text-[10px] font-semibold uppercase text-emerald-600">Daily Reward</span>
-                  <span className="text-sm font-semibold text-slate-900">📢 Share & Get +5 Free Credits</span>
-                </button>
               </div>
             </>
           )}
@@ -308,7 +328,7 @@ const App: React.FC = () => {
           {status === AppStatus.ERROR && (
             <div className="bg-white border-2 border-rose-100 rounded-[3rem] p-20 text-center space-y-8 shadow-sm">
               <div className="inline-flex items-center justify-center w-24 h-24 bg-rose-50 text-rose-600 rounded-full"><WarningIcon className="w-12 h-12" /></div>
-              <h2 className="text-4xl font-semibold text-slate-900">Scan Failed</h2>
+              <h2 className="text-4xl font-semibold text-slate-900">Oops! Something went wrong</h2>
               <p className="text-slate-500 max-sm mx-auto font-medium text-lg">{error}</p>
               <button onClick={reset} className="bg-rose-600 text-white font-semibold py-4 px-12 rounded-2xl shadow-xl">Try Again</button>
             </div>
@@ -340,6 +360,7 @@ const App: React.FC = () => {
             <PricingModule onPurchase={onPurchase} />
             <AboutUs />
             <Reviews />
+            <SupportSection onPurchase={onPurchase} />
           </div>
         )}
       </div>
@@ -365,12 +386,7 @@ const App: React.FC = () => {
       {waiterContext && <WaiterCard type={waiterContext.type} content_en={waiterContext.en} content_cn={waiterContext.cn} onClose={() => setWaiterContext(null)} />}
       {showStaffHelper && <StaffHelperModal onClose={() => setShowStaffHelper(false)} />}
       
-      {legalView && (
-        <LegalModal 
-          type={legalView} 
-          onClose={() => setLegalView(null)} 
-        />
-      )}
+      {legalView && <LegalModal type={legalView} onClose={() => setLegalView(null)} />}
     </div>
   );
 };
