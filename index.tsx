@@ -6,7 +6,7 @@ import { PayPalScriptProvider } from "@paypal/react-paypal-js";
 
 /** 
  * --- ENVIRONMENT SETUP ---
- * Syncs platform environment variables into process.env for SDK compatibility
+ * Ensures process.env.API_KEY is populated for the Google GenAI SDK
  */
 const syncEnvironment = () => {
   try {
@@ -14,18 +14,16 @@ const syncEnvironment = () => {
     if (!(window as any).process) (window as any).process = { env: {} };
     if (!(window as any).process.env) (window as any).process.env = {};
     
-    // Explicitly handle API_KEY for Google GenAI SDK
-    if (envSource.VITE_GEMINI_API_KEY) {
-      (window as any).process.env.API_KEY = envSource.VITE_GEMINI_API_KEY;
-    } else if (envSource.API_KEY) {
-      (window as any).process.env.API_KEY = envSource.API_KEY;
-    }
+    // Map available keys to the standard process.env.API_KEY used by the SDK
+    const apiKey = envSource.VITE_GEMINI_API_KEY || envSource.API_KEY || "";
+    (window as any).process.env.API_KEY = apiKey;
 
+    // Copy other env vars
     Object.keys(envSource).forEach(key => {
       (window as any).process.env[key] = String(envSource[key]);
     });
   } catch (e) {
-    console.warn("[Env Sync] Failed:", e);
+    console.error("[Env Sync] Failed:", e);
   }
 };
 
@@ -38,8 +36,7 @@ const DEFAULT_PAYPAL_CLIENT_ID = "AcC48c12BiT2mIq4tk1ZL5bx-wBeh_py5KL2tqCt_kroEC
 
 const getPayPalClientId = () => {
   const env = (window as any).process?.env || {};
-  const id = env.VITE_PAYPAL_CLIENT_ID || DEFAULT_PAYPAL_CLIENT_ID;
-  return (id && id !== 'undefined' && id !== 'null') ? id : DEFAULT_PAYPAL_CLIENT_ID;
+  return env.VITE_PAYPAL_CLIENT_ID || DEFAULT_PAYPAL_CLIENT_ID;
 };
 
 const paypalOptions = {
@@ -53,19 +50,14 @@ const paypalOptions = {
 
 const rootElement = document.getElementById('root');
 if (rootElement) {
-  try {
-    const root = ReactDOM.createRoot(rootElement);
-    root.render(
-      <React.StrictMode>
-        <PayPalScriptProvider options={paypalOptions}>
-          <App />
-        </PayPalScriptProvider>
-      </React.StrictMode>
-    );
-  } catch (err) {
-    console.error("React Mounting Failed:", err);
-    rootElement.innerHTML = `<div style="padding: 20px; color: red;">Failed to start application. Please refresh.</div>`;
-  }
+  const root = ReactDOM.createRoot(rootElement);
+  root.render(
+    <React.StrictMode>
+      <PayPalScriptProvider options={paypalOptions}>
+        <App />
+      </PayPalScriptProvider>
+    </React.StrictMode>
+  );
 } else {
-  console.error("Fatal Error: #root element not found.");
+  console.error("Fatal: #root not found.");
 }

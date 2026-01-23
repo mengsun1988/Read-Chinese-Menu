@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { RefundModal } from './RefundModal';
 import { PayPalButton } from './PayPalButton';
@@ -38,7 +39,7 @@ export const PricingModule: React.FC<{ onPurchase: (plan: Plan) => void }> = ({ 
         {PLANS.map((plan) => (
           <div 
             key={plan.id} 
-            className={`modern-card p-8 md:p-10 flex flex-col justify-between transition-all duration-300 relative border-2 ${
+            className={`modern-card rounded-[2.5rem] p-8 md:p-10 flex flex-col justify-between transition-all duration-300 relative border-2 ${
               plan.highlight 
               ? 'bg-rose-600 border-rose-700 shadow-2xl md:scale-105 z-10' 
               : 'bg-white border-slate-100 hover:border-rose-300 shadow-sm'
@@ -80,7 +81,7 @@ export const PricingModule: React.FC<{ onPurchase: (plan: Plan) => void }> = ({ 
               ) : (
                 <button 
                   onClick={() => setSelectedPlanId(plan.id)}
-                  className={`w-full py-5 rounded-2xl font-semibold text-xs uppercase tracking-widest transition-all shadow-md active:scale-95 ${
+                  className={`w-full py-5 rounded-full font-semibold text-xs uppercase tracking-widest transition-all shadow-md active:scale-95 ${
                     plan.highlight 
                       ? 'bg-white text-rose-600 hover:bg-slate-50' 
                       : 'bg-slate-900 text-white hover:bg-slate-800'

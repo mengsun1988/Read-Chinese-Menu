@@ -7,15 +7,10 @@
   <meta name="theme-color" content="#e11d48">
   <link rel="manifest" href="manifest.json">
   
-  <!-- Global Environment Shims -->
+  <!-- Global Environment Shims: Required for SDKs to function -->
   <script>
     window.process = { env: { NODE_ENV: 'production' } };
     window.global = window;
-    // Capture early errors
-    window.onerror = function(msg, url, line, col, error) {
-      console.error('[Boot Error]:', msg, 'at', url, ':', line);
-      return false;
-    };
   </script>
 
   <!-- Meta Tags -->
@@ -40,7 +35,8 @@
       margin: 0;
       -webkit-font-smoothing: antialiased;
     }
-    .boot-loader {
+    /* Simple CSS-only loader that disappears once React mounts */
+    #root:empty {
       position: fixed;
       inset: 0;
       display: flex;
@@ -48,18 +44,9 @@
       align-items: center;
       justify-content: center;
       background: #fcfbf9;
-      z-index: 9999;
     }
-    .spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid #f3f3f3;
-      border-top: 3px solid #e11d48;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-bottom: 16px;
-    }
-    .loader-text {
+    #root:empty::after {
+      content: "Initializing Application...";
       font-family: var(--font-title);
       font-size: 11px;
       color: #e11d48;
@@ -68,7 +55,6 @@
       text-transform: uppercase;
       animation: pulse 1.5s infinite;
     }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
   </style>
 <script type="importmap">
@@ -84,11 +70,6 @@
 </script>
 </head>
 <body>
-  <div id="root">
-    <div class="boot-loader">
-      <div class="spinner"></div>
-      <div class="loader-text">Initializing AI Engine...</div>
-    </div>
-  </div>
+  <div id="root"></div>
 </body>
 </html>

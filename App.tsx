@@ -265,7 +265,7 @@ const App: React.FC = () => {
           <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-900">
             {isUnlimited() ? 'Unlimited Access' : `Credits: ${totalCredits}`}
           </span>
-          {!isUnlimited() && totalCredits <= 3 && <button onClick={() => setShowPricing(true)} className="ml-2 px-2 py-0.5 bg-rose-600 text-white text-[8px] rounded-lg font-medium">Top Up</button>}
+          {!isUnlimited() && totalCredits <= 3 && <button onClick={() => setShowPricing(true)} className="ml-2 px-2 py-0.5 bg-rose-600 text-white text-[8px] rounded-full font-medium">Top Up</button>}
         </div>
 
         <header className="mb-16 space-y-6 text-center">
@@ -293,7 +293,7 @@ const App: React.FC = () => {
                       <p className="text-sm font-semibold text-slate-900">Share & Earn +5 Free Credits</p>
                     </div>
                   </div>
-                  <div className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest">Claim Now</div>
+                  <div className="bg-emerald-600 text-white px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest">Claim Now</div>
                 </button>
               </div>
 
@@ -309,7 +309,7 @@ const App: React.FC = () => {
                   <CameraIcon className="w-12 h-12 text-white" />
                 </button>
                 <h2 className="text-4xl font-semibold text-slate-900 mb-2">{mode === RecognitionMode.MENU ? "What's on the Menu?" : "What's this Store?"}</h2>
-                <button onClick={triggerUpload} className="w-full max-w-xs bg-slate-900 text-white font-semibold py-5 rounded-2xl shadow-lg mt-8">📁 Upload or Capture</button>
+                <button onClick={triggerUpload} className="w-full max-w-xs bg-slate-900 text-white font-semibold py-5 rounded-full shadow-lg mt-8">📁 Upload or Capture</button>
               </div>
             </>
           )}
@@ -321,7 +321,7 @@ const App: React.FC = () => {
               <div className="inline-flex items-center justify-center w-24 h-24 bg-rose-50 text-rose-600 rounded-full"><WarningIcon className="w-12 h-12" /></div>
               <h2 className="text-4xl font-semibold text-slate-900">Scan Failed</h2>
               <p className="text-slate-500 max-sm mx-auto font-medium text-lg">{error}</p>
-              <button onClick={reset} className="bg-rose-600 text-white font-semibold py-4 px-12 rounded-2xl shadow-xl">Try Again</button>
+              <button onClick={reset} className="bg-rose-600 text-white font-semibold py-4 px-12 rounded-full shadow-xl">Try Again</button>
             </div>
           )}
 
@@ -335,7 +335,7 @@ const App: React.FC = () => {
                     <p className="text-sm font-medium text-rose-400 uppercase tracking-widest">{mode === RecognitionMode.MENU ? `${dishes.length} Matches` : 'Storefront Identified'}</p>
                   </div>
                 </div>
-                <button onClick={reset} className="bg-white text-slate-900 font-semibold py-5 px-10 rounded-2xl shadow-xl">New Scan</button>
+                <button onClick={reset} className="bg-white text-slate-900 font-semibold py-5 px-10 rounded-full shadow-xl">New Scan</button>
               </div>
               {mode === RecognitionMode.MENU ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

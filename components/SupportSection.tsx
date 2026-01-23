@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { PayPalButton } from './PayPalButton';
 
@@ -85,7 +86,7 @@ export const SupportSection: React.FC<{ onPurchase: (plan: any) => void }> = ({ 
             ) : (
               <button 
                 onClick={() => setSelectedId(tier.id)}
-                className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-orange-100/50 hover:bg-slate-800 transition-all active:scale-95"
+                className="w-full py-4 bg-slate-900 text-white rounded-full font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-orange-100/50 hover:bg-slate-800 transition-all active:scale-95"
               >
                 Send Support
               </button>
