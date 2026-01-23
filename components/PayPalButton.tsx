@@ -8,11 +8,20 @@ interface PayPalButtonProps {
 }
 
 export const PayPalButton: React.FC<PayPalButtonProps> = ({ amount, planName, onSuccess }) => {
-  // Use pre-configured PAYPAL_CLIENT_ID from process.env if available, otherwise fallback to sandbox 'sb'
-  const clientId = (process.env as any).PAYPAL_CLIENT_ID || "sb";
+  // ✅ Using import.meta.env to read variables from .env or .env.local in a Vite environment
+  const clientId = (import.meta as any).env.VITE_PAYPAL_CLIENT_ID;
 
   return (
-    <PayPalScriptProvider options={{ "client-id": clientId }}>
+    // ✅ Fallback to "sb" (sandbox) if clientId is not found, providing a warning for debugging
+    <PayPalScriptProvider options={{ clientId: clientId || "sb" }}>
+      {!clientId && (
+        <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-xl">
+          <p className="text-rose-600 text-[10px] font-bold text-center uppercase tracking-wider">
+            ⚠️ Warning: VITE_PAYPAL_CLIENT_ID not found in environment!
+          </p>
+        </div>
+      )}
+      
       <PayPalButtons
         style={{ layout: "vertical", shape: "pill", color: "blue" }}
         createOrder={(data, actions) => {
