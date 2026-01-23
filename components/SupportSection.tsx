@@ -69,7 +69,7 @@ export const SupportSection: React.FC<{ onPurchase: (plan: any) => void }> = ({ 
             <p className="text-xs text-slate-500 font-medium mb-8 h-8 flex items-center">{tier.description}</p>
 
             {selectedId === tier.id ? (
-              <div className="w-full animate-in zoom-in duration-300">
+              <div className="w-full animate-in zoom-in duration-300 min-h-[120px]">
                 <PayPalButton 
                   amount={tier.amount.toString()} 
                   planName={tier.name} 

@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { Dish, StoreResult } from "../types";
 
@@ -27,12 +28,11 @@ Identify:
 Format: JSON object.`;
 
 export async function processMenuImage(base64Image: string): Promise<Dish[]> {
-  // Updated to use import.meta.env as requested
-  const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string);
-  const ai = new GoogleGenAI({ apiKey });
+  // Create a new GoogleGenAI instance right before making an API call to ensure it uses the correct context.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const response = await ai.models.generateContent({
-    model: 'gemini-1.5-flash',
+    model: 'gemini-3-flash-preview',
     contents: {
       parts: [
         {
@@ -96,12 +96,11 @@ export async function processMenuImage(base64Image: string): Promise<Dish[]> {
 }
 
 export async function processStorefrontImage(base64Image: string): Promise<StoreResult> {
-  // Updated to use import.meta.env as requested
-  const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string);
-  const ai = new GoogleGenAI({ apiKey });
+  // Create a new GoogleGenAI instance right before making an API call to ensure it uses the correct context.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const response = await ai.models.generateContent({
-    model: 'gemini-1.5-flash',
+    model: 'gemini-3-flash-preview',
     contents: {
       parts: [
         {
