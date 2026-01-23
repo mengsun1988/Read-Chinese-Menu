@@ -106,9 +106,16 @@ const App: React.FC = () => {
 
   // Derived Values
   const totalCredits = usage.freeCredits + usage.paidCredits;
+  
   const isUnlimited = () => {
     if (!usage.passExpiryDate) return false;
-    return new Date(usage.passExpiryDate) > new Date();
+    return new Date(usage.passExpiryDate).getTime() > new Date().getTime();
+  };
+
+  const getRemainingDays = () => {
+    if (!usage.passExpiryDate) return 0;
+    const diff = new Date(usage.passExpiryDate).getTime() - new Date().getTime();
+    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
   };
 
   const triggerUpload = () => fileInputRef.current?.click();
@@ -176,7 +183,7 @@ const App: React.FC = () => {
             setStoreResult(result);
           }
 
-          // Consume credits
+          // Consume credits only if NOT unlimited
           if (!isUnlimited()) {
             setUsage(prev => {
               if (prev.paidCredits > 0) return { ...prev, paidCredits: prev.paidCredits - 1 };
@@ -224,10 +231,12 @@ const App: React.FC = () => {
         <div className="fixed bottom-6 right-6 z-[60] flex items-center gap-2 bg-white/95 backdrop-blur-md px-4 py-3 rounded-2xl border border-slate-200 shadow-2xl hover:scale-105 transition-transform cursor-default select-none group">
           <div className={`w-2.5 h-2.5 rounded-full ${isUnlimited() ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></div>
           <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-900">
-            {isUnlimited() ? 'Unlimited Access' : `Credits: ${totalCredits}`}
+            {isUnlimited() 
+              ? `Unlimited Access (${getRemainingDays()}d left)` 
+              : `Credits: ${totalCredits}`}
           </span>
           {!isUnlimited() && totalCredits <= 3 && (
-            <button onClick={() => setShowPricing(true)} className="ml-2 px-2 py-0.5 bg-rose-600 text-white text-[8px] rounded-full font-medium">Top Up</button>
+            <button onClick={() => setShowPricing(true)} className="ml-2 px-2 py-0.5 bg-rose-600 text-white text-[8px] rounded-full font-medium transition-colors hover:bg-rose-700">Top Up</button>
           )}
         </div>
 
