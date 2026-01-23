@@ -1,6 +1,6 @@
 import React from 'react';
 import { Dish, Ingredient } from '../types';
-import { ChiliIcon, LeafIcon, WarningIcon, AnimalFatIcon, SpeakerIcon } from './Icons';
+import { ChiliIcon, AnimalFatIcon, SpeakerIcon, WarningIcon } from './Icons';
 
 interface DishDetailModalProps {
   dish: Dish;
@@ -8,6 +8,12 @@ interface DishDetailModalProps {
   onIngredientClick: (ing: Ingredient) => void;
   onSpicyClick: () => void;
 }
+
+const getSpicyComparison = (level: number) => {
+  if (level <= 1) return { label: 'Mild', comparison: 'Jalapeño level' };
+  if (level <= 3) return { label: 'Medium', comparison: 'Cayenne level' };
+  return { label: 'Extra Spicy', comparison: 'Habanero / Reaper level' };
+};
 
 export const DishDetailModal: React.FC<DishDetailModalProps> = ({ dish, onClose, onIngredientClick, onSpicyClick }) => {
   const handleImageSearch = () => {
@@ -24,6 +30,8 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ dish, onClose,
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utterance);
   };
+
+  const spicyInfo = getSpicyComparison(dish.spiciness);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
@@ -82,7 +90,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ dish, onClose,
           </div>
         </div>
 
-        <div className="p-8 pt-10 overflow-y-auto flex-1 space-y-8">
+        <div className="p-8 pt-10 overflow-y-auto flex-1 space-y-8 text-slate-900">
           {dish.has_animal_fats && (
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex gap-3 animate-pulse">
               <AnimalFatIcon className="w-6 h-6 text-amber-600 shrink-0" />
@@ -129,21 +137,41 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({ dish, onClose,
           </section>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Spice Meter Component */}
             <button 
               onClick={onSpicyClick}
-              className="bg-slate-50 p-5 rounded-[2rem] border-2 border-slate-100 text-left hover:bg-red-50 hover:border-red-200 transition-colors group"
+              className="bg-slate-50 p-5 rounded-[2rem] border-2 border-slate-100 text-left hover:bg-red-50 hover:border-red-200 transition-all group overflow-hidden relative"
             >
-              <h4 className="text-[10px] font-semibold text-slate-400 uppercase mb-3 group-hover:text-red-500">Spiciness (Ask Staff)</h4>
-              <div className="flex gap-1.5">
-                {[...Array(5)].map((_, i) => (
-                  <ChiliIcon 
-                    key={i} 
-                    className={`w-6 h-6 ${i < dish.spiciness ? 'text-red-600' : 'text-slate-200'}`} 
-                    filled={i < dish.spiciness} 
-                  />
-                ))}
+              <h4 className="text-[10px] font-semibold text-slate-400 uppercase mb-3 group-hover:text-red-500">Spice Meter (Click to ask)</h4>
+              
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex gap-0.5">
+                    {[...Array(5)].map((_, i) => (
+                      <ChiliIcon 
+                        key={i} 
+                        className={`w-5 h-5 transition-transform duration-300 ${i < dish.spiciness ? 'text-red-600 scale-110' : 'text-slate-200'}`} 
+                        filled={i < dish.spiciness} 
+                      />
+                    ))}
+                  </div>
+                  <span className="text-[10px] font-bold text-red-600 uppercase tracking-tighter">{spicyInfo.label}</span>
+                </div>
+
+                {/* Progress Bar Visualization */}
+                <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-yellow-400 via-orange-500 to-red-600 transition-all duration-1000"
+                    style={{ width: `${(dish.spiciness / 5) * 100}%` }}
+                  ></div>
+                </div>
+
+                <p className="text-[9px] font-medium text-slate-400 group-hover:text-red-800 leading-tight">
+                  Compared to: <span className="font-bold">{spicyInfo.comparison}</span>
+                </p>
               </div>
             </button>
+
             <div className="bg-slate-50 p-5 rounded-[2rem] border-2 border-slate-100 flex flex-col justify-center">
               <h4 className="text-[10px] font-semibold text-slate-400 uppercase mb-2">Allergens Detected</h4>
               <div className="flex flex-wrap gap-1.5">

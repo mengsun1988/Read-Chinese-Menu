@@ -7,10 +7,10 @@
   <link rel="manifest" href="manifest.json">
   
   <!-- Primary Meta Tags -->
-  <title>Read Chinese Menu | AI Translation & Ingredient Decoder</title>
-  <meta name="title" content="Read Chinese Menu | AI Translation & Ingredient Decoder">
-  <meta name="description" content="The ultimate travel tool for China. Instantly translate Chinese menus from photos. Identify hidden lard/animal fats, allergens, and get pronunciation guides for every dish.">
-  <meta name="keywords" content="translate chinese menu, chinese food translation, chinese menu ocr, identify lard in chinese food, chinese dish pinyin, allergen detector chinese menu, vegetarian in china, vegan china travel">
+  <title>Read Chinese Menu & Street Guide | AI Translation & Decoder</title>
+  <meta name="title" content="Read Chinese Menu & Street Guide | AI Translation & Decoder">
+  <meta name="description" content="The ultimate travel tool for China. Instantly translate Chinese menus and storefronts from photos. Identify hidden lard, animal fats, and allergens. Get local shop insights and street guide tips.">
+  <meta name="keywords" content="translate chinese menu, chinese storefront ocr, identify lard in chinese food, chinese dish pinyin, allergen detector, street food china guide, scan chinese signs, vegetarian china travel">
   <meta name="author" content="Read Chinese Menu Team">
   <link rel="canonical" href="https://readchinesemenu.com" />
 
@@ -18,14 +18,14 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://readchinesemenu.com/">
   <meta property="og:title" content="Read Chinese Menu | Know what’s on your plate">
-  <meta property="og:description" content="Stop guessing what you're eating. Scan any Chinese menu to see ingredients, allergens, and hidden fats. Perfect for international travelers.">
+  <meta property="og:description" content="Scan menus or storefronts. Decipher ingredients, allergens, and hidden fats. Perfect for international travelers in China.">
   <meta property="og:image" content="https://img.alicdn.com/imgextra/i2/O1CN01f4O86J25v8K9qB7oB_!!6000000007589-2-tps-1024-1024.png">
 
   <!-- Twitter -->
   <meta property="twitter:card" content="summary_large_image">
   <meta property="twitter:url" content="https://readchinesemenu.com/">
-  <meta property="twitter:title" content="Read Chinese Menu | AI Translation & Ingredient Decoder">
-  <meta property="twitter:description" content="The ultimate travel tool for China. Instantly translate Chinese menus from photos. Identify hidden lard, allergens, and get pronunciation guides.">
+  <meta property="twitter:title" content="Read Chinese Menu | AI Translation & Street Guide">
+  <meta property="twitter:description" content="The ultimate travel tool for China. Scan any Chinese menu or shop sign to see ingredients, allergens, and local tips.">
   <meta property="twitter:image" content="https://img.alicdn.com/imgextra/i2/O1CN01f4O86J25v8K9qB7oB_!!6000000007589-2-tps-1024-1024.png">
 
   <!-- JSON-LD Structured Data -->
@@ -34,8 +34,8 @@
       "@context": "https://schema.org",
       "@type": "WebApplication",
       "name": "Read Chinese Menu",
-      "alternateName": "Chinese Menu Decoder",
-      "description": "An AI-powered web application that helps international travelers translate Chinese menus and identify dish ingredients, allergens, and hidden animal fats.",
+      "alternateName": "Chinese Street Guide Decoder",
+      "description": "An AI-powered web application that helps international travelers translate Chinese menus, scan storefronts, and identify dish ingredients, allergens, and hidden animal fats.",
       "applicationCategory": "TravelApplication, FoodApplication",
       "operatingSystem": "All",
       "offers": {
@@ -45,6 +45,7 @@
       },
       "featureList": [
         "Menu OCR and Translation",
+        "Street Sign & Storefront Recognition",
         "Hidden Animal Fat Detection",
         "Allergen Identification",
         "Pronunciation Guides (Pinyin)",
@@ -68,6 +69,7 @@
       background-color: #fcfbf9;
       color: #1a1a1a;
       -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
     }
     h1, h2, h3, .font-title {
       font-family: var(--font-title);
@@ -86,8 +88,8 @@
   "imports": {
     "react/": "https://esm.sh/react@^19.2.3/",
     "react": "https://esm.sh/react@^19.2.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "@google/genai": "https://esm.sh/@google/genai@^1.38.0"
+    "@google/genai": "https://esm.sh/@google/genai@^1.38.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
   }
 }
 </script>
