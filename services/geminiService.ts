@@ -8,6 +8,9 @@ export type MenuRecognitionResult = {
   error?: string;
 };
 
+// Cloudflare Worker URL
+const WORKER_URL = "https://read-chinese-menu-api.sweet-dream-3937.workers.dev";
+
 /**
  * 识别菜单函数 - 导出给 App.tsx 使用
  */
@@ -15,7 +18,7 @@ export async function processMenuImage(
   imageBase64: string
 ): Promise<MenuRecognitionResult> {
   try {
-    const response = await fetch("/api/gemini", {
+    const response = await fetch(WORKER_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -30,23 +33,17 @@ export async function processMenuImage(
       return { 
         ok: false, 
         dishes: [], 
-        error: errorData?.error || `API request failed (${response.status})` 
+        error: `API request failed (${response.status})` 
       };
     }
 
     const data = await response.json();
     
-    // 兼容 Mock 数据的数组格式
-    if (Array.isArray(data)) {
-      return { ok: true, dishes: validateDishes(data) };
-    }
-
-    // 处理对象格式的响应
-    if (data.ok === false) {
+    if (data.error) {
       return { ok: false, dishes: [], error: data.error };
     }
 
-    const dishes = data.dishes || data;
+    const dishes = data.dishes || [];
     return { ok: true, dishes: validateDishes(Array.isArray(dishes) ? dishes : []), raw: data };
   } catch (err) {
     console.error("[Menu Recognition Network Error]", err);
@@ -61,7 +58,7 @@ export async function processStorefrontImage(
   imageBase64: string
 ): Promise<StoreResult | any> {
   try {
-    const response = await fetch("/api/gemini", {
+    const response = await fetch(WORKER_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -73,7 +70,7 @@ export async function processStorefrontImage(
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       console.error("[Street Recognition Error]", response.status, errorData);
-      return { error: errorData?.error || `API request failed (${response.status})` };
+      return { error: `API request failed (${response.status})` };
     }
 
     const data = await response.json();
