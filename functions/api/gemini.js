@@ -1,22 +1,45 @@
 /**
- * 最简单的测试函数 - 验证 EdgeOne Pages 路由是否工作
+ * 最小化测试函数
  */
 export default {
   async fetch(request, env, ctx) {
-    return new Response(
-      JSON.stringify({
-        ok: true,
-        message: "EdgeOne function is working!",
-        method: request.method,
-        timestamp: new Date().toISOString(),
-        env_keys: Object.keys(env || {})
-      }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json" }
+    console.log('[Test] Request received');
+    
+    if (request.method !== "POST") {
+      return new Response(JSON.stringify({ error: "Only POST allowed" }), {
+        status: 405,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    try {
+      const body = await request.json();
+      console.log('[Test] Body received:', body);
+
+      const apiKey = env.GEMINI_API_KEY;
+      console.log('[Test] API Key exists:', !!apiKey);
+
+      if (!apiKey) {
+        return new Response(
+          JSON.stringify({ error: "Missing GEMINI_API_KEY environment variable" }),
+          { status: 500, headers: { "Content-Type": "application/json" } }
+        );
       }
-    );
-  }
+
+      // 简单测试返回
+      return new Response(
+        JSON.stringify({ ok: true, test: "API is working" }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+
+    } catch (error) {
+      console.error('[Test] Error:', error);
+      return new Response(
+        JSON.stringify({ error: error.message }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  },
 };
 
 /**
