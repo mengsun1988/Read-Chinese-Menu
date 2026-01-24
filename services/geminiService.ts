@@ -9,7 +9,7 @@ export type MenuRecognitionResult = {
 };
 
 // Cloudflare Worker URL
-const WORKER_URL = "https://read-chinese-menu-api.samuelmore1903.workers.dev/";
+const WORKER_URL = "https://read-chinese-menu-api.samuelmore1903.workers.dev";
 
 /**
  * 识别菜单函数 - 导出给 App.tsx 使用
