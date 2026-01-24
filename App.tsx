@@ -152,30 +152,81 @@ const handleDailyShare = async () => {
     }
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+// 压缩图片助手函数
+  const compressImage = (base64Str: string): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = base64Str;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 1200; // 识别菜单 1200px 足够清晰
+        let width = img.width;
+        let height = img.height;
+
+        if (width > MAX_WIDTH) {
+          height *= MAX_WIDTH / width;
+          width = MAX_WIDTH;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        // 压缩为 JPEG，质量 0.6
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
+        resolve(compressedBase64.split(',')[1]); // 只返回 Base64 数据部分
+      };
+    });
+  };
+
+const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!isUnlimited() && totalCredits <= 0) { setShowPricing(true); return; }
+
+    // 准入检查：点数够不够
+    if (!isUnlimited() && totalCredits <= 0) {
+      setShowPricing(true);
+      return;
+    }
 
     setStatus(AppStatus.LOADING);
     setPreviewUrl(URL.createObjectURL(file));
+    setError(null);
 
     const reader = new FileReader();
     reader.onloadend = async () => {
-      const base64 = (reader.result as string).split(',')[1];
       try {
+        const originalBase64 = reader.result as string;
+        
+        // --- 核心修复：压缩图片 ---
+        const compressedBase64 = await compressImage(originalBase64);
+
+        // --- 发送压缩后的短数据 ---
         if (mode === RecognitionMode.MENU) {
-          const result = await processMenuImage(base64);
-          setDishes(result);
+          const result = await processMenuImage(compressedBase64);
+          if (Array.isArray(result) && result.length > 0) {
+            setDishes(result);
+            setStatus(AppStatus.SUCCESS);
+          } else {
+            throw new Error("No dishes found. Please try a clearer photo.");
+          }
         } else {
-          const result = await processStorefrontImage(base64);
+          const result = await processStorefrontImage(compressedBase64);
           setStoreResult(result);
+          setStatus(AppStatus.SUCCESS);
         }
+
+        // 成功后扣除点数
         if (!isUnlimited()) {
-          setUsage(prev => prev.paidCredits > 0 ? { ...prev, paidCredits: prev.paidCredits - 1 } : { ...prev, freeCredits: prev.freeCredits - 1 });
+          setUsage(prev => ({
+            ...prev,
+            paidCredits: prev.paidCredits > 0 ? prev.paidCredits - 1 : prev.paidCredits,
+            freeCredits: prev.paidCredits > 0 ? prev.freeCredits : prev.freeCredits - 1
+          }));
         }
-        setStatus(AppStatus.SUCCESS);
+
       } catch (err: any) {
+        console.error("Analysis Error:", err);
         setError(err.message || "Failed to process image.");
         setStatus(AppStatus.ERROR);
       }
