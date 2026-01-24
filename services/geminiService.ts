@@ -3,7 +3,8 @@ import { Dish, StoreResult } from "../types";
 const WORKER_URL = "https://read-chinese-menu-api.samuelmore1903.workers.dev";
 
 function cleanBase64(base64: string): string {
-  return base64.includes(",") ? base64.split(",")[1] : base64;
+  if (!base64) return "";
+  return base64.replace(/^data:image\/\w+;base64,/, "");
 }
 
 export async function processMenuImage(base64Image: string): Promise<any[]> {
@@ -16,10 +17,14 @@ export async function processMenuImage(base64Image: string): Promise<any[]> {
       body: JSON.stringify({ image: cleanedBase64, type: "menu" }),
     });
 
-    if (!response.ok) throw new Error(`Network Error: ${response.status}`);
-    const result = await response.json();
+    if (!response.ok) {
+      const detail = await response.text();
+      throw new Error(detail || `Server Error ${response.status}`);
+    }
 
+    const result = await response.json();
     let rawArray: any[] = [];
+
     if (Array.isArray(result)) {
       rawArray = result;
     } else if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
@@ -34,11 +39,10 @@ export async function processMenuImage(base64Image: string): Promise<any[]> {
     return rawArray.map((item: any, index: number) => {
       const ingredients = Array.isArray(item.ingredients) ? item.ingredients : [];
       const dietary = Array.isArray(item.dietary_flags) ? item.dietary_flags : [];
-      
       return {
         ...item,
         id: item.id || `dish-${Date.now()}-${index}`,
-        // 关键：同时提供两种字段名，兼容所有旧组件
+        // 双重字段映射，确保卡片和弹窗都能读到
         dish_name_cn: item.name_cn || item.name || "未知菜名",
         dish_name_en: item.name_en || item.english_name || "Unknown Dish",
         name_cn: item.name_cn || item.name || "未知菜名",
@@ -46,7 +50,6 @@ export async function processMenuImage(base64Image: string): Promise<any[]> {
         price: String(item.price || ""),
         description: item.description || "",
         spiciness: Number(item.spiciness_level || item.spiciness || 0),
-        spiciness_level: Number(item.spiciness_level || item.spiciness || 0),
         ingredients: ingredients,
         dietary_flags: dietary,
         is_vegetarian: dietary.includes('vegetarian') || dietary.includes('vegan'),
@@ -54,7 +57,7 @@ export async function processMenuImage(base64Image: string): Promise<any[]> {
       };
     });
   } catch (err) {
-    console.error("Service Error:", err);
+    console.error("Analysis failed:", err);
     throw err;
   }
 }
@@ -64,8 +67,7 @@ export async function processStorefrontImage(base64Image: string): Promise<Store
   const fallback: StoreResult = { name: "Unknown Store", rating: 0, cuisine: "N/A" };
   try {
     const response = await fetch(WORKER_URL, {
-      method: "POST",
-      mode: "cors",
+      method: "POST", mode: "cors",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ image: cleanedBase64, type: "storefront" }),
     });
