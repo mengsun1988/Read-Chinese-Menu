@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { AppStatus, Dish, UserUsage, RecognitionMode, StoreResult, Ingredient } from './types';
 import { processMenuImage, processStorefrontImage } from './services/geminiService';
@@ -62,7 +61,7 @@ const App: React.FC = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(usage));
   }, [usage]);
 
-  /** ✅ PayPal SDK 注入 (Preserved as requested) */
+  /** ✅ PayPal SDK Injection */
   useEffect(() => {
     if (!showPricing) return;
 
@@ -81,20 +80,19 @@ const App: React.FC = () => {
       const paypal = (window as any).paypal;
       if (!paypal) return;
 
+      const container = document.getElementById('paypal-button-container');
+      if (container) container.innerHTML = '';
+
       paypal.Buttons({
         createOrder: (_: any, actions: any) => {
           return actions.order.create({
-            purchase_units: [
-              {
-                amount: { value: '5.00' }
-              }
-            ]
+            purchase_units: [{ amount: { value: '5.00' } }]
           });
         },
         onApprove: async (_: any, actions: any) => {
           await actions.order.capture();
           alert('Payment successful (sandbox)');
-          onPurchase({ id: 'manual-topup', name: 'Starter Pack', amount: 4.99, description: '60 Credits' });
+          onPurchase({ id: 'starter', name: 'Starter Pack', amount: 4.99, description: '60 Credits' });
         },
         onError: (err: any) => {
           console.error('PayPal error', err);
@@ -104,8 +102,7 @@ const App: React.FC = () => {
     }
   }, [showPricing]);
 
-  // Derived Values
-  const totalCredits = usage.freeCredits + usage.paidCredits;
+  const totalCredits = (usage.freeCredits || 0) + (usage.paidCredits || 0);
   
   const isUnlimited = () => {
     if (!usage.passExpiryDate) return false;
@@ -152,7 +149,7 @@ const App: React.FC = () => {
     }
     setUsage(prev => ({
       ...prev,
-      freeCredits: prev.freeCredits + 5,
+      freeCredits: (prev.freeCredits || 0) + 5,
       lastShareDate: today
     }));
     alert("5 Bonus Credits Added! Sharing is caring 🎁");
@@ -168,40 +165,41 @@ const App: React.FC = () => {
     }
 
     setStatus(AppStatus.LOADING);
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(URL.createObjectURL(file));
 
-    try {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64 = (reader.result as string).split(',')[1];
-        try {
-          if (mode === RecognitionMode.MENU) {
-            const result = await processMenuImage(base64);
-            setDishes(result.dishes);
-          } else {
-            const result = await processStorefrontImage(base64);
-            setStoreResult(result);
-          }
-
-          // Consume credits only if NOT unlimited
-          if (!isUnlimited()) {
-            setUsage(prev => {
-              if (prev.paidCredits > 0) return { ...prev, paidCredits: prev.paidCredits - 1 };
-              return { ...prev, freeCredits: prev.freeCredits - 1 };
-            });
-          }
-
-          setStatus(AppStatus.SUCCESS);
-        } catch (err: any) {
-          setError(err.message || "Failed to process image. Please ensure the menu is clear and well-lit.");
-          setStatus(AppStatus.ERROR);
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64 = (reader.result as string).split(',')[1];
+      try {
+        if (mode === RecognitionMode.MENU) {
+          const result = await processMenuImage(base64);
+          // ✅ 修复点：直接设置结果，已经在 service 层处理为 Dish[] 数组
+          setDishes(Array.isArray(result) ? result : []);
+        } else {
+          const result = await processStorefrontImage(base64);
+          setStoreResult(result);
         }
-      };
-      reader.readAsDataURL(file);
-    } catch (err) {
+
+        if (!isUnlimited()) {
+          setUsage(prev => {
+            const updated = { ...prev };
+            if (updated.paidCredits > 0) updated.paidCredits -= 1;
+            else if (updated.freeCredits > 0) updated.freeCredits -= 1;
+            return updated;
+          });
+        }
+        setStatus(AppStatus.SUCCESS);
+      } catch (err: any) {
+        setError(err.message || "Failed to process image. Please try again.");
+        setStatus(AppStatus.ERROR);
+      }
+    };
+    reader.onerror = () => {
       setError("Failed to read file.");
       setStatus(AppStatus.ERROR);
-    }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleDishClick = (dish: Dish) => setSelectedDish(dish);
@@ -305,14 +303,16 @@ const App: React.FC = () => {
                   {previewUrl && <img src={previewUrl} className="w-24 h-24 object-cover rounded-2xl border-2 border-white/10" alt="Preview" />}
                   <div>
                     <h3 className="font-semibold text-3xl text-white tracking-tight">{mode === RecognitionMode.MENU ? "Dish List" : "Shop Guide"}</h3>
-                    <p className="text-sm font-medium text-rose-400 uppercase tracking-widest">{mode === RecognitionMode.MENU ? `${dishes.length} Matches` : 'Storefront Identified'}</p>
+                    <p className="text-sm font-medium text-rose-400 uppercase tracking-widest">
+                      {mode === RecognitionMode.MENU ? `${dishes?.length || 0} Matches` : 'Storefront Identified'}
+                    </p>
                   </div>
                 </div>
                 <button onClick={reset} className="bg-white text-slate-900 font-semibold py-5 px-10 rounded-full shadow-xl">New Scan</button>
               </div>
               {mode === RecognitionMode.MENU ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {dishes.map((dish, index) => <DishCard key={index} dish={dish} onClick={() => handleDishClick(dish)} />)}
+                  {dishes?.map((dish, index) => <DishCard key={index} dish={dish} onClick={() => handleDishClick(dish)} />)}
                 </div>
               ) : (storeResult && <StoreCard store={storeResult} onShowStaff={() => setShowStaffHelper(true)} />)}
             </div>
