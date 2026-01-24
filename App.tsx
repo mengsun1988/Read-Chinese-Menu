@@ -56,51 +56,9 @@ const App: React.FC = () => {
   const [waiterContext, setWaiterContext] = useState<{ type: 'ingredient' | 'spiciness'; content_en: string; content_cn: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Persistence
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(usage));
   }, [usage]);
-
-  /** ✅ PayPal SDK Injection */
-  useEffect(() => {
-    if (!showPricing) return;
-
-    if ((window as any).paypal) {
-      renderPaypal();
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = `https://www.paypal.com/sdk/js?client-id=AdY7cjJGhxSVjZOPZr-LoHhX8JHtyQfNjmr6I8HjO4cv3cqW_U2zr1hpxa67nU8o4i6GoH0sFIh0P1aS&currency=USD&intent=capture`;
-    script.async = true;
-    script.onload = renderPaypal;
-    document.body.appendChild(script);
-
-    function renderPaypal() {
-      const paypal = (window as any).paypal;
-      if (!paypal) return;
-
-      const container = document.getElementById('paypal-button-container');
-      if (container) container.innerHTML = '';
-
-      paypal.Buttons({
-        createOrder: (_: any, actions: any) => {
-          return actions.order.create({
-            purchase_units: [{ amount: { value: '5.00' } }]
-          });
-        },
-        onApprove: async (_: any, actions: any) => {
-          await actions.order.capture();
-          alert('Payment successful (sandbox)');
-          onPurchase({ id: 'starter', name: 'Starter Pack', amount: 4.99, description: '60 Credits' });
-        },
-        onError: (err: any) => {
-          console.error('PayPal error', err);
-          alert('Payment failed');
-        }
-      }).render('#paypal-button-container');
-    }
-  }, [showPricing]);
 
   const totalCredits = (usage.freeCredits || 0) + (usage.paidCredits || 0);
   
@@ -144,7 +102,7 @@ const App: React.FC = () => {
   const handleDailyShare = () => {
     const today = getBeijingDate();
     if (usage.lastShareDate === today) {
-      alert("You've already claimed your share bonus for today!");
+      alert("Already claimed today!");
       return;
     }
     setUsage(prev => ({
@@ -152,7 +110,7 @@ const App: React.FC = () => {
       freeCredits: (prev.freeCredits || 0) + 5,
       lastShareDate: today
     }));
-    alert("5 Bonus Credits Added! Sharing is caring 🎁");
+    alert("5 Bonus Credits Added! 🎁");
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -174,159 +132,117 @@ const App: React.FC = () => {
       try {
         if (mode === RecognitionMode.MENU) {
           const result = await processMenuImage(base64);
-          // ✅ 修复点：直接设置结果，已经在 service 层处理为 Dish[] 数组
-          setDishes(Array.isArray(result) ? result : []);
+          // ✅ 修正点：直接使用 Service 处理好的数组
+          setDishes(result || []);
         } else {
           const result = await processStorefrontImage(base64);
           setStoreResult(result);
         }
 
         if (!isUnlimited()) {
-          setUsage(prev => {
-            const updated = { ...prev };
-            if (updated.paidCredits > 0) updated.paidCredits -= 1;
-            else if (updated.freeCredits > 0) updated.freeCredits -= 1;
-            return updated;
-          });
+          setUsage(prev => ({
+            ...prev,
+            paidCredits: prev.paidCredits > 0 ? prev.paidCredits - 1 : prev.paidCredits,
+            freeCredits: prev.paidCredits <= 0 ? prev.freeCredits - 1 : prev.freeCredits
+          }));
         }
         setStatus(AppStatus.SUCCESS);
       } catch (err: any) {
-        setError(err.message || "Failed to process image. Please try again.");
+        setError(err.message || "Recognition failed.");
         setStatus(AppStatus.ERROR);
       }
     };
-    reader.onerror = () => {
-      setError("Failed to read file.");
-      setStatus(AppStatus.ERROR);
-    };
     reader.readAsDataURL(file);
-  };
-
-  const handleDishClick = (dish: Dish) => setSelectedDish(dish);
-
-  const handleIngredientClick = (ing: Ingredient) => {
-    setWaiterContext({
-      type: 'ingredient',
-      content_en: ing.name_en,
-      content_cn: ing.name_cn
-    });
-  };
-
-  const handleSpicyClick = () => {
-    setWaiterContext({
-      type: 'spiciness',
-      content_en: 'Spiciness',
-      content_cn: '辣度'
-    });
   };
 
   return (
     <div className="min-h-screen selection:bg-rose-600 selection:text-white pb-0 overflow-x-hidden">
       <A2HSManager />
-
       <div className="max-w-5xl mx-auto px-6 py-16 md:py-24">
         {/* Credits Badge */}
-        <div className="fixed bottom-6 right-6 z-[60] flex items-center gap-2 bg-white/95 backdrop-blur-md px-4 py-3 rounded-2xl border border-slate-200 shadow-2xl hover:scale-105 transition-transform cursor-default select-none group">
+        <div className="fixed bottom-6 right-6 z-[60] flex items-center gap-2 bg-white/95 backdrop-blur-md px-4 py-3 rounded-2xl border border-slate-200 shadow-2xl hover:scale-105 transition-transform select-none">
           <div className={`w-2.5 h-2.5 rounded-full ${isUnlimited() ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></div>
           <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-900">
-            {isUnlimited() 
-              ? `Unlimited Access (${getRemainingDays()}d left)` 
-              : `Credits: ${totalCredits}`}
+            {isUnlimited() ? `Unlimited (${getRemainingDays()}d)` : `Credits: ${totalCredits}`}
           </span>
-          {!isUnlimited() && totalCredits <= 3 && (
-            <button onClick={() => setShowPricing(true)} className="ml-2 px-2 py-0.5 bg-rose-600 text-white text-[8px] rounded-full font-medium transition-colors hover:bg-rose-700">Top Up</button>
-          )}
         </div>
 
         <header className="mb-16 space-y-6 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-rose-50 border border-rose-100 rounded-full mb-4 animate-in fade-in zoom-in duration-1000">
-            <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse"></span>
-            <span className="text-[9px] font-bold text-rose-600 uppercase tracking-widest">Global Explorer Edition</span>
-          </div>
-          <h1 className="text-5xl md:text-7xl font-semibold text-slate-900 tracking-tighter leading-none">
+          <h1 className="text-5xl md:text-7xl font-semibold text-slate-900 tracking-tighter">
             Read <span className="text-rose-600">Chinese Menu</span>
           </h1>
-          <p className="text-slate-500 font-medium text-sm md:text-base tracking-wide max-w-xl mx-auto uppercase">
-            Know what’s on your plate • Translate & Communicate
+          <p className="text-slate-500 font-medium text-sm md:text-base uppercase tracking-widest">
+            Know what’s on your plate
           </p>
         </header>
 
         <main className="mb-20">
           {status === AppStatus.IDLE && (
             <>
-              <div className="max-w-xl mx-auto mb-10 animate-in slide-in-from-bottom duration-700">
-                <button onClick={handleDailyShare} className="w-full bg-emerald-50 border border-emerald-100 p-6 rounded-[2rem] flex items-center justify-between group hover:border-emerald-200 transition-all active:scale-[0.98]">
+              <div className="max-w-xl mx-auto mb-10">
+                <button onClick={handleDailyShare} className="w-full bg-emerald-50 border border-emerald-100 p-6 rounded-[2rem] flex items-center justify-between group transition-all active:scale-[0.98]">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-2xl shadow-sm">🎁</div>
                     <div className="text-left">
                       <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Daily Reward</p>
-                      <p className="text-sm font-semibold text-slate-900">Share & Earn +5 Free Credits</p>
+                      <p className="text-sm font-semibold text-slate-900">Share & Earn +5 Credits</p>
                     </div>
                   </div>
-                  <div className="bg-emerald-600 text-white px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest">Claim Now</div>
+                  <div className="bg-emerald-600 text-white px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest">Claim</div>
                 </button>
               </div>
 
               <div className="flex justify-center mb-8">
-                <div className="bg-slate-100 p-1.5 rounded-2xl flex gap-1 shadow-inner">
-                  <button onClick={() => setMode(RecognitionMode.MENU)} className={`px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${mode === RecognitionMode.MENU ? 'bg-white text-rose-600 shadow-md scale-105' : 'text-slate-400'}`}>Scan Menu</button>
-                  <button onClick={() => setMode(RecognitionMode.STREET)} className={`px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${mode === RecognitionMode.STREET ? 'bg-slate-900 text-white shadow-md scale-105' : 'text-slate-400'}`}>Scan Storefront</button>
+                <div className="bg-slate-100 p-1.5 rounded-2xl flex gap-1">
+                  <button onClick={() => setMode(RecognitionMode.MENU)} className={`px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${mode === RecognitionMode.MENU ? 'bg-white text-rose-600 shadow-md' : 'text-slate-400'}`}>Scan Menu</button>
+                  <button onClick={() => setMode(RecognitionMode.STREET)} className={`px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${mode === RecognitionMode.STREET ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400'}`}>Scan Storefront</button>
                 </div>
               </div>
 
-              <div className="modern-card p-12 md:p-20 text-center flex flex-col items-center shadow-xl mb-10">
+              <div className="modern-card p-12 md:p-20 text-center flex flex-col items-center shadow-xl">
                 <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
-                <button onClick={triggerUpload} className={`w-24 h-24 rounded-3xl flex items-center justify-center mb-10 shadow-2xl transition-transform active:scale-90 hover:scale-105 ${mode === RecognitionMode.MENU ? 'bg-rose-600 shadow-rose-200' : 'bg-slate-900 shadow-slate-200'}`}>
+                <button onClick={triggerUpload} className={`w-24 h-24 rounded-3xl flex items-center justify-center mb-10 shadow-2xl transition-transform active:scale-95 ${mode === RecognitionMode.MENU ? 'bg-rose-600' : 'bg-slate-900'}`}>
                   <CameraIcon className="w-12 h-12 text-white" />
                 </button>
-                <h2 className="text-4xl font-semibold text-slate-900 mb-2">{mode === RecognitionMode.MENU ? "What's on the Menu?" : "What's this Store?"}</h2>
-                <button onClick={triggerUpload} className="w-full max-w-xs bg-slate-900 text-white font-semibold py-5 rounded-full shadow-lg mt-8">📁 Upload or Capture</button>
+                <h2 className="text-4xl font-semibold text-slate-900 mb-2">Ready to Scan?</h2>
+                <button onClick={triggerUpload} className="w-full max-w-xs bg-slate-900 text-white font-semibold py-5 rounded-full shadow-lg mt-8">📁 Upload Photo</button>
               </div>
             </>
           )}
 
-          {status === AppStatus.LOADING && <div className="modern-card overflow-hidden shadow-2xl"><LoadingScreen /></div>}
+          {status === AppStatus.LOADING && <LoadingScreen />}
 
           {status === AppStatus.ERROR && (
-            <div className="bg-white border-2 border-rose-100 rounded-[3rem] p-20 text-center space-y-8 shadow-sm">
-              <div className="inline-flex items-center justify-center w-24 h-24 bg-rose-50 text-rose-600 rounded-full"><WarningIcon className="w-12 h-12" /></div>
+            <div className="bg-white border-2 border-rose-100 rounded-[3rem] p-20 text-center space-y-8">
+              <WarningIcon className="w-16 h-16 text-rose-600 mx-auto" />
               <h2 className="text-4xl font-semibold text-slate-900">Scan Failed</h2>
-              <p className="text-slate-500 max-sm mx-auto font-medium text-lg">{error}</p>
-              <button onClick={reset} className="bg-rose-600 text-white font-semibold py-4 px-12 rounded-full shadow-xl">Try Again</button>
+              <p className="text-slate-500 text-lg">{error}</p>
+              <button onClick={reset} className="bg-rose-600 text-white font-semibold py-4 px-12 rounded-full">Try Again</button>
             </div>
           )}
 
           {status === AppStatus.SUCCESS && (
-            <div className="space-y-12 animate-in fade-in slide-in-from-bottom-10">
-              <div className="flex flex-col md:flex-row justify-between items-center gap-8 bg-slate-900 p-8 rounded-[2.5rem] shadow-2xl border border-white/5 sticky top-6 z-20">
+            <div className="space-y-12">
+              <div className="flex flex-col md:flex-row justify-between items-center gap-8 bg-slate-900 p-8 rounded-[2.5rem] shadow-2xl sticky top-6 z-20">
                 <div className="flex items-center gap-6">
-                  {previewUrl && <img src={previewUrl} className="w-24 h-24 object-cover rounded-2xl border-2 border-white/10" alt="Preview" />}
+                  {previewUrl && <img src={previewUrl} className="w-20 h-20 object-cover rounded-2xl border-2 border-white/10" alt="Preview" />}
                   <div>
-                    <h3 className="font-semibold text-3xl text-white tracking-tight">{mode === RecognitionMode.MENU ? "Dish List" : "Shop Guide"}</h3>
+                    <h3 className="font-semibold text-3xl text-white">{mode === RecognitionMode.MENU ? "Dish List" : "Storefront"}</h3>
                     <p className="text-sm font-medium text-rose-400 uppercase tracking-widest">
-                      {mode === RecognitionMode.MENU ? `${dishes?.length || 0} Matches` : 'Storefront Identified'}
+                      {mode === RecognitionMode.MENU ? `${dishes?.length || 0} Dishes Found` : 'Store Identified'}
                     </p>
                   </div>
                 </div>
-                <button onClick={reset} className="bg-white text-slate-900 font-semibold py-5 px-10 rounded-full shadow-xl">New Scan</button>
+                <button onClick={reset} className="bg-white text-slate-900 font-semibold py-4 px-10 rounded-full">New Scan</button>
               </div>
               {mode === RecognitionMode.MENU ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {dishes?.map((dish, index) => <DishCard key={index} dish={dish} onClick={() => handleDishClick(dish)} />)}
+                  {dishes?.map((dish, index) => <DishCard key={dish.id || index} dish={dish} onClick={() => setSelectedDish(dish)} />)}
                 </div>
               ) : (storeResult && <StoreCard store={storeResult} onShowStaff={() => setShowStaffHelper(true)} />)}
             </div>
           )}
         </main>
-        
-        {status !== AppStatus.SUCCESS && (
-          <div className="space-y-20">
-            <PricingModule onPurchase={onPurchase} />
-            <AboutUs />
-            <Reviews />
-            <SupportSection onPurchase={onPurchase} />
-          </div>
-        )}
       </div>
 
       <Footer
@@ -338,32 +254,16 @@ const App: React.FC = () => {
       />
 
       {/* Modals */}
-      {showPricing && (
-        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md overflow-y-auto p-4 flex items-center justify-center">
-          <div className="bg-[#fcfbf9] w-full max-w-5xl rounded-[3rem] relative p-8 animate-in zoom-in shadow-2xl">
-            <button onClick={() => setShowPricing(false)} className="absolute top-6 right-6 p-2 text-slate-400">✕</button>
-            <PricingModule onPurchase={onPurchase} />
-            <div className="mt-12"><div id="paypal-button-container"></div></div>
-          </div>
-        </div>
-      )}
-
       {selectedDish && (
         <DishDetailModal 
           dish={selectedDish} 
           onClose={() => setSelectedDish(null)}
-          onIngredientClick={handleIngredientClick}
-          onSpicyClick={handleSpicyClick}
+          onIngredientClick={(ing) => setWaiterContext({ type: 'ingredient', content_en: ing.name_en, content_cn: ing.name_cn })}
+          onSpicyClick={() => setWaiterContext({ type: 'spiciness', content_en: 'Spiciness', content_cn: '辣度' })}
         />
       )}
-
-      {waiterContext && (
-        <WaiterCard 
-          {...waiterContext} 
-          onClose={() => setWaiterContext(null)} 
-        />
-      )}
-
+      {waiterContext && <WaiterCard {...waiterContext} onClose={() => setWaiterContext(null)} />}
+      {showPricing && <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4"><div className="bg-white rounded-[3rem] p-8 relative max-w-4xl w-full"><button onClick={() => setShowPricing(false)} className="absolute top-6 right-6">✕</button><PricingModule onPurchase={onPurchase} /></div></div>}
       {showStaffHelper && <StaffHelperModal onClose={() => setShowStaffHelper(false)} />}
       {legalView && <LegalModal type={legalView} onClose={() => setLegalView(null)} />}
     </div>
