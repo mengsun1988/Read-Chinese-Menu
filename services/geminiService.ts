@@ -1,63 +1,73 @@
 import { Dish, StoreResult } from "../types";
 
-const WORKER_URL = "[https://read-chinese-menu-api.samuelmore1903.workers.dev](https://read-chinese-menu-api.samuelmore1903.workers.dev)";
+// 确保 URL 是一个干净的常量字符串
+const WORKER_URL = "https://read-chinese-menu-api.samuelmore1903.workers.dev";
 
 /**
- * 移除 Base64 字符串的前缀头（如果存在）
+ * 移除 Base64 字符串的前缀头
  */
 function cleanBase64(base64: string): string {
   return base64.includes(",") ? base64.split(",")[1] : base64;
 }
 
 /**
- * 处理菜单图片：识别菜名、成分、价格等
+ * 处理菜单图片
  */
 export async function processMenuImage(base64Image: string): Promise<Dish[]> {
   const cleanedBase64 = cleanBase64(base64Image);
   
   try {
+    // 显式指定请求头，防止被浏览器或 CDN 误判
     const response = await fetch(WORKER_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ image: cleanedBase64, type: "menu" }),
+      mode: "cors", // 显式开启 CORS
+      headers: { 
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify({ 
+        image: cleanedBase64, 
+        type: "menu" 
+      }),
     });
 
+    // 针对 405 错误的特殊检查
+    if (response.status === 405) {
+      throw new Error("API Connection Blocked (405). Please check if the Worker URL is correct and CORS is enabled on the backend.");
+    }
+
     if (!response.ok) {
-      throw new Error(`Server responded with ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(`Server Error (${response.status}): ${errorText || 'Unknown response'}`);
     }
 
     const result = await response.json();
     
-    // 如果 Worker 返回了明确的错误
     if (result.error) {
       throw new Error(`AI Error: ${result.error}`);
     }
 
-    // 提取 AI 文本内容
     const aiText = result.candidates?.[0]?.content?.parts?.[0]?.text || "";
     
     if (!aiText) {
-      throw new Error("The AI returned an empty response. Please try again.");
+      throw new Error("The AI returned an empty response.");
     }
 
     try {
-      // 找到 JSON 数组的起始和结束位置
       const firstBracket = aiText.indexOf('[');
       const lastBracket = aiText.lastIndexOf(']');
       
       if (firstBracket === -1 || lastBracket === -1) {
-        console.error("Malformed AI Response (No array found):", aiText);
-        throw new Error("Could not parse menu data. Please ensure the menu is clearly visible.");
+        throw new Error("Could not find valid menu data in the response.");
       }
 
       const jsonStr = aiText.substring(firstBracket, lastBracket + 1);
       const rawArray = JSON.parse(jsonStr);
       
       if (!Array.isArray(rawArray)) {
-        throw new Error("Data format error: AI did not return a list of dishes.");
+        throw new Error("Response format error: Not an array.");
       }
 
-      // 映射并清洗数据，确保符合 Dish 接口
       return rawArray.map((item: any, index: number) => ({
         id: item.id || `dish-${Date.now()}-${index}`,
         name_cn: item.name_cn || item.name || "未知菜名",
@@ -66,23 +76,24 @@ export async function processMenuImage(base64Image: string): Promise<Dish[]> {
         description: item.description || "",
         ingredients: Array.isArray(item.ingredients) ? item.ingredients : [],
         dietary_flags: Array.isArray(item.dietary_flags) ? item.dietary_flags : [],
-        spiciness_level: Math.min(Math.max(Number(item.spiciness_level) || 0, 0), 5), // 限制在 0-5
+        spiciness_level: Math.min(Math.max(Number(item.spiciness_level) || 0, 0), 5),
         image_url: item.image_url || ""
       })) as Dish[];
 
     } catch (parseErr) {
-      console.error("JSON Parse Exception:", parseErr, "Raw Text:", aiText);
-      throw new Error("Failed to decode menu information. The photo may be too complex.");
+      console.error("Parse Error Details:", aiText);
+      throw new Error("Failed to decode the menu. Please try a clearer photo.");
     }
 
   } catch (err: any) {
-    console.error("Network or Processing Error:", err);
-    throw err; // 将错误向上抛出，由 App.tsx 的 catch 块捕获并显示给用户
+    console.error("Network Error Details:", err);
+    // 如果仍然出现 405，很有可能是 Worker 端的路由没写好（不支持 POST）
+    throw err;
   }
 }
 
 /**
- * 处理店面图片：识别店名、评分、菜系等
+ * 处理店面图片
  */
 export async function processStorefrontImage(base64Image: string): Promise<StoreResult> {
   const cleanedBase64 = cleanBase64(base64Image);
@@ -91,9 +102,18 @@ export async function processStorefrontImage(base64Image: string): Promise<Store
   try {
     const response = await fetch(WORKER_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ image: cleanedBase64, type: "storefront" }),
+      mode: "cors",
+      headers: { 
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify({ 
+        image: cleanedBase64, 
+        type: "storefront" 
+      }),
     });
+
+    if (!response.ok) return fallback;
 
     const result = await response.json();
     const aiText = result.candidates?.[0]?.content?.parts?.[0]?.text || "";
@@ -107,14 +127,13 @@ export async function processStorefrontImage(base64Image: string): Promise<Store
       return {
         ...fallback,
         ...parsed,
-        // 确保数值类型正确
         rating: Number(parsed.rating) || 0
       };
     }
     
     return fallback;
   } catch (err) {
-    console.error("Storefront Processing Error:", err);
+    console.error("Storefront Error:", err);
     return fallback;
   }
 }
