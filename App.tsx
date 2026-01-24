@@ -110,10 +110,14 @@ const App: React.FC = () => {
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !spendCredit()) return;
+    if (!file) return;
+    
+    // 在开始前检查点数
+    if (!spendCredit()) return;
 
     setStatus(AppStatus.LOADING);
     setPreviewUrl(URL.createObjectURL(file));
+    setError(null);
 
     const reader = new FileReader();
     reader.onloadend = async () => {
@@ -121,27 +125,30 @@ const App: React.FC = () => {
       try {
         if (mode === RecognitionMode.MENU) {
           const result = await processMenuImage(base64);
-          const raw = Array.isArray(result) ? result : (result?.dishes || []);
-          const clean = raw.map((d: any, i: number) => ({
-            id: d.id || `d-${i}`,
-            name_cn: d.name_cn || d.dish_name || "未知",
-            name_en: d.name_en || d.english_name || "Unknown",
-            price: String(d.price || ""),
-            description: d.description || "",
-            ingredients: Array.isArray(d.ingredients) ? d.ingredients : [],
-            dietary_flags: Array.isArray(d.dietary_flags) ? d.dietary_flags : [],
-            spiciness_level: Number(d.spiciness_level) || 0
-          }));
-          if (!clean.length) throw new Error("No items found.");
-          setDishes(clean);
+          
+          // 深度兼容性检查：确保 result 是有效的菜品数组
+          if (!result || !Array.isArray(result) || result.length === 0) {
+            throw new Error("AI couldn't find any dishes. Please try a clearer or closer photo.");
+          }
+          
+          setDishes(result);
         } else {
-          setStoreResult(await processStorefrontImage(base64));
+          const result = await processStorefrontImage(base64);
+          if (!result || result.name === "Unknown") {
+            throw new Error("Could not identify the store. Try a photo with the store name clearly visible.");
+          }
+          setStoreResult(result);
         }
         setStatus(AppStatus.SUCCESS);
       } catch (err: any) {
-        setError(err.message || "Failed to read image.");
+        console.error("Analysis Error:", err);
+        setError(err.message || "Something went wrong during analysis.");
         setStatus(AppStatus.ERROR);
       }
+    };
+    reader.onerror = () => {
+      setError("Failed to read image file.");
+      setStatus(AppStatus.ERROR);
     };
     reader.readAsDataURL(file);
   };
@@ -167,17 +174,14 @@ const App: React.FC = () => {
     setShowPricing(false);
   };
 
-  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-
   return (
     <div className="min-h-screen selection:bg-rose-600 selection:text-white bg-[#fcfbf9] font-['Roboto']">
-      {/* 1. PWA Tip (Custom font Poppins applied) */}
       {showAppTip && status === AppStatus.IDLE && (
         <div className="fixed top-4 right-4 z-[110] flex flex-col items-end gap-3 pointer-events-none animate-in fade-in duration-500">
           <div className="bg-[#e11d48] text-white px-5 py-3 rounded-2xl shadow-2xl relative pointer-events-auto font-['Poppins']">
             <button onClick={handleDismissTip} className="absolute -top-2 -left-2 w-6 h-6 bg-slate-900 rounded-full flex items-center justify-center text-white/60 text-[10px]">✕</button>
             <p className="text-[11px] font-semibold uppercase tracking-widest leading-tight text-center">
-              {isIOS ? <>Tap "Share" then<br/>"Add to Home Screen"</> : <>Tap "⋮" then<br/>"Install App"</>}
+              {/iPhone|iPad|iPod/i.test(navigator.userAgent) ? <>Tap "Share" then<br/>"Add to Home Screen"</> : <>Tap "⋮" then<br/>"Install App"</>}
             </p>
             <div className="absolute top-0 right-6 -mt-2 w-4 h-4 bg-[#e11d48] rotate-45"></div>
           </div>
@@ -195,7 +199,6 @@ const App: React.FC = () => {
           </span>
         </div>
 
-        {/* Header */}
         <header className="mb-16 text-center space-y-6">
           <div className="flex items-center gap-4 mb-2 opacity-30">
             <div className="h-px bg-slate-900 flex-1"></div>
@@ -211,13 +214,11 @@ const App: React.FC = () => {
         <main className="mb-20">
           {status === AppStatus.IDLE && (
             <div className="space-y-10 animate-in fade-in duration-700">
-              {/* Daily Reward */}
               <button onClick={handleDailyShare} className="max-w-xs mx-auto w-full bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex flex-col items-center gap-1 hover:bg-emerald-100 transition-colors">
                 <span className="text-[10px] font-bold uppercase text-emerald-600 font-['Poppins']">Daily Reward</span>
                 <span className="text-sm font-semibold text-slate-900">📢 Share for +5 Credits</span>
               </button>
 
-              {/* Mode Switcher */}
               <div className="flex justify-center">
                 <div className="bg-slate-200/50 p-1 rounded-2xl flex gap-1 font-['Poppins']">
                   <button onClick={() => setMode(RecognitionMode.MENU)} className={`px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${mode === RecognitionMode.MENU ? 'bg-white text-[#e11d48] shadow-sm' : 'text-slate-500'}`}>Menu</button>
@@ -225,7 +226,6 @@ const App: React.FC = () => {
                 </div>
               </div>
 
-              {/* Upload Card */}
               <div className="bg-white p-12 md:p-20 text-center flex flex-col items-center shadow-2xl rounded-[3rem] border border-slate-100">
                 <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
                 <button onClick={() => fileInputRef.current?.click()} className={`w-24 h-24 rounded-3xl flex items-center justify-center mb-10 shadow-2xl active:scale-90 transition-transform ${mode === RecognitionMode.MENU ? 'bg-[#e11d48]' : 'bg-slate-900'}`}>
@@ -239,9 +239,6 @@ const App: React.FC = () => {
                 <PricingModule onPurchase={onPurchase} />
                 <AboutUs />
                 <Reviews />
-                <div className="text-center pb-10">
-                   <button onClick={() => window.location.href='https://www.paypal.com/paypalme/yourhandle/5'} className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-full text-slate-600 font-bold hover:bg-slate-50 transition-all font-['Poppins'] text-xs shadow-sm">☕ Buy me a treat ($5)</button>
-                </div>
               </div>
             </div>
           )}
@@ -253,7 +250,7 @@ const App: React.FC = () => {
               <div className="flex flex-col md:flex-row justify-between items-center gap-8 bg-slate-900 p-8 rounded-[2.5rem] shadow-2xl sticky top-6 z-20">
                 <div className="flex items-center gap-6">
                   {previewUrl && <img src={previewUrl} className="w-20 h-20 object-cover rounded-2xl border-2 border-white/10" alt="Preview" />}
-                  <div className="font-['Poppins']">
+                  <div className="font-['Poppins'] text-left">
                     <h3 className="font-semibold text-2xl text-white tracking-tight">{mode === RecognitionMode.MENU ? "Results" : "Shop Info"}</h3>
                     <p className="text-[10px] font-bold text-rose-400 uppercase tracking-widest">{mode === RecognitionMode.MENU ? `${dishes.length} Items Found` : 'Identified'}</p>
                   </div>
@@ -272,11 +269,15 @@ const App: React.FC = () => {
           )}
 
           {status === AppStatus.ERROR && (
-            <div className="bg-white border-2 border-rose-50 rounded-[3rem] p-20 text-center space-y-8 font-['Poppins']">
-              <WarningIcon className="w-12 h-12 text-[#e11d48] mx-auto" />
-              <h2 className="text-3xl font-semibold">Scan Error</h2>
-              <p className="text-slate-500 max-w-sm mx-auto text-sm">{error}</p>
-              <button onClick={reset} className="bg-[#e11d48] text-white font-bold py-4 px-12 rounded-2xl shadow-lg uppercase tracking-widest text-xs">Try Again</button>
+            <div className="bg-white border-2 border-rose-50 rounded-[3rem] p-12 md:p-20 text-center space-y-8 font-['Poppins']">
+              <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto">
+                <WarningIcon className="w-10 h-10 text-[#e11d48]" />
+              </div>
+              <h2 className="text-3xl font-semibold">Scan Failed</h2>
+              <div className="bg-slate-50 p-6 rounded-2xl text-slate-500 max-w-sm mx-auto text-sm leading-relaxed">
+                {error || "Unknown error occurred."}
+              </div>
+              <button onClick={reset} className="bg-[#e11d48] text-white font-bold py-4 px-12 rounded-2xl shadow-lg uppercase tracking-widest text-xs active:scale-95 transition-transform">Try Again</button>
             </div>
           )}
         </main>
@@ -301,7 +302,7 @@ const App: React.FC = () => {
       {showPricing && (
         <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-[#fcfbf9] rounded-[3rem] p-8 relative max-w-5xl w-full shadow-2xl overflow-y-auto max-h-[95vh] animate-in zoom-in-95 duration-300">
-            <button onClick={() => setShowPricing(false)} className="absolute top-8 right-8 w-10 h-10 flex items-center justify-center bg-slate-100 rounded-full text-slate-400">✕</button>
+            <button onClick={() => setShowPricing(false)} className="absolute top-8 right-8 w-10 h-10 flex items-center justify-center bg-slate-100 rounded-full text-slate-400 z-10">✕</button>
             <PricingModule onPurchase={onPurchase} />
           </div>
         </div>
