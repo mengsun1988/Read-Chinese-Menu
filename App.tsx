@@ -58,6 +58,7 @@ const App: React.FC = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(usage));
   }, [usage]);
 
+  /** PayPal SDK 注入 (保持原有逻辑) */
   useEffect(() => {
     if (!showPricing) return;
     if ((window as any).paypal) { renderPaypal(); return; }
@@ -82,7 +83,7 @@ const App: React.FC = () => {
     }
   }, [showPricing]);
 
-  const totalCredits = usage.freeCredits + usage.paidCredits;
+  const totalCredits = (usage.freeCredits || 0) + (usage.paidCredits || 0);
   const isUnlimited = () => usage.passExpiryDate ? new Date(usage.passExpiryDate).getTime() > Date.now() : false;
   const getRemainingDays = () => {
     if (!usage.passExpiryDate) return 0;
@@ -92,12 +93,24 @@ const App: React.FC = () => {
 
   const triggerUpload = () => fileInputRef.current?.click();
 
+  /** 核心修改：切换模式时彻底清理状态，防止 .map 报错 */
+  const handleModeChange = (newMode: RecognitionMode) => {
+    setMode(newMode);
+    setStatus(AppStatus.IDLE);
+    setDishes([]);
+    setStoreResult(null);
+    setError(null);
+    setPreviewUrl(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   const reset = () => {
     setStatus(AppStatus.IDLE);
     setDishes([]);
     setStoreResult(null);
     setError(null);
     setPreviewUrl(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const onPurchase = (plan: any) => {
@@ -110,80 +123,57 @@ const App: React.FC = () => {
     });
   };
 
-const handleDailyShare = async () => {
+  const handleDailyShare = async () => {
     const today = getBeijingDate();
-    
-    // 1. 检查今天是否领过
     if (usage.lastShareDate === today) {
       alert("You've already claimed your share bonus for today!");
       return;
     }
-
-    // 2. 准备分享内容
     const shareData = {
       title: 'Read Chinese Menu',
       text: 'Check out this amazing AI tool for decoding Chinese menus!',
       url: window.location.origin,
     };
-
     try {
-      // 3. 调用系统原生分享接口
       if (navigator.share) {
         await navigator.share(shareData);
-        // 执行到这里说明分享成功（或调起了分享面板并返回）
       } else {
-        // 4. 降级方案：不支持原生分享的浏览器（如部分 PC 浏览器）
         await navigator.clipboard.writeText(window.location.origin);
         alert("Link copied! Share it with your friends to claim your bonus.");
       }
-
-      // 5. 分享动作完成后再发放奖励
-      setUsage(prev => ({
-        ...prev,
-        freeCredits: prev.freeCredits + 5,
-        lastShareDate: today
-      }));
-      
+      setUsage(prev => ({ ...prev, freeCredits: (prev.freeCredits || 0) + 5, lastShareDate: today }));
       alert("Success! 5 Bonus Credits Added! 🎁");
-
-    } catch (err) {
-      // 如果用户取消分享或分享失败，不发放奖励
-      console.log("Share failed or cancelled", err);
-    }
+    } catch (err) { console.log("Share cancelled", err); }
   };
 
-// 压缩图片助手函数
+  /** 压缩图片助手函数 */
   const compressImage = (base64Str: string): Promise<string> => {
     return new Promise((resolve) => {
       const img = new Image();
       img.src = base64Str;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 1200; // 识别菜单 1200px 足够清晰
+        const MAX_WIDTH = 1200; 
         let width = img.width;
         let height = img.height;
-
         if (width > MAX_WIDTH) {
           height *= MAX_WIDTH / width;
           width = MAX_WIDTH;
         }
-
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         ctx?.drawImage(img, 0, 0, width, height);
-        // 压缩为 JPEG，质量 0.6
         const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
-        resolve(compressedBase64.split(',')[1]); // 只返回 Base64 数据部分
+        resolve(compressedBase64.split(',')[1]); 
       };
     });
   };
 
-const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // 准入检查：点数够不够
     if (!isUnlimited() && totalCredits <= 0) {
       setShowPricing(true);
       return;
@@ -198,30 +188,36 @@ const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
       try {
         const originalBase64 = reader.result as string;
         
-        // --- 核心修复：压缩图片 ---
+        // 1. 压缩图片，解决手机端 400 错误
         const compressedBase64 = await compressImage(originalBase64);
 
-        // --- 发送压缩后的短数据 ---
+        // 2. 根据模式调用服务
         if (mode === RecognitionMode.MENU) {
           const result = await processMenuImage(compressedBase64);
           if (Array.isArray(result) && result.length > 0) {
             setDishes(result);
+            setStoreResult(null); // 确保数据隔离
             setStatus(AppStatus.SUCCESS);
           } else {
             throw new Error("No dishes found. Please try a clearer photo.");
           }
         } else {
           const result = await processStorefrontImage(compressedBase64);
-          setStoreResult(result);
-          setStatus(AppStatus.SUCCESS);
+          if (result && result.name !== "Unknown Store") {
+            setStoreResult(result);
+            setDishes([]); // 确保数据隔离
+            setStatus(AppStatus.SUCCESS);
+          } else {
+             throw new Error("Could not identify this store. Try a clearer storefront shot.");
+          }
         }
 
-        // 成功后扣除点数
+        // 3. 成功后扣除点数
         if (!isUnlimited()) {
           setUsage(prev => ({
             ...prev,
             paidCredits: prev.paidCredits > 0 ? prev.paidCredits - 1 : prev.paidCredits,
-            freeCredits: prev.paidCredits > 0 ? prev.freeCredits : prev.freeCredits - 1
+            freeCredits: prev.paidCredits > 0 ? prev.freeCredits : Math.max(0, prev.freeCredits - 1)
           }));
         }
 
@@ -281,8 +277,8 @@ const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
 
               <div className="flex justify-center mb-8">
                 <div className="bg-slate-100 p-1.5 rounded-2xl flex gap-1 shadow-inner">
-                  <button onClick={() => setMode(RecognitionMode.MENU)} className={`px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${mode === RecognitionMode.MENU ? 'bg-white text-rose-600 shadow-md scale-105' : 'text-slate-400'}`}>Scan Menu</button>
-                  <button onClick={() => setMode(RecognitionMode.STREET)} className={`px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${mode === RecognitionMode.STREET ? 'bg-slate-900 text-white shadow-md scale-105' : 'text-slate-400'}`}>Scan Storefront</button>
+                  <button onClick={() => handleModeChange(RecognitionMode.MENU)} className={`px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${mode === RecognitionMode.MENU ? 'bg-white text-rose-600 shadow-md scale-105' : 'text-slate-400'}`}>Scan Menu</button>
+                  <button onClick={() => handleModeChange(RecognitionMode.STREET)} className={`px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${mode === RecognitionMode.STREET ? 'bg-slate-900 text-white shadow-md scale-105' : 'text-slate-400'}`}>Scan Storefront</button>
                 </div>
               </div>
 
@@ -339,7 +335,7 @@ const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         )}
       </div>
 
-      <Footer onMenuScan={() => { setMode(RecognitionMode.MENU); reset(); }} onStreetScan={() => { setMode(RecognitionMode.STREET); reset(); }} onPricing={() => setShowPricing(true)} onPrivacy={() => setLegalView('privacy')} onTos={() => setLegalView('tos')} />
+      <Footer onMenuScan={() => handleModeChange(RecognitionMode.MENU)} onStreetScan={() => handleModeChange(RecognitionMode.STREET)} onPricing={() => setShowPricing(true)} onPrivacy={() => setLegalView('privacy')} onTos={() => setLegalView('tos')} />
 
       {showPricing && (
         <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md overflow-y-auto p-4 flex items-center justify-center">
