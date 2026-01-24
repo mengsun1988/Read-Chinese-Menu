@@ -108,11 +108,12 @@ const App: React.FC = () => {
     } catch (e) { console.warn(e); }
   };
 
+  // 修改后的核心文件上传处理逻辑
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
-    // 在开始前检查点数
+    // 1. 检查点数
     if (!spendCredit()) return;
 
     setStatus(AppStatus.LOADING);
@@ -126,22 +127,24 @@ const App: React.FC = () => {
         if (mode === RecognitionMode.MENU) {
           const result = await processMenuImage(base64);
           
-          // 深度兼容性检查：确保 result 是有效的菜品数组
-          if (!result || !Array.isArray(result) || result.length === 0) {
-            throw new Error("AI couldn't find any dishes. Please try a clearer or closer photo.");
+          // 这里的 result 已经在 geminiService 中被处理为数组了
+          if (result && result.length > 0) {
+            setDishes(result);
+            setStatus(AppStatus.SUCCESS);
+          } else {
+            throw new Error("No dishes were found in the image. Please try a clearer photo.");
           }
-          
-          setDishes(result);
         } else {
           const result = await processStorefrontImage(base64);
-          if (!result || result.name === "Unknown") {
-            throw new Error("Could not identify the store. Try a photo with the store name clearly visible.");
+          if (result && result.name !== "Unknown Store") {
+            setStoreResult(result);
+            setStatus(AppStatus.SUCCESS);
+          } else {
+            throw new Error("Could not identify this storefront. Please try another angle.");
           }
-          setStoreResult(result);
         }
-        setStatus(AppStatus.SUCCESS);
       } catch (err: any) {
-        console.error("Analysis Error:", err);
+        console.error("App Analysis Error:", err);
         setError(err.message || "Something went wrong during analysis.");
         setStatus(AppStatus.ERROR);
       }
@@ -158,6 +161,7 @@ const App: React.FC = () => {
     setDishes([]);
     setStoreResult(null);
     setError(null);
+    setPreviewUrl(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 

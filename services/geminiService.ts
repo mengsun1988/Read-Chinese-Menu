@@ -17,10 +17,9 @@ export async function processMenuImage(base64Image: string): Promise<Dish[]> {
   const cleanedBase64 = cleanBase64(base64Image);
   
   try {
-    // 显式指定请求头，防止被浏览器或 CDN 误判
     const response = await fetch(WORKER_URL, {
       method: "POST",
-      mode: "cors", // 显式开启 CORS
+      mode: "cors",
       headers: { 
         "Content-Type": "application/json",
         "Accept": "application/json"
@@ -31,9 +30,8 @@ export async function processMenuImage(base64Image: string): Promise<Dish[]> {
       }),
     });
 
-    // 针对 405 错误的特殊检查
     if (response.status === 405) {
-      throw new Error("API Connection Blocked (405). Please check if the Worker URL is correct and CORS is enabled on the backend.");
+      throw new Error("API Connection Blocked (405). Please check Worker CORS settings.");
     }
 
     if (!response.ok) {
@@ -47,47 +45,49 @@ export async function processMenuImage(base64Image: string): Promise<Dish[]> {
       throw new Error(`AI Error: ${result.error}`);
     }
 
-    const aiText = result.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    
-    if (!aiText) {
-      throw new Error("The AI returned an empty response.");
+    // --- 核心修改部分：兼容多种返回格式 ---
+    let rawArray: any[] = [];
+
+    if (Array.isArray(result)) {
+      // 格式 A: Worker 直接返回了数组 (你目前的情况)
+      rawArray = result;
+    } else if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
+      // 格式 B: Worker 返回的是 Gemini 原始嵌套格式，需要提取文本里的 JSON
+      const aiText = result.candidates[0].content.parts[0].text;
+      try {
+        const firstBracket = aiText.indexOf('[');
+        const lastBracket = aiText.lastIndexOf(']');
+        if (firstBracket !== -1 && lastBracket !== -1) {
+          const jsonStr = aiText.substring(firstBracket, lastBracket + 1);
+          rawArray = JSON.parse(jsonStr);
+        }
+      } catch (e) {
+        console.error("Internal Parse Error:", e);
+      }
+    } else if (result.dishes && Array.isArray(result.dishes)) {
+      // 格式 C: 返回的是带 key 的对象 { dishes: [...] }
+      rawArray = result.dishes;
     }
 
-    try {
-      const firstBracket = aiText.indexOf('[');
-      const lastBracket = aiText.lastIndexOf(']');
-      
-      if (firstBracket === -1 || lastBracket === -1) {
-        throw new Error("Could not find valid menu data in the response.");
-      }
-
-      const jsonStr = aiText.substring(firstBracket, lastBracket + 1);
-      const rawArray = JSON.parse(jsonStr);
-      
-      if (!Array.isArray(rawArray)) {
-        throw new Error("Response format error: Not an array.");
-      }
-
-      return rawArray.map((item: any, index: number) => ({
-        id: item.id || `dish-${Date.now()}-${index}`,
-        name_cn: item.name_cn || item.name || "未知菜名",
-        name_en: item.name_en || item.english_name || "Unknown Dish",
-        price: String(item.price || ""),
-        description: item.description || "",
-        ingredients: Array.isArray(item.ingredients) ? item.ingredients : [],
-        dietary_flags: Array.isArray(item.dietary_flags) ? item.dietary_flags : [],
-        spiciness_level: Math.min(Math.max(Number(item.spiciness_level) || 0, 0), 5),
-        image_url: item.image_url || ""
-      })) as Dish[];
-
-    } catch (parseErr) {
-      console.error("Parse Error Details:", aiText);
-      throw new Error("Failed to decode the menu. Please try a clearer photo.");
+    if (!rawArray || rawArray.length === 0) {
+      throw new Error("The AI returned an empty response or invalid format.");
     }
+
+    // 统一映射字段，防止后端字段名不一致
+    return rawArray.map((item: any, index: number) => ({
+      id: item.id || `dish-${Date.now()}-${index}`,
+      name_cn: item.name_cn || item.name || "未知菜名",
+      name_en: item.name_en || item.english_name || "Unknown Dish",
+      price: String(item.price || ""),
+      description: item.description || "",
+      ingredients: Array.isArray(item.ingredients) ? item.ingredients : [],
+      dietary_flags: Array.isArray(item.dietary_flags) ? item.dietary_flags : [],
+      spiciness_level: Math.min(Math.max(Number(item.spiciness_level) || 0, 0), 5),
+      image_url: item.image_url || ""
+    })) as Dish[];
 
   } catch (err: any) {
-    console.error("Network Error Details:", err);
-    // 如果仍然出现 405，很有可能是 Worker 端的路由没写好（不支持 POST）
+    console.error("Process Image Error:", err);
     throw err;
   }
 }
@@ -116,22 +116,24 @@ export async function processStorefrontImage(base64Image: string): Promise<Store
     if (!response.ok) return fallback;
 
     const result = await response.json();
-    const aiText = result.candidates?.[0]?.content?.parts?.[0]?.text || "";
     
-    const firstBrace = aiText.indexOf('{');
-    const lastBrace = aiText.lastIndexOf('}');
-
-    if (firstBrace !== -1 && lastBrace !== -1) {
-      const jsonStr = aiText.substring(firstBrace, lastBrace + 1);
-      const parsed = JSON.parse(jsonStr);
-      return {
-        ...fallback,
-        ...parsed,
-        rating: Number(parsed.rating) || 0
-      };
+    // 兼容处理：直接返回对象或嵌套在 candidates 里
+    let storeData = result;
+    if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
+      const aiText = result.candidates[0].content.parts[0].text;
+      const firstBrace = aiText.indexOf('{');
+      const lastBrace = aiText.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace !== -1) {
+        storeData = JSON.parse(aiText.substring(firstBrace, lastBrace + 1));
+      }
     }
-    
-    return fallback;
+
+    return {
+      ...fallback,
+      ...storeData,
+      name: storeData.name || storeData.store_name || fallback.name,
+      rating: Number(storeData.rating) || 0
+    };
   } catch (err) {
     console.error("Storefront Error:", err);
     return fallback;
