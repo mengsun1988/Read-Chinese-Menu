@@ -1,250 +1,91 @@
-/**
- * Cloudflare Worker - Gemini API Integration
- * 处理菜单和店铺识别请求，并调用 Google Gemini API
- */
+// 修改事件监听器，将 env 传递给处理函数
+addEventListener('fetch', event => {
+  event.respondWith(handleRequest(event.request, event.env));
+});
 
-export default {
-  async fetch(request, env, ctx) {
-    // CORS 预检请求
-    if (request.method === "OPTIONS") {
-      return new Response(null, {
-        status: 204,
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type",
-        },
+async function handleRequest(request, env) {
+  // 提前定义跨域头，避免“变量未初始化”错误
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Content-Type': 'application/json',
+  };
+
+  // 1. 处理跨域预检请求
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      headers: {
+        ...corsHeaders,
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+    });
+  }
+
+  // 2. 只处理 POST 请求
+  if (request.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Only POST allowed' }), {
+      status: 405,
+      headers: corsHeaders
+    });
+  }
+
+  try {
+    // 3. 解析前端请求
+    const clientData = await request.json();
+    const { imageBase64, prompt } = clientData;
+
+    if (!imageBase64) {
+      return new Response(JSON.stringify({ error: 'No image data provided' }), {
+        status: 400,
+        headers: corsHeaders
       });
     }
 
-    // 只允许 POST 请求
-    if (request.method !== "POST") {
-      return new Response(
-        JSON.stringify({ error: "Only POST allowed" }),
-        { 
-          status: 405,
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*",
-          },
-        }
-      );
+    // 4. 构建 Gemini API 请求
+    const geminiReqBody = {
+      contents: [{
+        parts: [
+          { text: prompt || "Describe this image" },
+          {
+            inline_data: {
+              mime_type: "image/jpeg",
+              data: imageBase64.replace(/^data:image\/\w+;base64,/, '')
+            }
+          }
+        ]
+      }]
+    };
+
+    // 🔑 关键：从环境变量中读取密钥！
+    const GEMINI_API_KEY = env.GEMINI_API_KEY; // 这里的名字必须和你设置的“变量名称”一致
+    if (!GEMINI_API_KEY) {
+      throw new Error('Gemini API key is not configured in environment variables.');
     }
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=${GEMINI_API_KEY}`;
 
-    try {
-      const body = await request.json();
-      const { image, type } = body;
+    // 5. 调用 Gemini API
+    const geminiResponse = await fetch(geminiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(geminiReqBody)
+    });
 
-      if (!image || !type) {
-        return new Response(
-          JSON.stringify({
-            ok: false,
-            error: "Missing required fields: image, type",
-            dishes: []
-          }),
-          { 
-            status: 400,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": "*",
-            },
-          }
-        );
-      }
+    // 6. 返回结果给前端
+    const result = await geminiResponse.json();
+    return new Response(JSON.stringify(result), {
+      status: geminiResponse.status,
+      headers: corsHeaders
+    });
 
-      const geminiApiKey = env.GEMINI_API_KEY;
-      if (!geminiApiKey) {
-        console.error("[Worker] GEMINI_API_KEY not found in environment variables");
-        return new Response(
-          JSON.stringify({
-            ok: false,
-            error: "API key not configured",
-            dishes: []
-          }),
-          { 
-            status: 500,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": "*",
-            },
-          }
-        );
-      }
-
-      // 构建 Gemini API 请求
-      const prompt = type === "menu"
-        ? `You are a Chinese restaurant menu analyzer. Analyze this menu image and extract all dishes. For each dish, provide:
-1. Chinese name (dish_name_cn)
-2. English translation (dish_name_en)
-3. Pinyin (pinyin)
-4. Pronunciation guide in English (pronunciation_guide)
-5. Description of the dish (description)
-6. Classic/common ingredients (classic_ingredients as array of {name_en, name_cn})
-7. Potential ingredients based on the dish (potential_ingredients)
-8. Spiciness level 0-5 (spiciness)
-9. Common allergens (allergens as array)
-10. Whether it's vegetarian (is_vegetarian)
-11. Whether it contains animal fats (has_animal_fats)
-12. Price if visible (price)
-
-Return ONLY valid JSON array of dish objects. Each ingredient object should have name_en and name_cn properties.`
-        : `You are a Chinese storefront analyzer. Analyze this storefront/street image and provide:
-1. Store name if visible (store_name)
-2. Address if visible (address)
-3. Type of store/restaurant (store_type)
-4. Visible signage text (signage)
-5. Overall description (description)
-
-Return ONLY valid JSON object with these properties. If not visible, use null or empty string.`;
-
-      // 调用 Gemini API
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  {
-                    text: prompt,
-                  },
-                  {
-                    inlineData: {
-                      mimeType: "image/jpeg",
-                      data: image, // Base64 编码的图片
-                    },
-                  },
-                ],
-              },
-            ],
-            generationConfig: {
-              temperature: 0.4,
-              topK: 32,
-              topP: 1,
-              maxOutputTokens: 4096,
-            },
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.text();
-        console.error("[Worker] Gemini API error:", errorData);
-        return new Response(
-          JSON.stringify({
-            ok: false,
-            error: `Gemini API error: ${response.status}`,
-            dishes: []
-          }),
-          { 
-            status: response.status,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": "*",
-            },
-          }
-        );
-      }
-
-      const geminiData = await response.json();
-      const content = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-      if (!content) {
-        return new Response(
-          JSON.stringify({
-            ok: false,
-            error: "No content from Gemini API",
-            dishes: []
-          }),
-          { 
-            status: 500,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": "*",
-            },
-          }
-        );
-      }
-
-      // 解析 JSON 响应
-      let result;
-      try {
-        // 尝试提取 JSON（可能被包装在 markdown 代码块中）
-        let jsonString = content;
-        const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-        if (jsonMatch) {
-          jsonString = jsonMatch[1];
-        }
-        result = JSON.parse(jsonString);
-      } catch (parseError) {
-        console.error("[Worker] JSON parse error:", parseError);
-        return new Response(
-          JSON.stringify({
-            ok: false,
-            error: "Failed to parse API response",
-            dishes: type === "menu" ? [] : {}
-          }),
-          { 
-            status: 500,
-            headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": "*",
-            },
-          }
-        );
-      }
-
-      // 为菜单添加默认值
-      if (type === "menu" && Array.isArray(result)) {
-        result = result.map(dish => ({
-          dish_name_cn: dish.dish_name_cn || "",
-          dish_name_en: dish.dish_name_en || "",
-          pinyin: dish.pinyin || "",
-          pronunciation_guide: dish.pronunciation_guide || "",
-          description: dish.description || "",
-          classic_ingredients: dish.classic_ingredients || [],
-          potential_ingredients: dish.potential_ingredients || [],
-          spiciness: dish.spiciness ?? 0,
-          allergens: dish.allergens || [],
-          is_vegetarian: dish.is_vegetarian ?? false,
-          has_animal_fats: dish.has_animal_fats ?? false,
-          price: dish.price || "",
-        }));
-      }
-
-      return new Response(
-        JSON.stringify({
-          ok: true,
-          [type === "menu" ? "dishes" : "store"]: result,
-        }),
-        { 
-          status: 200,
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "POST, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type",
-          },
-        }
-      );
-    } catch (error) {
-      console.error("[Worker] Error:", error);
-      return new Response(
-        JSON.stringify({
-          ok: false,
-          error: error.message || "Internal server error",
-          dishes: []
-        }),
-        { 
-          status: 500,
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*",
-          },
-        }
-      );
-    }
-  },
-};
+  } catch (error) {
+    // 7. 错误处理
+    console.error('Worker Error:', error);
+    return new Response(JSON.stringify({
+      error: 'Internal Server Error',
+      details: error.message
+    }), {
+      status: 500,
+      headers: corsHeaders
+    });
+  }
+}
