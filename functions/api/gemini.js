@@ -3,81 +3,81 @@
  * 路由: /api/gemini
  * 调用 Gemini API 进行菜单和店铺识别
  */
-export async function onRequest(context) {
-  const { request, env } = context;
-
-  // 只接受 POST 请求
-  if (request.method !== "POST") {
-    return new Response(
-      JSON.stringify({ ok: false, error: "Only POST method allowed", dishes: [] }),
-      { status: 405, headers: { "Content-Type": "application/json" } }
-    );
-  }
-
-  console.log("[Gemini API] Request received");
-
-  try {
-    const body = await request.json();
-    const { image, type = "menu" } = body;
-
-    console.log("[Gemini API] Request type:", type, "Image size:", image?.length);
-
-    if (!image) {
+export default {
+  async fetch(request, env, ctx) {
+    // 只接受 POST 请求
+    if (request.method !== "POST") {
       return new Response(
-        JSON.stringify({ ok: false, error: "Missing image data", dishes: [] }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        JSON.stringify({ ok: false, error: "Only POST method allowed", dishes: [] }),
+        { status: 405, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    // 读取环境变量
-    const apiKey = env.GEMINI_API_KEY;
+    console.log("[Gemini API] Request received");
 
-    if (!apiKey) {
-      console.error("[Gemini API] GEMINI_API_KEY not configured");
+    try {
+      const body = await request.json();
+      const { image, type = "menu" } = body;
+
+      console.log("[Gemini API] Request type:", type, "Image size:", image?.length);
+
+      if (!image) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "Missing image data", dishes: [] }),
+          { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      // 读取环境变量
+      const apiKey = env.GEMINI_API_KEY;
+
+      if (!apiKey) {
+        console.error("[Gemini API] GEMINI_API_KEY not configured");
+        return new Response(
+          JSON.stringify({
+            ok: false,
+            error: "Server configuration error: Missing GEMINI_API_KEY",
+            dishes: [],
+          }),
+          { status: 500, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      console.log("[Gemini API] API Key found, length:", apiKey.length);
+
+      // 调用 Gemini API
+      const result =
+        type === "menu"
+          ? await recognizeMenu(image, apiKey)
+          : await recognizeStorefront(image, apiKey);
+
+      if (result.error) {
+        console.error("[Gemini API] Recognition error:", result.error);
+        return new Response(
+          JSON.stringify({ ok: false, error: result.error, dishes: [] }),
+          { status: 500, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      console.log("[Gemini API] Success, returned items:", Array.isArray(result) ? result.length : 1);
+
+      return new Response(JSON.stringify(result), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (err) {
+      console.error("[Gemini API] Fatal error:", err.message);
       return new Response(
         JSON.stringify({
           ok: false,
-          error: "Server configuration error: Missing GEMINI_API_KEY",
+          error: "API error: " + err.message,
           dishes: [],
         }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
     }
-
-    console.log("[Gemini API] API Key found, length:", apiKey.length);
-
-    // 调用 Gemini API
-    const result =
-      type === "menu"
-        ? await recognizeMenu(image, apiKey)
-        : await recognizeStorefront(image, apiKey);
-
-    if (result.error) {
-      console.error("[Gemini API] Recognition error:", result.error);
-      return new Response(
-        JSON.stringify({ ok: false, error: result.error, dishes: [] }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    console.log("[Gemini API] Success, returned items:", Array.isArray(result) ? result.length : 1);
-
-    return new Response(JSON.stringify(result), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-  } catch (err) {
-    console.error("[Gemini API] Fatal error:", err.message);
-    return new Response(
-      JSON.stringify({
-        ok: false,
-        error: "API error: " + err.message,
-        dishes: [],
-      }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
-  }
-}
+  },
+};
 
 /**
  * 识别菜单
