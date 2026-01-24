@@ -114,17 +114,14 @@ export async function processMenuImage(base64Image: string): Promise<any[]> {
  */
 export async function processStorefrontImage(base64Image: string): Promise<StoreResult> {
   const cleanedBase64 = cleanBase64(base64Image);
-  
-  // 核心修复：定义完整的 fallback 对象，包含所有可能的数组字段
   const fallback: any = { 
-    name: "Unknown Store", 
+    name: "", 
     rating: 0, 
-    cuisine: "N/A",
-    description: "No description available.",
-    tags: [],        // 防御 .map 报错
-    features: [],    // 防御 .map 报错
-    highlights: [],  // 防御 .map 报错
-    opening_hours: [] // 防御 .map 报错
+    cuisine: "",
+    description: "",
+    tags: [],
+    features: [],
+    highlights: []
   };
   
   try {
@@ -135,28 +132,35 @@ export async function processStorefrontImage(base64Image: string): Promise<Store
       body: JSON.stringify({ image: cleanedBase64, type: "storefront" }),
     });
 
-    if (!response.ok) return fallback as StoreResult;
-
     const result = await response.json();
-    let data = result;
-
-    if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
-      const text = result.candidates[0].content.parts[0].text;
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      data = jsonMatch ? JSON.parse(jsonMatch[0]) : fallback;
+    
+    // 如果后端直接返回了正确格式
+    if (result && result.name && result.name !== "Unknown Store") {
+      return { ...fallback, ...result } as StoreResult;
     }
 
-    // 返回时再次确认所有数组字段存在，即便 AI 返回了对象但缺少字段
-    return {
-      ...fallback,
-      ...data,
-      name: data.name || data.store_name || fallback.name,
-      rating: Number(data.rating) || 0,
-      cuisine: data.cuisine || fallback.cuisine,
-      tags: Array.isArray(data.tags) ? data.tags : fallback.tags,
-      features: Array.isArray(data.features) ? data.features : fallback.features,
-      highlights: Array.isArray(data.highlights) ? data.highlights : fallback.highlights
-    } as StoreResult;
+    // 处理嵌套在 candidates 里的情况，使用更强的正则
+    let aiText = "";
+    if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
+      aiText = result.candidates[0].content.parts[0].text;
+    } else if (typeof result === 'string') {
+      aiText = result;
+    }
+
+    if (aiText) {
+      const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const data = JSON.parse(jsonMatch[0]);
+        return {
+          ...fallback,
+          ...data,
+          name: data.name || data.store_name || "",
+          rating: Number(data.rating) || 0
+        } as StoreResult;
+      }
+    }
+
+    return fallback as StoreResult;
   } catch (err) {
     console.error("Storefront Analysis Error:", err);
     return fallback as StoreResult;

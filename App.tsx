@@ -153,7 +153,7 @@ const App: React.FC = () => {
       img.src = base64Str;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 1200; 
+        const MAX_WIDTH = 1600; 
         let width = img.width;
         let height = img.height;
         if (width > MAX_WIDTH) {
@@ -164,7 +164,7 @@ const App: React.FC = () => {
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         ctx?.drawImage(img, 0, 0, width, height);
-        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
         resolve(compressedBase64.split(',')[1]); 
       };
     });
@@ -188,31 +188,30 @@ const App: React.FC = () => {
       try {
         const originalBase64 = reader.result as string;
         
-        // 1. 压缩图片，解决手机端 400 错误
+        // 1. 压缩图片 (将宽度提升到 1600px 以增加店面识别率)
         const compressedBase64 = await compressImage(originalBase64);
 
-        // 2. 根据模式调用服务
         if (mode === RecognitionMode.MENU) {
           const result = await processMenuImage(compressedBase64);
           if (Array.isArray(result) && result.length > 0) {
             setDishes(result);
-            setStoreResult(null); // 确保数据隔离
+            setStoreResult(null);
             setStatus(AppStatus.SUCCESS);
           } else {
             throw new Error("No dishes found. Please try a clearer photo.");
           }
         } else {
           const result = await processStorefrontImage(compressedBase64);
-          if (result && result.name !== "Unknown Store") {
+          // --- 修改这里：放宽校验条件 ---
+          if (result && (result.name || result.cuisine)) {
             setStoreResult(result);
-            setDishes([]); // 确保数据隔离
+            setDishes([]);
             setStatus(AppStatus.SUCCESS);
           } else {
-             throw new Error("Could not identify this store. Try a clearer storefront shot.");
+             throw new Error("Could not identify this store. Try a closer storefront shot.");
           }
         }
 
-        // 3. 成功后扣除点数
         if (!isUnlimited()) {
           setUsage(prev => ({
             ...prev,
