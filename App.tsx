@@ -27,7 +27,7 @@ const getBeijingDate = () => {
 const App: React.FC = () => {
   const [status, setStatus] = useState<AppStatus>(AppStatus.IDLE);
   const [mode, setMode] = useState<RecognitionMode>(RecognitionMode.MENU);
-  const [dishes, setDishes] = useState<any[]>([]); // 使用 any[] 确保兼容性
+  const [dishes, setDishes] = useState<any[]>([]);
   const [storeResult, setStoreResult] = useState<StoreResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -69,10 +69,16 @@ const App: React.FC = () => {
     }
   }, []);
 
+  const handleDismissTip = () => {
+    setShowAppTip(false);
+    localStorage.setItem(TIP_STORAGE_KEY, (new Date().getTime() + 86400000).toString());
+  };
+
+  const isUnlimited = () => usage.passExpiryDate ? new Date(usage.passExpiryDate).getTime() > Date.now() : false;
+  const totalCredits = (usage.freeCredits || 0) + (usage.paidCredits || 0);
+
   const spendCredit = (): boolean => {
-    const totalCredits = (usage.freeCredits || 0) + (usage.paidCredits || 0);
-    const isUnlimited = usage.passExpiryDate ? new Date(usage.passExpiryDate).getTime() > Date.now() : false;
-    if (isUnlimited) return true;
+    if (isUnlimited()) return true;
     if (totalCredits <= 0) { setShowPricing(true); return false; }
     setUsage(prev => {
       const u = { ...prev };
@@ -83,14 +89,27 @@ const App: React.FC = () => {
     return true;
   };
 
+  const handleDailyShare = async () => {
+    const today = getBeijingDate();
+    if (usage.lastShareDate === today) return alert("Already claimed today!");
+    try {
+      const data = { title: 'Read Chinese Menu', url: window.location.origin };
+      if (navigator.share) await navigator.share(data);
+      else {
+        await navigator.clipboard.writeText(window.location.origin);
+        alert("Link copied!");
+      }
+      setUsage(prev => ({ ...prev, freeCredits: (prev.freeCredits || 0) + 5, lastShareDate: today }));
+      alert("Success! +5 Credits.");
+    } catch (e) { console.warn(e); }
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !spendCredit()) return;
-
     setStatus(AppStatus.LOADING);
     setPreviewUrl(URL.createObjectURL(file));
     setError(null);
-
     const reader = new FileReader();
     reader.onloadend = async () => {
       const base64 = (reader.result as string).split(',')[1];
@@ -100,16 +119,14 @@ const App: React.FC = () => {
           if (Array.isArray(result) && result.length > 0) {
             setDishes(result);
             setStatus(AppStatus.SUCCESS);
-          } else {
-            throw new Error("No dishes found. Please try a clearer photo.");
-          }
+          } else { throw new Error("No dishes found."); }
         } else {
           const result = await processStorefrontImage(base64);
           setStoreResult(result);
           setStatus(AppStatus.SUCCESS);
         }
       } catch (err: any) {
-        setError(err.message || "Analysis failed.");
+        setError(err.message || "Failed.");
         setStatus(AppStatus.ERROR);
       }
     };
@@ -124,49 +141,104 @@ const App: React.FC = () => {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const onPurchase = (plan: any) => {
+    setUsage(prev => {
+      const u = { ...prev };
+      if (plan.id === 'starter') u.paidCredits = (u.paidCredits || 0) + 60;
+      else {
+        const days = plan.id === 'traveler' ? 7 : 30;
+        u.passExpiryDate = new Date(Date.now() + days * 86400000).toISOString();
+      }
+      return u;
+    });
+    setShowPricing(false);
+  };
+
   return (
-    <div className="min-h-screen bg-[#fcfbf9] font-['Roboto']">
+    <div className="min-h-screen selection:bg-rose-600 selection:text-white bg-[#fcfbf9] font-['Roboto']">
+      {showAppTip && status === AppStatus.IDLE && (
+        <div className="fixed top-4 right-4 z-[110] flex flex-col items-end gap-3 pointer-events-none animate-in fade-in duration-500">
+          <div className="bg-[#e11d48] text-white px-5 py-3 rounded-2xl shadow-2xl relative pointer-events-auto font-['Poppins']">
+            <button onClick={handleDismissTip} className="absolute -top-2 -left-2 w-6 h-6 bg-slate-900 rounded-full flex items-center justify-center text-white/60 text-[10px]">✕</button>
+            <p className="text-[11px] font-semibold uppercase tracking-widest leading-tight text-center">
+              {/iPhone|iPad|iPod/i.test(navigator.userAgent) ? <>Tap "Share" then<br/>"Add to Home Screen"</> : <>Tap "⋮" then<br/>"Install App"</>}
+            </p>
+          </div>
+        </div>
+      )}
+
       <A2HSManager />
+      
       <div className="max-w-5xl mx-auto px-6 py-16 md:py-24">
+        <div className="fixed bottom-6 right-6 z-[60] flex items-center gap-2 bg-white/95 backdrop-blur-md px-4 py-3 rounded-2xl border border-slate-200 shadow-2xl font-['Poppins']">
+          <div className={`w-2.5 h-2.5 rounded-full ${isUnlimited() ? 'bg-emerald-500 animate-pulse' : 'bg-[#e11d48]'}`}></div>
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-900">
+            {isUnlimited() ? 'Unlimited' : `Credits: ${totalCredits}`}
+          </span>
+        </div>
+
         <header className="mb-16 text-center space-y-6">
-           <h1 className="text-5xl md:text-7xl font-semibold text-slate-900 tracking-tighter font-['Poppins']">
+          <div className="flex items-center gap-4 mb-2 opacity-30">
+            <div className="h-px bg-slate-900 flex-1"></div>
+            <div className="text-[10px] font-bold uppercase tracking-[0.4em] font-['Poppins']">Explorer Edition</div>
+            <div className="h-px bg-slate-900 flex-1"></div>
+          </div>
+          <h1 className="text-5xl md:text-7xl font-semibold text-slate-900 tracking-tighter leading-none font-['Poppins']">
             Read <span className="text-[#e11d48]">Chinese Menu</span>
           </h1>
+          <p className="text-[#e11d48] font-bold uppercase tracking-widest text-[10px] font-['Poppins']">No registration. Scan and eat.</p>
         </header>
 
-        <main>
+        <main className="mb-20">
           {status === AppStatus.IDLE && (
-            <div className="space-y-10">
+            <div className="space-y-10 animate-in fade-in duration-700">
+              <button onClick={handleDailyShare} className="max-w-xs mx-auto w-full bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex flex-col items-center gap-1 hover:bg-emerald-100 transition-colors">
+                <span className="text-[10px] font-bold uppercase text-emerald-600 font-['Poppins']">Daily Reward</span>
+                <span className="text-sm font-semibold text-slate-900">📢 Share for +5 Credits</span>
+              </button>
+
               <div className="flex justify-center">
-                <div className="bg-slate-200/50 p-1 rounded-2xl flex gap-1">
-                  <button onClick={() => setMode(RecognitionMode.MENU)} className={`px-6 py-2 rounded-xl text-[10px] font-bold uppercase ${mode === RecognitionMode.MENU ? 'bg-white text-[#e11d48]' : 'text-slate-500'}`}>Menu</button>
-                  <button onClick={() => setMode(RecognitionMode.STREET)} className={`px-6 py-2 rounded-xl text-[10px] font-bold uppercase ${mode === RecognitionMode.STREET ? 'bg-slate-900 text-white' : 'text-slate-500'}`}>Street</button>
+                <div className="bg-slate-200/50 p-1 rounded-2xl flex gap-1 font-['Poppins']">
+                  <button onClick={() => setMode(RecognitionMode.MENU)} className={`px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${mode === RecognitionMode.MENU ? 'bg-white text-[#e11d48] shadow-sm' : 'text-slate-500'}`}>Menu</button>
+                  <button onClick={() => setMode(RecognitionMode.STREET)} className={`px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${mode === RecognitionMode.STREET ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-500'}`}>Street</button>
                 </div>
               </div>
-              <div className="bg-white p-12 text-center shadow-2xl rounded-[3rem] border border-slate-100">
+
+              <div className="bg-white p-12 md:p-20 text-center flex flex-col items-center shadow-2xl rounded-[3rem] border border-slate-100">
                 <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
-                <button onClick={() => fileInputRef.current?.click()} className="w-24 h-24 rounded-3xl bg-[#e11d48] flex items-center justify-center mb-10 mx-auto shadow-xl">
+                <button onClick={() => fileInputRef.current?.click()} className={`w-24 h-24 rounded-3xl flex items-center justify-center mb-10 shadow-2xl active:scale-90 transition-transform ${mode === RecognitionMode.MENU ? 'bg-[#e11d48]' : 'bg-slate-900'}`}>
                   <CameraIcon className="w-10 h-10 text-white" />
                 </button>
-                <button onClick={() => fileInputRef.current?.click()} className="w-full max-w-xs bg-slate-900 text-white font-bold py-5 rounded-2xl">UPLOAD PHOTO</button>
+                <h2 className="text-3xl font-semibold text-slate-900 mb-8 font-['Poppins']">{mode === RecognitionMode.MENU ? "What's on the Menu?" : "Identify this Store"}</h2>
+                <button onClick={() => fileInputRef.current?.click()} className="w-full max-w-xs bg-slate-900 text-white font-bold py-5 rounded-2xl shadow-lg font-['Poppins'] uppercase tracking-widest text-xs">📁 Upload Photo</button>
               </div>
-              <AboutUs /><Reviews />
+
+              <div className="space-y-32 mt-20">
+                <PricingModule onPurchase={onPurchase} />
+                <AboutUs />
+                <Reviews />
+              </div>
             </div>
           )}
 
           {status === AppStatus.LOADING && <LoadingScreen />}
 
           {status === AppStatus.SUCCESS && (
-            <div className="space-y-12">
-              <div className="flex justify-between items-center bg-slate-900 p-8 rounded-[2.5rem] sticky top-6 z-20">
-                <h3 className="text-white text-xl font-bold">Results ({dishes.length})</h3>
-                <button onClick={reset} className="bg-white px-6 py-2 rounded-xl text-xs font-bold">NEW SCAN</button>
+            <div className="space-y-12 animate-in slide-in-from-bottom-5 duration-700">
+              <div className="flex flex-col md:flex-row justify-between items-center gap-8 bg-slate-900 p-8 rounded-[2.5rem] shadow-2xl sticky top-6 z-20">
+                <div className="flex items-center gap-6">
+                  {previewUrl && <img src={previewUrl} className="w-20 h-20 object-cover rounded-2xl border-2 border-white/10" alt="Preview" />}
+                  <div className="font-['Poppins'] text-left">
+                    <h3 className="font-semibold text-2xl text-white tracking-tight">{mode === RecognitionMode.MENU ? "Results" : "Shop Info"}</h3>
+                    <p className="text-[10px] font-bold text-rose-400 uppercase tracking-widest">{mode === RecognitionMode.MENU ? `${dishes.length} Items Found` : 'Identified'}</p>
+                  </div>
+                </div>
+                <button onClick={reset} className="bg-white text-slate-900 font-bold py-4 px-10 rounded-2xl font-['Poppins'] text-xs uppercase tracking-widest">New Scan</button>
               </div>
+
               {mode === RecognitionMode.MENU ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {Array.isArray(dishes) && dishes.map((dish, i) => (
-                    <DishCard key={dish.id || i} dish={dish} onClick={() => setSelectedDish(dish)} />
-                  ))}
+                  {Array.isArray(dishes) && dishes.map((dish, i) => <DishCard key={dish.id || i} dish={dish} onClick={() => setSelectedDish(dish)} />)}
                 </div>
               ) : (
                 storeResult && <StoreCard store={storeResult} onShowStaff={() => setShowStaffHelper(true)} />
@@ -175,16 +247,23 @@ const App: React.FC = () => {
           )}
 
           {status === AppStatus.ERROR && (
-            <div className="text-center p-20 bg-white rounded-[3rem] border border-rose-100">
-              <WarningIcon className="w-12 h-12 text-rose-500 mx-auto mb-4" />
-              <p className="text-slate-600 mb-8">{error}</p>
-              <button onClick={reset} className="bg-rose-600 text-white px-8 py-3 rounded-xl">Retry</button>
+            <div className="bg-white border-2 border-rose-50 rounded-[3rem] p-12 md:p-20 text-center space-y-8 font-['Poppins']">
+              <WarningIcon className="w-10 h-10 text-[#e11d48] mx-auto" />
+              <h2 className="text-3xl font-semibold">Scan Failed</h2>
+              <p className="text-slate-500 max-w-sm mx-auto">{error}</p>
+              <button onClick={reset} className="bg-[#e11d48] text-white font-bold py-4 px-12 rounded-2xl shadow-lg uppercase tracking-widest text-xs">Try Again</button>
             </div>
           )}
         </main>
       </div>
-      
-      <Footer onMenuScan={reset} onStreetScan={reset} onPricing={() => setShowPricing(true)} onPrivacy={() => {}} onTos={() => {}} />
+
+      <Footer
+        onMenuScan={() => { setMode(RecognitionMode.MENU); reset(); }}
+        onStreetScan={() => { setMode(RecognitionMode.STREET); reset(); }}
+        onPricing={() => setShowPricing(true)}
+        onPrivacy={() => setLegalView('privacy')}
+        onTos={() => setLegalView('tos')}
+      />
 
       {selectedDish && (
         <DishDetailModal 
@@ -193,6 +272,19 @@ const App: React.FC = () => {
           onSpicyClick={() => setWaiterContext({ type: 'spiciness', content_en: 'Spiciness', content_cn: '辣度' })}
         />
       )}
+
+      {showPricing && (
+        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#fcfbf9] rounded-[3rem] p-8 relative max-w-5xl w-full shadow-2xl overflow-y-auto max-h-[95vh] animate-in zoom-in-95 duration-300">
+            <button onClick={() => setShowPricing(false)} className="absolute top-8 right-8 w-10 h-10 flex items-center justify-center bg-slate-100 rounded-full text-slate-400 z-10">✕</button>
+            <PricingModule onPurchase={onPurchase} />
+          </div>
+        </div>
+      )}
+      
+      {waiterContext && <WaiterCard {...waiterContext} onClose={() => setWaiterContext(null)} />}
+      {showStaffHelper && <StaffHelperModal onClose={() => setShowStaffHelper(false)} />}
+      {legalView && <LegalModal type={legalView} onClose={() => setLegalView(null)} />}
     </div>
   );
 };

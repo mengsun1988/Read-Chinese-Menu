@@ -2,18 +2,17 @@ import React from 'react';
 import { ChiliIcon, LeafIcon, WarningIcon } from './Icons';
 
 interface DishCardProps {
-  dish: any; // 使用 any 兼容映射后的数据
+  dish: any;
   onClick: () => void;
 }
 
 export const DishCard: React.FC<DishCardProps> = ({ dish, onClick }) => {
-  // 防御性：确保 spiciness 有默认值
   const spiceLevel = Number(dish.spiciness) || 0;
 
   return (
     <button 
       onClick={onClick}
-      className="modern-card group text-left overflow-hidden hover:border-rose-600 transition-all duration-300 w-full bg-white rounded-3xl border border-slate-100 shadow-sm"
+      className="modern-card group text-left overflow-hidden hover:border-rose-600 transition-all duration-300 w-full"
     >
       <div className="p-6 md:p-8 flex flex-col justify-between h-full">
         <div>
@@ -52,7 +51,6 @@ export const DishCard: React.FC<DishCardProps> = ({ dish, onClick }) => {
               </div>
             )}
             <div className="flex items-center gap-0.5">
-              {/* 安全地渲染辣椒图标 */}
               {Array.from({ length: 5 }).map((_, i) => (
                  <ChiliIcon 
                    key={i} 
