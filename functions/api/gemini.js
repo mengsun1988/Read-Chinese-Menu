@@ -1,10 +1,16 @@
 /**
  * EdgeOne Pages - 边缘函数
  * 路由: /api/gemini
- * 调用 Gemini API 进行菜单和店铺识别
+ * 简化版本 - 测试基本路由
  */
 export default {
   async fetch(request, env, ctx) {
+    // 日志：确认函数被调用
+    console.log("[EdgeOne] Function invoked");
+    console.log("[EdgeOne] Method:", request.method);
+    console.log("[EdgeOne] URL:", request.url);
+    console.log("[EdgeOne] Env keys:", Object.keys(env).join(", "));
+
     // 只接受 POST 请求
     if (request.method !== "POST") {
       return new Response(
@@ -13,13 +19,27 @@ export default {
       );
     }
 
-    console.log("[Gemini API] Request received");
-
     try {
       const body = await request.json();
       const { image, type = "menu" } = body;
 
-      console.log("[Gemini API] Request type:", type, "Image size:", image?.length);
+      // 检查环境变量
+      const apiKey = env?.GEMINI_API_KEY;
+      console.log("[EdgeOne] API Key status:", apiKey ? "✓ Found" : "✗ Missing");
+
+      if (!apiKey) {
+        return new Response(
+          JSON.stringify({
+            ok: false,
+            error: "Missing GEMINI_API_KEY environment variable",
+            dishes: [],
+            debug: {
+              availableEnv: Object.keys(env || {}),
+            }
+          }),
+          { status: 500, headers: { "Content-Type": "application/json" } }
+        );
+      }
 
       if (!image) {
         return new Response(
@@ -28,50 +48,33 @@ export default {
         );
       }
 
-      // 读取环境变量
-      const apiKey = env.GEMINI_API_KEY;
-
-      if (!apiKey) {
-        console.error("[Gemini API] GEMINI_API_KEY not configured");
-        return new Response(
-          JSON.stringify({
-            ok: false,
-            error: "Server configuration error: Missing GEMINI_API_KEY",
-            dishes: [],
-          }),
-          { status: 500, headers: { "Content-Type": "application/json" } }
-        );
-      }
-
-      console.log("[Gemini API] API Key found, length:", apiKey.length);
+      console.log("[EdgeOne] Processing", type, "with image size:", image.length);
 
       // 调用 Gemini API
-      const result =
-        type === "menu"
-          ? await recognizeMenu(image, apiKey)
-          : await recognizeStorefront(image, apiKey);
+      const result = type === "menu"
+        ? await recognizeMenu(image, apiKey)
+        : await recognizeStorefront(image, apiKey);
 
       if (result.error) {
-        console.error("[Gemini API] Recognition error:", result.error);
+        console.error("[EdgeOne] Error:", result.error);
         return new Response(
           JSON.stringify({ ok: false, error: result.error, dishes: [] }),
           { status: 500, headers: { "Content-Type": "application/json" } }
         );
       }
 
-      console.log("[Gemini API] Success, returned items:", Array.isArray(result) ? result.length : 1);
-
+      console.log("[EdgeOne] Success, returned:", Array.isArray(result) ? result.length + " items" : "1 item");
       return new Response(JSON.stringify(result), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       });
     } catch (err) {
-      console.error("[Gemini API] Fatal error:", err.message);
+      console.error("[EdgeOne] Fatal error:", err.message, err.stack);
       return new Response(
         JSON.stringify({
           ok: false,
-          error: "API error: " + err.message,
-          dishes: [],
+          error: err.message,
+          dishes: []
         }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
