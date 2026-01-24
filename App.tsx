@@ -110,11 +110,46 @@ const App: React.FC = () => {
     });
   };
 
-  const handleDailyShare = () => {
+const handleDailyShare = async () => {
     const today = getBeijingDate();
-    if (usage.lastShareDate === today) return alert("Already claimed today!");
-    setUsage(prev => ({ ...prev, freeCredits: prev.freeCredits + 5, lastShareDate: today }));
-    alert("5 Bonus Credits Added! 🎁");
+    
+    // 1. 检查今天是否领过
+    if (usage.lastShareDate === today) {
+      alert("You've already claimed your share bonus for today!");
+      return;
+    }
+
+    // 2. 准备分享内容
+    const shareData = {
+      title: 'Read Chinese Menu',
+      text: 'Check out this amazing AI tool for decoding Chinese menus!',
+      url: window.location.origin,
+    };
+
+    try {
+      // 3. 调用系统原生分享接口
+      if (navigator.share) {
+        await navigator.share(shareData);
+        // 执行到这里说明分享成功（或调起了分享面板并返回）
+      } else {
+        // 4. 降级方案：不支持原生分享的浏览器（如部分 PC 浏览器）
+        await navigator.clipboard.writeText(window.location.origin);
+        alert("Link copied! Share it with your friends to claim your bonus.");
+      }
+
+      // 5. 分享动作完成后再发放奖励
+      setUsage(prev => ({
+        ...prev,
+        freeCredits: prev.freeCredits + 5,
+        lastShareDate: today
+      }));
+      
+      alert("Success! 5 Bonus Credits Added! 🎁");
+
+    } catch (err) {
+      // 如果用户取消分享或分享失败，不发放奖励
+      console.log("Share failed or cancelled", err);
+    }
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
