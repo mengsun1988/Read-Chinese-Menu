@@ -1,0 +1,11 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "read-chinese-menu-api"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+[env.production]
+routes = [
+  { pattern = "read-chinese-menu-api.sweet-dream-3937.workers.dev/*", zone_name = "workers.dev" }
+]
+
+vars = { ENVIRONMENT = "production" }

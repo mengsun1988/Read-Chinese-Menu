@@ -5,8 +5,8 @@
 export async function onRequest(context) {
   const { request, env } = context;
   
-  console.log('[Test] Request received');
-  console.log('[Test] Method:', request.method);
+  console.log('[API] Request received');
+  console.log('[API] Method:', request.method);
 
   if (request.method !== "POST") {
     return new Response(JSON.stringify({ error: "Only POST allowed" }), {
@@ -17,27 +17,59 @@ export async function onRequest(context) {
 
   try {
     const body = await request.json();
-    console.log('[Test] Body:', body);
+    const { image, type } = body;
+
+    console.log('[API] Request type:', type);
+    console.log('[API] Image length:', image?.length);
+
+    if (!image || !type) {
+      return new Response(
+        JSON.stringify({ error: "Missing image or type parameter", dishes: [] }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
 
     const apiKey = env.GEMINI_API_KEY;
-    console.log('[Test] API Key:', apiKey ? 'exists' : 'missing');
+    console.log('[API] API Key available:', apiKey ? 'yes' : 'no');
 
     if (!apiKey) {
       return new Response(
-        JSON.stringify({ error: "Missing GEMINI_API_KEY" }),
+        JSON.stringify({ error: "GEMINI_API_KEY not configured", dishes: [] }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    let result;
+    if (type === "menu") {
+      result = await recognizeMenu(image, apiKey);
+    } else if (type === "street") {
+      result = await recognizeStorefront(image, apiKey);
+    } else {
+      return new Response(
+        JSON.stringify({ error: "Invalid type. Use 'menu' or 'street'", dishes: [] }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    if (result.error) {
+      return new Response(
+        JSON.stringify({ error: result.error, dishes: [] }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
     }
 
     return new Response(
-      JSON.stringify({ ok: true, message: "Function working!" }),
+      JSON.stringify({ 
+        ok: true,
+        [type === "menu" ? "dishes" : "store"]: result
+      }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
 
   } catch (error) {
-    console.error('[Test] Error:', error);
+    console.error('[API] Error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message, dishes: [] }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
