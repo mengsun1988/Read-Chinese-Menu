@@ -18,13 +18,14 @@ export async function processMenuImage(base64Image: string): Promise<any[]> {
     });
 
     if (!response.ok) {
-      const detail = await response.text();
-      throw new Error(detail || `Server Error ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(errorText || `Error ${response.status}`);
     }
 
     const result = await response.json();
     let rawArray: any[] = [];
 
+    // 解析逻辑
     if (Array.isArray(result)) {
       rawArray = result;
     } else if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
@@ -36,28 +37,40 @@ export async function processMenuImage(base64Image: string): Promise<any[]> {
 
     if (!Array.isArray(rawArray)) return [];
 
+    // 核心映射：将 AI 数据 完美适配到你昨天的高级组件上
     return rawArray.map((item: any, index: number) => {
       const ingredients = Array.isArray(item.ingredients) ? item.ingredients : [];
       const dietary = Array.isArray(item.dietary_flags) ? item.dietary_flags : [];
+      
       return {
         ...item,
         id: item.id || `dish-${Date.now()}-${index}`,
-        // 双重字段映射，确保卡片和弹窗都能读到
+        // 基础字段
         dish_name_cn: item.name_cn || item.name || "未知菜名",
         dish_name_en: item.name_en || item.english_name || "Unknown Dish",
-        name_cn: item.name_cn || item.name || "未知菜名",
-        name_en: item.name_en || item.english_name || "Unknown Dish",
         price: String(item.price || ""),
-        description: item.description || "",
+        description: item.description || "No description available.",
+        
+        // 语音与拼音 (如果 AI 没给，就给空字符串)
+        pinyin: item.pinyin || "",
+        pronunciation_guide: item.pronunciation_guide || "",
+        
+        // 辣度与过敏原
         spiciness: Number(item.spiciness_level || item.spiciness || 0),
-        ingredients: ingredients,
-        dietary_flags: dietary,
+        allergens: Array.isArray(item.allergens) ? item.allergens : 
+                   (dietary.filter(f => f.startsWith('contains_')).map(f => f.replace('contains_', ''))),
+        
+        // 成分分类 (适配你昨天的 Modal)
+        classic_ingredients: ingredients,
+        potential_ingredients: Array.isArray(item.potential_ingredients) ? item.potential_ingredients : [],
+        
+        // 标志位
         is_vegetarian: dietary.includes('vegetarian') || dietary.includes('vegan'),
-        has_animal_fats: dietary.includes('contains_pork') || dietary.includes('contains_lard')
+        has_animal_fats: item.has_animal_fats || dietary.includes('contains_lard') || dietary.includes('contains_pork'),
       };
     });
   } catch (err) {
-    console.error("Analysis failed:", err);
+    console.error("Analysis Error:", err);
     throw err;
   }
 }
