@@ -177,7 +177,7 @@ const App: React.FC = () => {
         try {
           if (mode === RecognitionMode.MENU) {
             const result = await processMenuImage(base64);
-            setDishes(result);
+            setDishes(result.dishes);
           } else {
             const result = await processStorefrontImage(base64);
             setStoreResult(result);
