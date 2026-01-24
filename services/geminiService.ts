@@ -1,17 +1,17 @@
-// services/geminiService.ts
+// src/services/geminiService.ts
 
 import { Dish, StoreResult } from "../types";
 
 /**
- * 💡 修改点 1：使用 Cloudflare Workers 的完整域名
- * 不要使用相对路径 "/api/gemini"，因为你现在跨平台调用了
+ * 💡 核心配置：指向您的 Cloudflare Worker 地址
  */
-const GEMINI_ENDPOINT = "https://read-chinese-menu-api.samuelmore1903.workers.dev";
+const WORKER_URL = "https://read-chinese-menu-api.samuelmore1903.workers.dev";
 
 /**
- * 去掉 base64 的 data:image/... 前缀
+ * 内部辅助函数：确保 Base64 数据纯净
  */
 function cleanBase64(base64: string): string {
+  // 如果带有 data:image/jpeg;base64, 前缀，则剔除
   if (base64.includes(",")) {
     return base64.split(",")[1];
   }
@@ -19,83 +19,85 @@ function cleanBase64(base64: string): string {
 }
 
 /**
- * 菜单图片识别
+ * 菜单图片识别（主功能）
  */
-export async function processMenuImage(
-  base64Image: string
-): Promise<Dish[]> {
+export async function processMenuImage(base64Image: string): Promise<Dish[]> {
   const cleanedBase64 = cleanBase64(base64Image);
 
   try {
-    const response = await fetch(GEMINI_ENDPOINT, {
+    const response = await fetch(WORKER_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        image: cleanedBase64, // 👈 必须叫 image，对应 Worker 逻辑
+        image: cleanedBase64, // 👈 必须叫 image，对应 Worker 里的解构
         type: "menu",
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Worker error:", errorText);
-      throw new Error("识别请求失败，请检查后端配置");
+      console.error("Worker Error Response:", errorText);
+      throw new Error(`后端识别失败: ${response.status}`);
     }
 
-    // 💡 修改点 2：解析 Gemini 3 的返回结构
     const result = await response.json();
 
-    // 如果 Worker 直接返回了 text 字符串（由 JSON.parse 转后的数组）
-    if (Array.isArray(result)) return result as Dish[];
-
-    // 适配 Gemini 标准返回格式
-    const aiResponseText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+    // 1. 从 Gemini 3 复杂的返回结构中提取文本
+    const aiText = result.candidates?.[0]?.content?.parts?.[0]?.text;
     
-    if (!aiResponseText) {
-      console.error("Gemini 3 empty response:", result);
+    if (!aiText) {
+      console.warn("AI 未能识别到有效内容，返回原始结果:", result);
       return [];
     }
 
-    // 将 AI 返回的 JSON 字符串转为对象
+    // 2. 解析 AI 返回的 JSON 字符串（包含 Markdown 清理）
     try {
-      // 有时 AI 会在字符串前后加 ```json ... ```，需要清理
-      const cleanedJson = aiResponseText.replace(/```json|```/g, "").trim();
+      const cleanedJson = aiText.replace(/```json|```/g, "").trim();
       const parsedData = JSON.parse(cleanedJson);
       
-      // 最终确保返回的是数组
-      return Array.isArray(parsedData) ? parsedData : (parsedData.dishes || []);
+      // 3. 灵活返回：如果是数组则直接返回，如果是对象则尝试取 dishes 属性
+      if (Array.isArray(parsedData)) {
+        return parsedData as Dish[];
+      } else if (parsedData.dishes && Array.isArray(parsedData.dishes)) {
+        return parsedData.dishes as Dish[];
+      }
+      return [];
     } catch (parseErr) {
-      console.error("JSON parse error from AI:", aiResponseText);
-      throw new Error("AI 返回数据格式有误");
+      console.error("解析 AI JSON 失败，原始文本:", aiText);
+      throw new Error("AI 数据格式化失败");
     }
 
   } catch (err: any) {
-    console.error("processMenuImage failed:", err);
+    console.error("processMenuImage 异常:", err);
     throw err;
   }
 }
 
 /**
- * 店铺门头识别
+ * 店铺门头识别（为以后扩展功能预留）
  */
-export async function processStorefrontImage(
-  base64Image: string
-): Promise<StoreResult> {
+export async function processStorefrontImage(base64Image: string): Promise<StoreResult> {
   const cleanedBase64 = cleanBase64(base64Image);
 
-  const response = await fetch(GEMINI_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      image: cleanedBase64,
-      type: "storefront",
-    }),
-  });
+  try {
+    const response = await fetch(WORKER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        image: cleanedBase64,
+        type: "storefront",
+      }),
+    });
 
-  const result = await response.json();
-  const aiText = result.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
-  const cleanedJson = aiText.replace(/```json|```/g, "").trim();
-  return JSON.parse(cleanedJson) as StoreResult;
+    const result = await response.json();
+    const aiText = result.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+    const cleanedJson = aiText.replace(/```json|```/g, "").trim();
+    
+    return JSON.parse(cleanedJson) as StoreResult;
+  } catch (err) {
+    console.error("processStorefrontImage 异常:", err);
+    throw err;
+  }
 }
