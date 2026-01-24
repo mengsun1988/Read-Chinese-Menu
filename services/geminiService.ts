@@ -4,6 +4,22 @@ import { Dish, StoreResult } from "../types";
 const WORKER_URL = "https://read-chinese-menu-api.samuelmore1903.workers.dev";
 
 /**
+ * 🆕 获取或生成设备唯一 ID (UserId)
+ * 用于后端 KV 数据库点数限制，不需要登录
+ */
+function getOrCreateUserId(): string {
+  const STORAGE_KEY = 'rmc_anonymous_user_id';
+  let userId = localStorage.getItem(STORAGE_KEY);
+  
+  if (!userId) {
+    // 生成一个随机 ID，例如 user-823b...
+    userId = 'user-' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    localStorage.setItem(STORAGE_KEY, userId);
+  }
+  return userId;
+}
+
+/**
  * 彻底清洗 Base64，处理手机拍摄的大体积数据
  */
 function cleanBase64(base64: string): string {
@@ -18,6 +34,7 @@ function cleanBase64(base64: string): string {
  */
 export async function processMenuImage(base64Image: string): Promise<any[]> {
   const cleanedBase64 = cleanBase64(base64Image);
+  const userId = getOrCreateUserId(); // 获取本次请求的 ID
   
   try {
     const response = await fetch(WORKER_URL, {
@@ -29,9 +46,15 @@ export async function processMenuImage(base64Image: string): Promise<any[]> {
       },
       body: JSON.stringify({ 
         image: cleanedBase64, 
-        type: "menu" 
+        type: "menu",
+        userId: userId // 🆕 将 ID 传给后端 Worker
       }),
     });
+
+    // 针对点数耗尽的特殊处理
+    if (response.status === 403) {
+      throw new Error("You have run out of free scans for today.");
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -46,7 +69,6 @@ export async function processMenuImage(base64Image: string): Promise<any[]> {
       rawArray = result;
     } else if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
       const text = result.candidates[0].content.parts[0].text;
-      // 使用正则提取被 Markdown 包裹的 JSON 数组
       const jsonMatch = text.match(/\[[\s\S]*\]/);
       rawArray = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
     } else if (result.dishes && Array.isArray(result.dishes)) {
@@ -57,15 +79,12 @@ export async function processMenuImage(base64Image: string): Promise<any[]> {
 
     // 2. 详细的字段映射与数据清洗
     return rawArray.map((item: any, index: number) => {
-      // 处理价格：统一加上 CNY
       const rawPrice = String(item.price || "");
       const formattedPrice = rawPrice && !rawPrice.includes('CNY') ? `${rawPrice} CNY` : rawPrice;
 
-      // 处理成分和标志位
       const ingredients = Array.isArray(item.ingredients) ? item.ingredients : [];
       const dietary = Array.isArray(item.dietary_flags) ? item.dietary_flags : [];
 
-      // 深度检查是否有猪油/动物油脂 (适配 WarningIcon)
       const animalFatDetected = item.has_animal_fats === true || 
                                dietary.includes('contains_lard') || 
                                dietary.includes('contains_pork') ||
@@ -74,30 +93,25 @@ export async function processMenuImage(base64Image: string): Promise<any[]> {
       return {
         ...item,
         id: item.id || `dish-${Date.now()}-${index}`,
-        // 菜名适配 (兼容不同版本的组件)
         name_cn: item.name_cn || item.name || "未知菜品",
         name_en: item.name_en || item.english_name || "Unknown Dish",
         dish_name_cn: item.name_cn || item.name || "未知菜品",
         dish_name_en: item.name_en || item.english_name || "Unknown Dish",
         
-        // 核心信息
         price: formattedPrice,
         description: item.description || "No description provided.",
         spiciness: Number(item.spiciness_level || item.spiciness || 0),
         spiciness_level: Number(item.spiciness_level || item.spiciness || 0),
         
-        // 成分与过敏原 (确保 .map 不会报错)
         ingredients: ingredients,
-        classic_ingredients: ingredients, // 适配详情弹窗
+        classic_ingredients: ingredients,
         potential_ingredients: Array.isArray(item.potential_ingredients) ? item.potential_ingredients : [],
         allergens: Array.isArray(item.allergens) ? item.allergens : [],
         dietary_flags: dietary,
         
-        // 标志位
         is_vegetarian: item.is_vegetarian || dietary.includes('vegetarian') || dietary.includes('vegan'),
         has_animal_fats: animalFatDetected,
         
-        // 语音与拼音
         pinyin: item.pinyin || "",
         pronunciation_guide: item.pronunciation_guide || ""
       };
@@ -114,6 +128,7 @@ export async function processMenuImage(base64Image: string): Promise<any[]> {
  */
 export async function processStorefrontImage(base64Image: string): Promise<StoreResult> {
   const cleanedBase64 = cleanBase64(base64Image);
+  const userId = getOrCreateUserId(); // 获取本次请求的 ID
   const fallback: any = { 
     name: "", 
     rating: 0, 
@@ -129,17 +144,19 @@ export async function processStorefrontImage(base64Image: string): Promise<Store
       method: "POST",
       mode: "cors",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ image: cleanedBase64, type: "storefront" }),
+      body: JSON.stringify({ 
+        image: cleanedBase64, 
+        type: "storefront",
+        userId: userId // 🆕 将 ID 传给后端 Worker
+      }),
     });
 
     const result = await response.json();
     
-    // 如果后端直接返回了正确格式
     if (result && result.name && result.name !== "Unknown Store") {
       return { ...fallback, ...result } as StoreResult;
     }
 
-    // 处理嵌套在 candidates 里的情况，使用更强的正则
     let aiText = "";
     if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
       aiText = result.candidates[0].content.parts[0].text;
