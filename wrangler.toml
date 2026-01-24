@@ -1,0 +1,29 @@
+# EdgeOne Workers 配置文件
+# 用于配置 API 端点和环境变量
+
+name = "read-chinese-menu"
+type = "service"
+
+# API 路由配置
+routes = [
+  { pattern = "/api/gemini", custom_domain = false }
+]
+
+# 环境变量（开发环境）
+[env.development]
+vars = { ENVIRONMENT = "development" }
+
+# 环境变量（生产环境）
+# 注意：生产环境的 GEMINI_API_KEY 应该在 EdgeOne 控制台中设置
+[env.production]
+vars = { ENVIRONMENT = "production" }
+
+# 构建配置
+[build]
+command = "npm run build"
+cwd = "./"
+watch_paths = ["src/**/*.{ts,tsx,js}"]
+
+# 兼容性标志
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
