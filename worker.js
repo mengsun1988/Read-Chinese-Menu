@@ -1,91 +1,71 @@
-// 修改事件监听器，将 env 传递给处理函数
-addEventListener('fetch', event => {
-  event.respondWith(handleRequest(event.request, event.env));
-});
+export default {
+  async fetch(request, env) {
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Content-Type': 'application/json',
+    };
 
-async function handleRequest(request, env) {
-  // 提前定义跨域头，避免“变量未初始化”错误
-  const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Content-Type': 'application/json',
-  };
+    // 1. 处理跨域预检
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { headers: corsHeaders });
+    }
 
-  // 1. 处理跨域预检请求
-  if (request.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: {
-        ...corsHeaders,
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-    });
-  }
+    if (request.method !== 'POST') {
+      return new Response(JSON.stringify({ error: 'Only POST allowed' }), { status: 405, headers: corsHeaders });
+    }
 
-  // 2. 只处理 POST 请求
-  if (request.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Only POST allowed' }), {
-      status: 405,
-      headers: corsHeaders
-    });
-  }
+    try {
+      const clientData = await request.json();
+      // 这里确保和前端 geminiService.ts 传参名一致
+      const { image, type } = clientData; 
 
-  try {
-    // 3. 解析前端请求
-    const clientData = await request.json();
-    const { imageBase64, prompt } = clientData;
+      if (!image) throw new Error('No image data provided');
 
-    if (!imageBase64) {
-      return new Response(JSON.stringify({ error: 'No image data provided' }), {
-        status: 400,
+      // 🔑 确保你在后台 Variables 里的 Secret Key 叫 GEMINI_API_KEY
+      const API_KEY = env.GEMINI_API_KEY;
+      if (!API_KEY) throw new Error('API Key is missing in Cloudflare Workers Settings');
+
+      // 更新为最新的 Gemini 3 Flash 接口地址
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash:generateContent?key=${API_KEY}`;
+
+      const geminiResponse = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: type === 'menu' ? "Exhaustively analyze this Chinese menu. Return a JSON array of dish objects." : "Identify this storefront." },
+              { inline_data: { mime_type: "image/jpeg", data: image.includes(',') ? image.split(',')[1] : image } }
+            ]
+          }],
+          generationConfig: { 
+            response_mime_type: "application/json" 
+          }
+        })
+      });
+
+      const result = await geminiResponse.json();
+
+      // 如果 Gemini 返回了错误（比如 Key 过期或模型不存在）
+      if (result.error) {
+        return new Response(JSON.stringify({ error: 'Gemini API Error', details: result.error.message }), {
+          status: 400,
+          headers: corsHeaders
+        });
+      }
+
+      // 提取 AI 返回的文本并直接发回前端
+      const aiText = result.candidates[0].content.parts[0].text;
+      return new Response(aiText, { headers: corsHeaders });
+
+    } catch (error) {
+      // 捕获 Workers 内部错误（如 JSON 解析失败、Key 未配置等）
+      return new Response(JSON.stringify({ error: 'Worker Internal Error', details: error.message }), {
+        status: 500,
         headers: corsHeaders
       });
     }
-
-    // 4. 构建 Gemini API 请求
-    const geminiReqBody = {
-      contents: [{
-        parts: [
-          { text: prompt || "Describe this image" },
-          {
-            inline_data: {
-              mime_type: "image/jpeg",
-              data: imageBase64.replace(/^data:image\/\w+;base64,/, '')
-            }
-          }
-        ]
-      }]
-    };
-
-    // 🔑 关键：从环境变量中读取密钥！
-    const GEMINI_API_KEY = env.GEMINI_API_KEY; // 这里的名字必须和你设置的“变量名称”一致
-    if (!GEMINI_API_KEY) {
-      throw new Error('Gemini API key is not configured in environment variables.');
-    }
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=${GEMINI_API_KEY}`;
-
-    // 5. 调用 Gemini API
-    const geminiResponse = await fetch(geminiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(geminiReqBody)
-    });
-
-    // 6. 返回结果给前端
-    const result = await geminiResponse.json();
-    return new Response(JSON.stringify(result), {
-      status: geminiResponse.status,
-      headers: corsHeaders
-    });
-
-  } catch (error) {
-    // 7. 错误处理
-    console.error('Worker Error:', error);
-    return new Response(JSON.stringify({
-      error: 'Internal Server Error',
-      details: error.message
-    }), {
-      status: 500,
-      headers: corsHeaders
-    });
   }
-}
+};
