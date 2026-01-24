@@ -1,85 +1,22 @@
 /**
- * EdgeOne Pages - 边缘函数
- * 路由: /api/gemini
- * 简化版本 - 测试基本路由
+ * 最简单的测试函数 - 验证 EdgeOne Pages 路由是否工作
  */
 export default {
   async fetch(request, env, ctx) {
-    // 日志：确认函数被调用
-    console.log("[EdgeOne] Function invoked");
-    console.log("[EdgeOne] Method:", request.method);
-    console.log("[EdgeOne] URL:", request.url);
-    console.log("[EdgeOne] Env keys:", Object.keys(env).join(", "));
-
-    // 只接受 POST 请求
-    if (request.method !== "POST") {
-      return new Response(
-        JSON.stringify({ ok: false, error: "Only POST method allowed", dishes: [] }),
-        { status: 405, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    try {
-      const body = await request.json();
-      const { image, type = "menu" } = body;
-
-      // 检查环境变量
-      const apiKey = env?.GEMINI_API_KEY;
-      console.log("[EdgeOne] API Key status:", apiKey ? "✓ Found" : "✗ Missing");
-
-      if (!apiKey) {
-        return new Response(
-          JSON.stringify({
-            ok: false,
-            error: "Missing GEMINI_API_KEY environment variable",
-            dishes: [],
-            debug: {
-              availableEnv: Object.keys(env || {}),
-            }
-          }),
-          { status: 500, headers: { "Content-Type": "application/json" } }
-        );
-      }
-
-      if (!image) {
-        return new Response(
-          JSON.stringify({ ok: false, error: "Missing image data", dishes: [] }),
-          { status: 400, headers: { "Content-Type": "application/json" } }
-        );
-      }
-
-      console.log("[EdgeOne] Processing", type, "with image size:", image.length);
-
-      // 调用 Gemini API
-      const result = type === "menu"
-        ? await recognizeMenu(image, apiKey)
-        : await recognizeStorefront(image, apiKey);
-
-      if (result.error) {
-        console.error("[EdgeOne] Error:", result.error);
-        return new Response(
-          JSON.stringify({ ok: false, error: result.error, dishes: [] }),
-          { status: 500, headers: { "Content-Type": "application/json" } }
-        );
-      }
-
-      console.log("[EdgeOne] Success, returned:", Array.isArray(result) ? result.length + " items" : "1 item");
-      return new Response(JSON.stringify(result), {
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        message: "EdgeOne function is working!",
+        method: request.method,
+        timestamp: new Date().toISOString(),
+        env_keys: Object.keys(env || {})
+      }),
+      {
         status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
-    } catch (err) {
-      console.error("[EdgeOne] Fatal error:", err.message, err.stack);
-      return new Response(
-        JSON.stringify({
-          ok: false,
-          error: err.message,
-          dishes: []
-        }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
-    }
-  },
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+  }
 };
 
 /**
