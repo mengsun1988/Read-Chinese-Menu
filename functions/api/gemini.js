@@ -1,46 +1,47 @@
 /**
- * 最小化测试函数
+ * EdgeOne Pages 函数 - 测试版本
  */
-export default {
-  async fetch(request, env, ctx) {
-    console.log('[Test] Request received');
-    
-    if (request.method !== "POST") {
-      return new Response(JSON.stringify({ error: "Only POST allowed" }), {
-        status: 405,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
 
-    try {
-      const body = await request.json();
-      console.log('[Test] Body received:', body);
+export async function onRequest(context) {
+  const { request, env } = context;
+  
+  console.log('[Test] Request received');
+  console.log('[Test] Method:', request.method);
 
-      const apiKey = env.GEMINI_API_KEY;
-      console.log('[Test] API Key exists:', !!apiKey);
+  if (request.method !== "POST") {
+    return new Response(JSON.stringify({ error: "Only POST allowed" }), {
+      status: 405,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 
-      if (!apiKey) {
-        return new Response(
-          JSON.stringify({ error: "Missing GEMINI_API_KEY environment variable" }),
-          { status: 500, headers: { "Content-Type": "application/json" } }
-        );
-      }
+  try {
+    const body = await request.json();
+    console.log('[Test] Body:', body);
 
-      // 简单测试返回
+    const apiKey = env.GEMINI_API_KEY;
+    console.log('[Test] API Key:', apiKey ? 'exists' : 'missing');
+
+    if (!apiKey) {
       return new Response(
-        JSON.stringify({ ok: true, test: "API is working" }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
-      );
-
-    } catch (error) {
-      console.error('[Test] Error:', error);
-      return new Response(
-        JSON.stringify({ error: error.message }),
+        JSON.stringify({ error: "Missing GEMINI_API_KEY" }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
     }
-  },
-};
+
+    return new Response(
+      JSON.stringify({ ok: true, message: "Function working!" }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
+
+  } catch (error) {
+    console.error('[Test] Error:', error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
+  }
+}
 
 /**
  * 识别菜单

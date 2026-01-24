@@ -15,7 +15,7 @@ export async function processMenuImage(
   imageBase64: string
 ): Promise<MenuRecognitionResult> {
   try {
-    const response = await fetch("/api/gemini", {
+    const response = await fetch("https://read-chinese-menu-api.sweet-dream-3937.workers.dev", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -61,7 +61,7 @@ export async function processStorefrontImage(
   imageBase64: string
 ): Promise<StoreResult | any> {
   try {
-    const response = await fetch("/api/gemini", {
+    const response = await fetch("https://read-chinese-menu-api.sweet-dream-3937.workers.dev", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
