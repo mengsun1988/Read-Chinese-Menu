@@ -98,33 +98,45 @@ const App: React.FC = () => {
           setDishes(list);
           setStatus(AppStatus.SUCCESS);
         } else throw new Error("No dishes found in this menu.");
-      } else {
-        const rawResult = await processStorefrontImage(base64);
-        const result = Array.isArray(rawResult) ? rawResult[0] : rawResult;
+ // ... 前面代码保持不变
+} else {
+  // --- Storefront 处理逻辑增强 ---
+  const rawResult = await processStorefrontImage(base64);
+  
+  // 核心修复逻辑：
+  // 兼容情况1: AI 返回了数组 [ {name_cn: '老娘舅', ...} ]
+  // 兼容情况2: AI 误把店铺当成菜品返回了
+  let result = Array.isArray(rawResult) ? rawResult[0] : rawResult;
 
-        if (result && (result.name_cn || result.name || result.cuisine)) {
-          // 简介合成逻辑
-          let finalDesc = result.description || "";
-          if (!finalDesc || finalDesc.length < 5) {
-            const name = result.name_en || result.name_cn || "This establishment";
-            const cuisine = result.cuisine || "local specialties";
-            const isRestaurant = cuisine.toLowerCase().match(/food|cuisine|restaurant|cafe/);
-            finalDesc = isRestaurant 
-              ? `A popular local spot specializing in ${cuisine}. Known for its authentic flavors, it's a great choice to experience ${name}.`
-              : `A local ${cuisine} establishment. This venue offers a unique look into daily life and local services in the neighborhood.`;
-          }
+  // 如果识别结果看起来像是一道菜（比如你发给我的 JSON），我们把它转换成店铺格式
+  if (result && !result.name_cn && result.dishes && result.dishes[0]) {
+    result = result.dishes[0];
+  }
 
-          setStoreResult({
-            ...result,
-            name: result.name_cn || result.name,
-            name_en: result.name_en || "Local Establishment",
-            description: finalDesc,
-            rating: result.rating || 4.5,
-            cuisine: result.cuisine || "Storefront"
-          });
-          setStatus(AppStatus.SUCCESS);
-        } else throw new Error("Storefront not recognized.");
-      }
+  if (result && (result.name_cn || result.name || result.cuisine)) {
+    let finalDesc = result.description || "";
+    
+    // 智能合成逻辑
+    if (!finalDesc || finalDesc.length < 5) {
+      const name = result.name_en || result.name_cn || "This establishment";
+      const cuisine = result.cuisine || "local specialties";
+      finalDesc = `A popular local spot. Known for its authentic flavors and welcoming atmosphere, it's a great choice to experience ${name}.`;
+    }
+
+    setStoreResult({
+      ...result,
+      name: result.name_cn || result.name, 
+      name_en: result.name_en || "Local Store",
+      description: finalDesc,
+      rating: result.rating || 4.5,
+      cuisine: result.cuisine || "Storefront"
+    });
+    setStatus(AppStatus.SUCCESS);
+  } else {
+    throw new Error("Could not identify this storefront. Please try a clearer photo.");
+  }
+}
+// ... 后面代码保持不变
 
       if (!isUnlimited()) {
         setUsage(prev => ({
