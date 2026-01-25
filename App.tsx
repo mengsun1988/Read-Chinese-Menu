@@ -1,12 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { AppStatus, Dish, UserUsage, RecognitionMode, StoreResult, Ingredient } from './types';
-// Extend StoreResult type to include required properties
-interface ExtendedStoreResult extends StoreResult {
-  name?: string;
-  cuisine?: string;
-  [key: string]: any; // Allow additional properties
-}
-// 🆕 导入新增的 getDishDeepDetail
+import { AppStatus, RecognitionMode, StoreResult, Ingredient, UserUsage } from './types';
 import { processMenuImage, processStorefrontImage, getDishDeepDetail } from './services/geminiService';
 import { DishCard } from './components/DishCard';
 import { LoadingScreen } from './components/LoadingScreen';
@@ -58,7 +51,6 @@ const App: React.FC = () => {
   });
 
   const [selectedDish, setSelectedDish] = useState<any | null>(null);
-  // 🆕 新增：详情加载状态
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [waiterContext, setWaiterContext] = useState<{ type: 'ingredient' | 'spiciness'; content_en: string; content_cn: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -67,7 +59,7 @@ const App: React.FC = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(usage));
   }, [usage]);
 
-  /** PayPal SDK 注入 */
+  /** PayPal SDK 初始化 */
   useEffect(() => {
     if (!showPricing) return;
     if ((window as any).paypal) { renderPaypal(); return; }
@@ -79,15 +71,13 @@ const App: React.FC = () => {
 
     function renderPaypal() {
       const paypal = (window as any).paypal;
-      if (!paypal) return;
+      if (!paypal || !document.getElementById('paypal-button-container')) return;
       paypal.Buttons({
         createOrder: (_: any, actions: any) => actions.order.create({ purchase_units: [{ amount: { value: '5.00' } }] }),
         onApprove: async (_: any, actions: any) => {
           await actions.order.capture();
-          alert('Payment successful!');
           onPurchase({ id: 'starter' });
-        },
-        onError: (err: any) => console.error('PayPal error', err)
+        }
       }).render('#paypal-button-container');
     }
   }, [showPricing]);
@@ -101,12 +91,7 @@ const App: React.FC = () => {
   };
 
   const triggerUpload = () => fileInputRef.current?.click();
-
-  const handleModeChange = (newMode: RecognitionMode) => {
-    setMode(newMode);
-    reset();
-  };
-
+  const handleModeChange = (newMode: RecognitionMode) => { setMode(newMode); reset(); };
   const reset = () => {
     setStatus(AppStatus.IDLE);
     setDishes([]);
@@ -124,32 +109,23 @@ const App: React.FC = () => {
       else if (plan.id === 'foodie') updated.passExpiryDate = new Date(Date.now() + 30 * 86400000).toISOString();
       return updated;
     });
+    setShowPricing(false);
   };
 
   const handleDailyShare = async () => {
     const today = getBeijingDate();
-    if (usage.lastShareDate === today) {
-      alert("You've already claimed your share bonus for today!");
-      return;
-    }
-    const shareData = {
-      title: 'Read Chinese Menu',
-      text: 'Check out this amazing AI tool for decoding Chinese menus!',
-      url: window.location.origin,
-    };
+    if (usage.lastShareDate === today) { alert("Already claimed today!"); return; }
     try {
       if (navigator.share) {
-        await navigator.share(shareData);
+        await navigator.share({ title: 'Read Chinese Menu', url: window.location.origin });
       } else {
         await navigator.clipboard.writeText(window.location.origin);
-        alert("Link copied! Share it with your friends to claim your bonus.");
+        alert("Link copied!");
       }
       setUsage(prev => ({ ...prev, freeCredits: (prev.freeCredits || 0) + 5, lastShareDate: today }));
-      alert("Success! 5 Bonus Credits Added! 🎁");
-    } catch (err) { console.log("Share cancelled", err); }
+    } catch (err) { console.log("Share failed", err); }
   };
 
-  /** * 极简图片压缩逻辑 */
   const getCompressedBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -159,65 +135,44 @@ const App: React.FC = () => {
         img.src = event.target?.result as string;
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 1200;
-          const MAX_HEIGHT = 1200;
-          let width = img.width;
-          let height = img.height;
-
-          if (width > MAX_WIDTH || height > MAX_HEIGHT) {
-            const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
-            width = Math.round(width * ratio);
-            height = Math.round(height * ratio);
+          const MAX = 1200;
+          let w = img.width, h = img.height;
+          if (w > MAX || h > MAX) {
+            const r = Math.min(MAX / w, MAX / h);
+            w *= r; h *= r;
           }
-
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx?.drawImage(img, 0, 0, width, height);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-          resolve(dataUrl.split(',')[1]);
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d')?.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.7).split(',')[1]);
         };
-        img.onerror = () => reject(new Error("Image Load Failed"));
       };
-      reader.onerror = () => reject(new Error("File Read Failed"));
     });
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    if (!isUnlimited() && totalCredits <= 0) {
-      setShowPricing(true);
-      return;
-    }
+    if (!isUnlimited() && totalCredits <= 0) { setShowPricing(true); return; }
 
     setStatus(AppStatus.LOADING);
     setPreviewUrl(URL.createObjectURL(file));
     setError(null);
 
     try {
-      const base64ForAI = await getCompressedBase64(file);
-
+      const base64 = await getCompressedBase64(file);
       if (mode === RecognitionMode.MENU) {
-        const result = await processMenuImage(base64ForAI);
-        const dishesArray = Array.isArray(result) ? result : (result.dishes || []);
-        if (dishesArray.length > 0) {
-          setDishes(dishesArray);
-          setStoreResult(null);
+        const result = await processMenuImage(base64);
+        const list = Array.isArray(result) ? result : (result.dishes || []);
+        if (list.length > 0) {
+          setDishes(list);
           setStatus(AppStatus.SUCCESS);
-        } else {
-          throw new Error("No dishes identified. Please try a closer, clearer photo.");
-        }
+        } else throw new Error("No dishes found.");
       } else {
-        const result = await processStorefrontImage(base64ForAI);
+        const result = await processStorefrontImage(base64);
         if (result && (result.name || result.cuisine)) {
           setStoreResult(result);
-          setDishes([]);
           setStatus(AppStatus.SUCCESS);
-        } else {
-          throw new Error("Storefront not recognized. Try showing the sign more clearly.");
-        }
+        } else throw new Error("Storefront not recognized.");
       }
 
       if (!isUnlimited()) {
@@ -227,136 +182,123 @@ const App: React.FC = () => {
           freeCredits: prev.paidCredits > 0 ? prev.freeCredits : Math.max(0, prev.freeCredits - 1)
         }));
       }
-
     } catch (err: any) {
-      console.error("Analysis Error:", err);
-      setError(err.message || "Request failed. Check your connection or photo size.");
+      setError(err.message);
       setStatus(AppStatus.ERROR);
     }
   };
 
-  // 🆕 核心修改：分步加载详情逻辑
   const handleDishClick = async (dish: any) => {
-    // 1. 先展示已有数据，弹窗秒开
     setSelectedDish(dish);
-    
-    // 2. 如果之前没解析过深度详情，则发起异步请求
     if (!dish.isFullyAnalyzed) {
       setLoadingDetail(true);
       try {
         const fullDetails = await getDishDeepDetail(dish.name_cn, dish.name_en);
-        
         if (fullDetails) {
-          // 3. 更新当前选中的菜品数据，弹窗会自动更新显示内容
-          setSelectedDish(prev => (prev?.id === dish.id ? { ...prev, ...fullDetails } : prev));
-          
-          // 4. 同步更新列表中的数据，防止下次点击同一菜品再次请求
-          setDishes(prevDishes => prevDishes.map(d => 
-            d.id === dish.id ? { ...d, ...fullDetails } : d
-          ));
+          const updatedDish = { ...dish, ...fullDetails, isFullyAnalyzed: true };
+          setSelectedDish(prev => (prev?.id === dish.id ? updatedDish : prev));
+          setDishes(prev => prev.map(d => d.id === dish.id ? updatedDish : d));
         }
-      } catch (e) {
-        console.error("Failed to load deep details", e);
-      } finally {
-        setLoadingDetail(false);
-      }
+      } catch (e) { console.error(e); } finally { setLoadingDetail(false); }
     }
   };
 
   return (
-    <div className="min-h-screen selection:bg-rose-600 selection:text-white pb-0 overflow-x-hidden bg-[#fafafa]">
+    <div className="min-h-screen pb-0 overflow-x-hidden bg-[#fafafa] font-sans">
       <A2HSManager />
 
       <div className="max-w-5xl mx-auto px-6 py-16 md:py-24">
         {/* Credits Badge */}
-        <div className="fixed bottom-6 right-6 z-[60] flex items-center gap-2 bg-white/95 backdrop-blur-md px-4 py-3 rounded-2xl border border-slate-200 shadow-2xl hover:scale-105 transition-transform">
-          <div className={`w-2.5 h-2.5 rounded-full ${isUnlimited() ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></div>
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-900">
-            {isUnlimited() ? `Unlimited Access (${getRemainingDays()}d left)` : `Credits: ${totalCredits}`}
+        <div className="fixed bottom-6 right-6 z-[60] flex items-center gap-2 bg-white/95 backdrop-blur-md px-4 py-3 rounded-2xl border border-slate-200 shadow-2xl transition-all">
+          <div className={`w-2 h-2 rounded-full ${isUnlimited() ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></div>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-900">
+            {isUnlimited() ? `${getRemainingDays()}d Premium` : `Credits: ${totalCredits}`}
           </span>
           {!isUnlimited() && totalCredits <= 3 && (
-            <button onClick={() => setShowPricing(true)} className="ml-2 px-2 py-0.5 bg-rose-600 text-white text-[8px] rounded-full font-medium">Top Up</button>
+            <button onClick={() => setShowPricing(true)} className="ml-1 px-2 py-0.5 bg-rose-600 text-white text-[8px] rounded-full font-bold">TOP UP</button>
           )}
         </div>
 
         <header className="mb-16 space-y-6 text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-rose-50 border border-rose-100 rounded-full mb-4">
             <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse"></span>
-            <span className="text-[9px] font-bold text-rose-600 uppercase tracking-widest">Global Explorer Edition</span>
+            <span className="text-[9px] font-bold text-rose-600 uppercase tracking-widest">AI Vision v3.0</span>
           </div>
-          <h1 className="text-5xl md:text-7xl font-semibold text-slate-900 tracking-tighter leading-none">
+          <h1 className="text-5xl md:text-7xl font-bold text-slate-900 tracking-tighter leading-none">
             Read <span className="text-rose-600">Chinese Menu</span>
           </h1>
-          <p className="text-slate-500 font-medium text-sm md:text-base tracking-wide max-w-xl mx-auto uppercase">
-            Know what’s on your plate • Translate & Communicate
+          <p className="text-slate-400 font-bold text-[10px] md:text-xs tracking-[0.2em] max-w-xl mx-auto uppercase">
+            Identify dishes • Check ingredients • Communicate with staff
           </p>
         </header>
 
         <main className="mb-20">
           {status === AppStatus.IDLE && (
             <>
-              <div className="max-w-xl mx-auto mb-10 animate-in slide-in-from-bottom duration-700">
-                <button onClick={handleDailyShare} className="w-full bg-emerald-50 border border-emerald-100 p-6 rounded-[2rem] flex items-center justify-between group hover:border-emerald-200 transition-all active:scale-[0.98]">
-                  <div className="flex items-center gap-4">
+              <div className="max-w-xl mx-auto mb-10">
+                <button onClick={handleDailyShare} className="w-full bg-emerald-50/50 border border-emerald-100 p-6 rounded-[2.5rem] flex items-center justify-between group hover:bg-emerald-50 transition-all">
+                  <div className="flex items-center gap-4 text-left">
                     <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-2xl shadow-sm">🎁</div>
-                    <div className="text-left">
-                      <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Daily Reward</p>
-                      <p className="text-sm font-semibold text-slate-900">Share & Earn +5 Free Credits</p>
+                    <div>
+                      <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest">Share Bonus</p>
+                      <p className="text-sm font-bold text-slate-900">+5 Free Credits Daily</p>
                     </div>
                   </div>
-                  <div className="bg-emerald-600 text-white px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest">Claim Now</div>
+                  <span className="bg-emerald-600 text-white px-4 py-2 rounded-full text-[9px] font-bold">SHARE</span>
                 </button>
               </div>
 
               <div className="flex justify-center mb-8">
-                <div className="bg-slate-100 p-1.5 rounded-2xl flex gap-1 shadow-inner">
-                  <button onClick={() => handleModeChange(RecognitionMode.MENU)} className={`px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${mode === RecognitionMode.MENU ? 'bg-white text-rose-600 shadow-md scale-105' : 'text-slate-400'}`}>Scan Menu</button>
-                  <button onClick={() => handleModeChange(RecognitionMode.STREET)} className={`px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${mode === RecognitionMode.STREET ? 'bg-slate-900 text-white shadow-md scale-105' : 'text-slate-400'}`}>Scan Storefront</button>
+                <div className="bg-slate-100/50 p-1.5 rounded-2xl flex gap-1 border border-slate-200/50">
+                  <button onClick={() => handleModeChange(RecognitionMode.MENU)} className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === RecognitionMode.MENU ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-400'}`}>Menu</button>
+                  <button onClick={() => handleModeChange(RecognitionMode.STREET)} className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === RecognitionMode.STREET ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-400'}`}>Street</button>
                 </div>
               </div>
 
-              <div className="bg-white border border-slate-100 p-12 md:p-20 text-center flex flex-col items-center shadow-xl mb-10 rounded-[3rem]">
+              <div className="bg-white border border-slate-100 p-12 md:p-20 text-center flex flex-col items-center shadow-xl mb-10 rounded-[3.5rem]">
                 <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
-                <button onClick={triggerUpload} className={`w-24 h-24 rounded-3xl flex items-center justify-center mb-10 shadow-2xl transition-transform active:scale-90 hover:scale-105 ${mode === RecognitionMode.MENU ? 'bg-rose-600 shadow-rose-200' : 'bg-slate-900 shadow-slate-200'}`}>
+                <button onClick={triggerUpload} className={`w-24 h-24 rounded-[2rem] flex items-center justify-center mb-10 shadow-2xl transition-transform active:scale-95 ${mode === RecognitionMode.MENU ? 'bg-rose-600' : 'bg-slate-900'}`}>
                   <CameraIcon className="w-12 h-12 text-white" />
                 </button>
-                <h2 className="text-4xl font-semibold text-slate-900 mb-2">{mode === RecognitionMode.MENU ? "What's on the Menu?" : "What's this Store?"}</h2>
-                <button onClick={triggerUpload} className="w-full max-w-xs bg-slate-900 text-white font-semibold py-5 rounded-full shadow-lg mt-8">📁 Upload or Capture</button>
+                <h2 className="text-3xl font-bold text-slate-900 mb-6">{mode === RecognitionMode.MENU ? "Scan a Menu" : "Identify Storefront"}</h2>
+                <button onClick={triggerUpload} className="w-full max-w-xs bg-slate-900 text-white font-bold py-5 rounded-full shadow-xl hover:bg-slate-800 transition-colors">START SCAN</button>
               </div>
             </>
           )}
 
-          {status === AppStatus.LOADING && <div className="bg-white p-12 rounded-[3rem] shadow-2xl"><LoadingScreen /></div>}
+          {status === AppStatus.LOADING && <LoadingScreen />}
 
           {status === AppStatus.ERROR && (
-            <div className="bg-white border-2 border-rose-100 rounded-[3rem] p-20 text-center space-y-8 shadow-sm">
-              <div className="inline-flex items-center justify-center w-24 h-24 bg-rose-50 text-rose-600 rounded-full"><WarningIcon className="w-12 h-12" /></div>
-              <h2 className="text-4xl font-semibold text-slate-900">Scan Failed</h2>
-              <p className="text-slate-500 max-w-sm mx-auto font-medium text-lg">{error}</p>
-              <button onClick={reset} className="bg-rose-600 text-white font-semibold py-4 px-12 rounded-full shadow-xl">Try Again</button>
+            <div className="bg-white border border-rose-100 rounded-[3rem] p-16 text-center space-y-6 shadow-sm">
+              <div className="w-20 h-20 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto"><WarningIcon className="w-10 h-10" /></div>
+              <h2 className="text-3xl font-bold text-slate-900">Scan Failed</h2>
+              <p className="text-slate-400 text-sm font-medium">{error}</p>
+              <button onClick={reset} className="bg-rose-600 text-white font-bold py-4 px-12 rounded-full shadow-lg">TRY AGAIN</button>
             </div>
           )}
 
           {status === AppStatus.SUCCESS && (
-            <div className="space-y-12 animate-in fade-in slide-in-from-bottom-10 duration-700">
-              <div className="flex flex-col md:flex-row justify-between items-center gap-8 bg-slate-900 p-8 rounded-[2.5rem] shadow-2xl sticky top-6 z-20">
-                <div className="flex items-center gap-6">
-                  {previewUrl && <img src={previewUrl} className="w-20 h-20 object-cover rounded-2xl border-2 border-white/10" alt="Preview" />}
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="flex justify-between items-center bg-slate-900 p-6 rounded-[2rem] shadow-2xl sticky top-4 z-20 mx-2 border border-white/5">
+                <div className="flex items-center gap-4">
+                  {previewUrl && <img src={previewUrl} className="w-12 h-12 object-cover rounded-xl ring-2 ring-white/10" alt="Preview" />}
                   <div className="text-left">
-                    <h3 className="font-semibold text-2xl text-white tracking-tight">{mode === RecognitionMode.MENU ? "Dish List" : "Shop Guide"}</h3>
-                    <p className="text-sm font-medium text-rose-400 uppercase tracking-widest">{mode === RecognitionMode.MENU ? `${dishes.length} Matches` : 'Storefront Identified'}</p>
+                    <h3 className="font-bold text-white tracking-tight">{mode === RecognitionMode.MENU ? "Results" : "Shop Details"}</h3>
+                    <p className="text-[10px] font-bold text-rose-400 uppercase tracking-widest">{mode === RecognitionMode.MENU ? `${dishes.length} Items` : 'Match Found'}</p>
                   </div>
                 </div>
-                <button onClick={reset} className="bg-white text-slate-900 font-semibold py-4 px-8 rounded-full shadow-xl text-sm">New Scan</button>
+                <button onClick={reset} className="bg-white/10 hover:bg-white/20 text-white font-bold py-2.5 px-6 rounded-full text-[10px] uppercase tracking-wider backdrop-blur-sm transition-colors border border-white/10">New</button>
               </div>
               
               {mode === RecognitionMode.MENU ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-2">
                   {dishes.map((dish, index) => (
-                    <div key={dish.id || index} className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-                      {/* 🆕 修改：点击调用新的 handleDishClick */}
-                      <DishCard dish={dish} onClick={() => handleDishClick(dish)} />
-                    </div>
+                    /* 修复：移除多余的外层包裹 div 和边框，直接渲染 DishCard */
+                    <DishCard 
+                      key={dish.id || index} 
+                      dish={dish} 
+                      onClick={() => handleDishClick(dish)} 
+                    />
                   ))}
                 </div>
               ) : (storeResult && <StoreCard store={storeResult} onShowStaff={() => setShowStaffHelper(true)} />)}
@@ -365,7 +307,7 @@ const App: React.FC = () => {
         </main>
         
         {status !== AppStatus.SUCCESS && (
-          <div className="space-y-20">
+          <div className="space-y-24 mt-32">
             <PricingModule onPurchase={onPurchase} />
             <AboutUs />
             <Reviews />
@@ -374,15 +316,20 @@ const App: React.FC = () => {
         )}
       </div>
 
-      <Footer onMenuScan={() => handleModeChange(RecognitionMode.MENU)} onStreetScan={() => handleModeChange(RecognitionMode.STREET)} onPricing={() => setShowPricing(true)} onPrivacy={() => setLegalView('privacy')} onTos={() => setLegalView('tos')} />
+      <Footer 
+        onMenuScan={() => handleModeChange(RecognitionMode.MENU)} 
+        onStreetScan={() => handleModeChange(RecognitionMode.STREET)} 
+        onPricing={() => setShowPricing(true)} 
+        onPrivacy={() => setLegalView('privacy')} 
+        onTos={() => setLegalView('tos')} 
+      />
 
-      {/* Pricing Modal */}
       {showPricing && (
-        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md overflow-y-auto p-4 flex items-center justify-center">
-          <div className="bg-[#fcfbf9] w-full max-w-5xl rounded-[3rem] relative p-8 animate-in zoom-in shadow-2xl">
-            <button onClick={() => setShowPricing(false)} className="absolute top-8 right-8 p-2 text-slate-400 text-2xl hover:text-slate-600">✕</button>
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md overflow-y-auto p-4 flex items-center justify-center">
+          <div className="bg-[#fcfbf9] w-full max-w-4xl rounded-[3rem] relative p-8 shadow-2xl overflow-hidden">
+            <button onClick={() => setShowPricing(false)} className="absolute top-8 right-8 p-2 text-slate-300 hover:text-slate-600 text-xl font-bold transition-colors">✕</button>
             <PricingModule onPurchase={onPurchase} />
-            <div className="mt-12"><div id="paypal-button-container"></div></div>
+            <div className="mt-8 max-w-sm mx-auto" id="paypal-button-container"></div>
           </div>
         </div>
       )}
@@ -393,7 +340,7 @@ const App: React.FC = () => {
           onClose={() => setSelectedDish(null)}
           onIngredientClick={(ing: Ingredient) => setWaiterContext({ type: 'ingredient', content_en: ing.name_en, content_cn: ing.name_cn })}
           onSpicyClick={() => setWaiterContext({ type: 'spiciness', content_en: 'Spiciness', content_cn: '辣度' })}
-          isLoadingDetail={loadingDetail} // 🆕 传入详情加载状态
+          isLoadingDetail={loadingDetail}
         />
       )}
 

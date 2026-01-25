@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { SpeakerIcon } from './Icons';
+import React, { useEffect } from 'react';
 
 interface WaiterCardProps {
   type: 'ingredient' | 'spiciness';
@@ -9,118 +8,86 @@ interface WaiterCardProps {
 }
 
 export const WaiterCard: React.FC<WaiterCardProps> = ({ type, content_en, content_cn, onClose }) => {
-  // 状态：'ask' (询问是否有) | 'request' (请求不放)
-  const [step, setStep] = useState<'ask' | 'request'>('ask');
-
+  
+  // 语音功能修复：确保在现代浏览器和移动端生效
   const speak = (text: string) => {
-    if (!('speechSynthesis' in window)) return;
+    if (!window.speechSynthesis) return;
+    
+    // 1. 取消正在排队的语音
+    window.speechSynthesis.cancel();
+
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'zh-CN';
-    utterance.rate = 0.8;
-    window.speechSynthesis.cancel();
+    utterance.rate = 0.85; // 稍微放慢语速，方便服务员听清
+    utterance.pitch = 1;
+    
+    // 某些移动端浏览器需要重新激活上下文
     window.speechSynthesis.speak(utterance);
   };
 
+  // 业务逻辑修复：区分食材询问与辣度询问
+  const options = type === 'ingredient' 
+    ? [
+        { 
+          en: `Does this contain ${content_en}?`, 
+          cn: `请问这个菜里有${content_cn}吗？`,
+          label: "Inquiry"
+        },
+        { 
+          en: `I'm allergic to ${content_en}, please remove it.`, 
+          cn: `我对${content_cn}过敏，请不要放。`,
+          label: "Allergy Alert"
+        }
+      ]
+    : [
+        { 
+          en: "Is this dish spicy?", 
+          cn: "请问这个菜辣吗？",
+          label: "Heat Level"
+        },
+        { 
+          en: "Can you make it non-spicy / mild?", 
+          cn: "可以做成不辣或者微辣吗？",
+          label: "Customization"
+        }
+      ];
+
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-300">
-      {/* 点击背景关闭 */}
-      <div className="absolute inset-0" onClick={onClose}></div>
-
-      <div className="bg-[#fcfbf9] w-full max-w-lg rounded-[3rem] shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-300 border border-white/20">
-        {/* 顶部状态条 */}
-        <div className={`h-2 w-full transition-all duration-500 ${step === 'ask' ? 'bg-rose-500' : 'bg-rose-600'}`}></div>
-        
-        {/* 顶部关闭按钮 */}
-        <button onClick={onClose} className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center bg-slate-100 rounded-full text-slate-400 z-10 hover:bg-slate-200 transition-colors">✕</button>
-
-        {step === 'ask' ? (
-          /* --- 第一步：询问是否有该食材 --- */
-          <div className="p-8 md:p-12 text-center space-y-8">
-            <header className="space-y-2">
-              <p className="text-rose-500 font-bold uppercase tracking-[0.2em] text-[10px]">Step 1: Ask Staff</p>
-              <h2 className="text-slate-400 text-lg italic font-medium">"Does this have {content_en}?"</h2>
-            </header>
-
-            <div className="py-4 space-y-6">
-              <h3 className="chinese-font text-5xl md:text-6xl font-bold text-slate-900 leading-tight">
-                这里面有<br/>
-                <span className="text-rose-600 underline decoration-yellow-400 underline-offset-8 decoration-4">{content_cn}</span>
-                吗？
-              </h3>
-              <button 
-                onClick={() => speak(`这里面有${content_cn}吗？`)}
-                className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mx-auto text-rose-600 active:scale-90 transition-transform shadow-sm"
-              >
-                <SpeakerIcon className="w-8 h-8" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 pt-4">
-              <button 
-                onClick={() => {
-                  setStep('request');
-                  speak("可以不放吗？");
-                }}
-                className="bg-rose-600 text-white py-6 rounded-2xl shadow-lg shadow-rose-100 flex flex-col items-center gap-1 active:scale-95 transition-all"
-              >
-                <span className="text-2xl font-bold">有 / 是</span>
-                <span className="text-[10px] font-bold uppercase opacity-70 italic">YES / Contain</span>
-              </button>
-              
-              <button 
-                onClick={onClose}
-                className="bg-slate-200 text-slate-600 py-6 rounded-2xl flex flex-col items-center gap-1 active:scale-95 transition-all"
-              >
-                <span className="text-2xl font-bold">没有</span>
-                <span className="text-[10px] font-bold uppercase opacity-70 italic">NO / None</span>
-              </button>
-            </div>
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
+      <div className="bg-white w-full max-w-sm rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in duration-200">
+        <div className="p-8 space-y-6">
+          <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+            <h3 className="font-bold text-slate-900 uppercase tracking-widest text-[10px]">
+              Waiter Communication
+            </h3>
+            <button onClick={onClose} className="text-slate-400 p-2">✕</button>
           </div>
-        ) : (
-          /* --- 第二步：请求不放 --- */
-          <div className="p-8 md:p-12 text-center space-y-8 animate-in slide-in-from-right duration-300">
-            <header className="space-y-2">
-              <p className="text-rose-500 font-bold uppercase tracking-[0.2em] text-[10px]">Step 2: Request Change</p>
-              <h2 className="text-slate-400 text-lg italic font-medium">"Can you leave it out?"</h2>
-            </header>
 
-            <div className="py-4 space-y-6">
-              <h3 className="chinese-font text-6xl md:text-7xl font-bold text-slate-900 leading-tight">
-                可以不放吗？
-              </h3>
-              <button 
-                onClick={() => speak("可以不放吗？")}
-                className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mx-auto text-rose-600 active:scale-90 transition-transform shadow-sm"
-              >
-                <SpeakerIcon className="w-8 h-8" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 pt-4">
-              <button 
-                onClick={onClose}
-                className="bg-emerald-500 text-white py-6 rounded-2xl shadow-lg shadow-emerald-100 flex flex-col items-center gap-1 active:scale-95 transition-transform"
-              >
-                <span className="text-2xl font-bold">可以</span>
-                <span className="text-[10px] font-bold uppercase opacity-80 italic">YES / OK</span>
-              </button>
-              <button 
-                onClick={onClose}
-                className="bg-slate-800 text-white py-6 rounded-2xl shadow-lg shadow-slate-200 flex flex-col items-center gap-1 active:scale-95 transition-transform"
-              >
-                <span className="text-2xl font-bold">不可以</span>
-                <span className="text-[10px] font-bold uppercase opacity-80 italic">NO / Cannot</span>
-              </button>
-            </div>
-
-            <button 
-              onClick={() => setStep('ask')}
-              className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] pt-4 hover:text-rose-500 transition-colors"
-            >
-              ← Back to first question
-            </button>
+          <div className="space-y-4">
+            {options.map((opt, i) => (
+              <div key={i} className="p-5 bg-slate-50 rounded-3xl border border-slate-100 space-y-3">
+                <div className="flex justify-between items-start">
+                  <span className="text-[9px] font-bold text-rose-500 uppercase tracking-tighter">{opt.label}</span>
+                </div>
+                <p className="text-sm font-semibold text-slate-700 leading-tight">{opt.en}</p>
+                
+                <div className="flex items-center justify-between gap-3 pt-2">
+                  <p className="text-xl font-bold text-slate-900 leading-tight flex-1">{opt.cn}</p>
+                  <button 
+                    onClick={() => speak(opt.cn)}
+                    className="w-12 h-12 bg-slate-900 text-white rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform flex-shrink-0"
+                  >
+                    <span className="text-lg">🔊</span>
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
-        )}
+
+          <p className="text-[10px] text-center text-slate-400 font-medium pb-2">
+            Tap the speaker to play audio for the staff
+          </p>
+        </div>
       </div>
     </div>
   );
