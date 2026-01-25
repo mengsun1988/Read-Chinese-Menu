@@ -14,7 +14,7 @@ interface DishDetailModalProps {
   isLoadingDetail?: boolean;
 }
 
-// 核心修复：完善辣度判断逻辑
+// 辣度判断逻辑
 const getSpicyComparison = (level: number) => {
   if (level <= 0) return { label: 'Not Spicy', comparison: 'None', color: 'text-slate-400' };
   if (level <= 1) return { label: 'Mild', comparison: 'Poblano', color: 'text-yellow-400' };
@@ -119,7 +119,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
             )}
           </section>
 
-          {/* Ingredients Grid */}
+          {/* Ingredients Grid - 核心修改部分 */}
           <section>
             <h4 className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] mb-4 flex items-center justify-between">
               Core Components
@@ -136,10 +136,16 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
                     <button 
                       key={i} 
                       onClick={() => onIngredientClick(ing)} 
-                      className="group p-4 bg-white hover:bg-red-50 rounded-2xl text-left border border-slate-100 transition-all active:scale-95 flex flex-col justify-center h-20 shadow-sm"
+                      className="group p-4 bg-white hover:bg-slate-50 rounded-2xl text-left border border-slate-100 transition-all active:scale-95 flex flex-col justify-center h-24 shadow-sm"
                     >
-                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-tight mb-0.5 line-clamp-1">{en}</span>
-                      <span className="text-lg font-black text-slate-800 group-hover:text-red-600 transition-colors">{cn || en}</span>
+                      {/* 英文：大一些，红色 */}
+                      <span className="text-sm font-black text-rose-600 leading-tight mb-1 line-clamp-2 uppercase tracking-tight">
+                        {en}
+                      </span>
+                      {/* 中文：小一些，灰色 */}
+                      <span className="text-[11px] font-bold text-slate-400 tracking-wide">
+                        {cn}
+                      </span>
                     </button>
                   );
                 })
