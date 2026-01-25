@@ -18,15 +18,13 @@ import { StaffHelperModal } from './components/StaffHelperModal';
 import { Footer } from './components/Footer';
 import { LegalModal } from './components/LegalModals';
 
-// 拆分出的逻辑与视图
+// 逻辑与视图
 import { useUserUsage } from './hooks/useUserUsage';
 import { HomeIdleView } from './views/HomeIdleView';
 
 const App: React.FC = () => {
-  // 1. 核心状态逻辑
   const { usage, setUsage, totalCredits, isUnlimited, getRemainingDays, handleDailyShare } = useUserUsage();
 
-  // 2. 识别相关状态
   const [status, setStatus] = useState<AppStatus>(AppStatus.IDLE);
   const [mode, setMode] = useState<RecognitionMode>(RecognitionMode.MENU);
   const [dishes, setDishes] = useState<any[]>([]);
@@ -34,7 +32,6 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  // 3. UI 交互状态
   const [showPricing, setShowPricing] = useState(false);
   const [showStaffHelper, setShowStaffHelper] = useState(false);
   const [legalView, setLegalView] = useState<'privacy' | 'tos' | null>(null);
@@ -44,7 +41,6 @@ const App: React.FC = () => {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 4. 功能函数
   const triggerUpload = () => fileInputRef.current?.click();
   const handleModeChange = (newMode: RecognitionMode) => { setMode(newMode); reset(); };
   
@@ -80,37 +76,35 @@ const App: React.FC = () => {
     });
   };
 
-  const processStoreData = (raw: any): StoreResult => {
+  // 强化版店铺数据处理逻辑
+  const processStoreData = (raw: any): StoreResult | null => {
+    if (!raw || typeof raw !== 'object') return null;
+    
     const data = Array.isArray(raw) ? raw[0] : raw;
-    const name_cn = data.name_cn || data.name || "Unknown Store";
-    const name_en = data.name_en || data.pinyin || "Local Business";
-    const originalDesc = data.description || "";
-    let cuisine = data.cuisine || "Storefront";
+    const name_cn = data.name_cn || data.name || data.store_name || "";
+    
+    if (!name_cn && !data.description) return null;
 
-    let finalDesc = originalDesc;
+    const name_en = data.name_en || data.pinyin || "Local Business";
+    let cuisine = data.cuisine || data.cuisine_type || "Storefront";
+    let finalDesc = data.description || "";
+
     const lowerName = name_cn.toLowerCase();
-    if (!finalDesc || finalDesc.length < 10) {
-      if (lowerName.includes('药') || lowerName.includes('pharmacy')) {
-        cuisine = "Pharmacy / Drugstore";
-        finalDesc = `A local pharmacy providing medical supplies and healthcare products.`;
-      } else if (lowerName.includes('发') || lowerName.includes('剪') || lowerName.includes('hair')) {
-        cuisine = "Hair Salon / Barber";
-        finalDesc = `A local hair salon offering styling and grooming services.`;
-      } else if (lowerName.includes('超市') || lowerName.includes('便利') || lowerName.includes('mart')) {
-        cuisine = "Convenience Store";
-        finalDesc = `A retail store selling daily groceries and snacks.`;
-      } else {
-        finalDesc = `A local establishment in China offering services to the neighborhood.`;
-      }
+    // 针对“老娘舅”或类似中式快餐的补全
+    if (lowerName.includes('老娘舅') || lowerName.includes('uncle')) {
+      cuisine = "Chinese Fast Casual";
+      if (finalDesc.length < 10) finalDesc = "A popular Chinese fast-food chain from the Yangtze Delta, famous for its high-quality rice sets and home-style side dishes.";
+    } else if (finalDesc.length < 5) {
+      finalDesc = `A local establishment identified as ${name_cn || 'this venue'}. It provides products or services to the local community.`;
     }
 
     return {
-      name: name_cn,
+      name: name_cn || "Local Shop",
       name_en: name_en,
       description: finalDesc,
       cuisine: cuisine,
       rating: data.rating || 4.5,
-      address: data.address || "Local Street"
+      address: data.address || "Main Street"
     };
   };
 
@@ -134,17 +128,24 @@ const App: React.FC = () => {
           setDishes(list);
           setStatus(AppStatus.SUCCESS);
         } else {
-          throw new Error("No dishes found. Please try a clearer photo.");
+          throw new Error("No dishes detected. Please try a clearer, top-down photo of the menu.");
         }
       } else {
         const rawResult = await processStorefrontImage(base64);
+        console.log("Raw Storefront Response:", rawResult);
+
+        // 防崩溃检查：如果 rawResult 是字符串（通常是 Cloudflare 524 错误页）
+        if (typeof rawResult === 'string') {
+          throw new Error("The service timed out (524). This happens when the AI takes too long to respond. Please try again.");
+        }
+
         const formattedStore = processStoreData(rawResult);
-        if (formattedStore && formattedStore.name) {
+        if (formattedStore) {
           setDishes([]);
           setStoreResult(formattedStore);
           setStatus(AppStatus.SUCCESS);
         } else {
-          throw new Error("Could not identify this storefront.");
+          throw new Error("Could not parse storefront details. Please ensure the sign is visible.");
         }
       }
 
@@ -156,26 +157,20 @@ const App: React.FC = () => {
         }));
       }
     } catch (err: any) {
-      setError(err.message);
+      console.error("Analysis Error:", err);
+      setError(err.message || "An unexpected error occurred.");
       setStatus(AppStatus.ERROR);
     }
   };
 
   const handleDishClick = async (dish: any) => {
-    let enhancedDesc = dish.description || "";
-    if (enhancedDesc.length < 10 && dish.ingredients) {
-      const ingredients = dish.ingredients.slice(0, 3).map((i: any) => typeof i === 'string' ? i : i.name_en).join(', ');
-      enhancedDesc = `Savory dish prepared with ${ingredients}.`;
-    }
-    const currentDish = { ...dish, description: enhancedDesc };
-    setSelectedDish(currentDish);
-
+    setSelectedDish(dish);
     if (!dish.isFullyAnalyzed) {
       setLoadingDetail(true);
       try {
         const full = await getDishDeepDetail(dish.name_cn, dish.name_en);
         if (full) {
-          const updated = { ...currentDish, ...full, isFullyAnalyzed: true };
+          const updated = { ...dish, ...full, isFullyAnalyzed: true };
           setSelectedDish(updated);
           setDishes(prev => prev.map(d => d.id === dish.id ? updated : d));
         }
@@ -250,42 +245,20 @@ const App: React.FC = () => {
               
               {mode === RecognitionMode.MENU ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-2">
-                  {(dishes || []).length > 0 ? (
-                    (dishes || []).map((dish, index) => (
-                      <DishCard key={dish.id || `dish-${index}`} dish={dish} onClick={() => handleDishClick(dish)} />
-                    ))
-                  ) : (
-                    <div className="col-span-full py-20 text-center bg-white rounded-[2rem] border border-dashed border-slate-200">
-                      <p className="text-slate-400 font-medium">No dish data available.</p>
-                    </div>
-                  )}
+                  {(dishes || []).map((dish, index) => (
+                    <DishCard key={dish.id || `dish-${index}`} dish={dish} onClick={() => handleDishClick(dish)} />
+                  ))}
                 </div>
               ) : (
-                storeResult ? (
-                  <StoreCard store={storeResult} onShowStaff={() => setShowStaffHelper(true)} />
-                ) : (
-                  <div className="py-20 text-center bg-white rounded-[2rem] border border-dashed border-slate-200">
-                    <p className="text-slate-400 font-medium">Identifying storefront...</p>
-                  </div>
-                )
+                storeResult && <StoreCard store={storeResult} onShowStaff={() => setShowStaffHelper(true)} />
               )}
             </div>
           )}
         </main>
-        
-        {status !== AppStatus.SUCCESS && (
-          <div className="space-y-24 mt-32">
-            <PricingModule onPurchase={onPurchase} />
-            <AboutUs />
-            <Reviews />
-            <SupportSection onPurchase={onPurchase} />
-          </div>
-        )}
       </div>
 
       <Footer onMenuScan={() => handleModeChange(RecognitionMode.MENU)} onStreetScan={() => handleModeChange(RecognitionMode.STREET)} onPricing={() => setShowPricing(true)} onPrivacy={() => setLegalView('privacy')} onTos={() => setLegalView('tos')} />
 
-      {/* Modals */}
       {showPricing && (
         <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md overflow-y-auto p-4 flex items-center justify-center">
           <div className="bg-[#fcfbf9] w-full max-w-4xl rounded-[3rem] relative p-8 shadow-2xl overflow-hidden">
@@ -297,11 +270,9 @@ const App: React.FC = () => {
 
       {selectedDish && (
         <DishDetailModal 
-          dish={selectedDish} 
-          onClose={() => setSelectedDish(null)}
+          dish={selectedDish} onClose={() => setSelectedDish(null)} isLoadingDetail={loadingDetail}
           onIngredientClick={(ing: Ingredient) => setWaiterContext({ type: 'ingredient', content_en: ing.name_en, content_cn: ing.name_cn })}
           onSpicyClick={() => setWaiterContext({ type: 'spiciness', content_en: 'Spiciness', content_cn: '辣度' })}
-          isLoadingDetail={loadingDetail}
         />
       )}
 
