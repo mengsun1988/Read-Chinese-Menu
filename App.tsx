@@ -254,9 +254,13 @@ const App: React.FC = () => {
       
       {showPricing && (
         <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-md overflow-y-auto p-4 flex items-center justify-center">
-          <div className="bg-[#fcfbf9] w-full max-w-4xl rounded-[3rem] relative p-8 shadow-2xl">
-            <button onClick={() => setShowPricing(false)} className="absolute top-8 right-8 p-2 text-slate-400 hover:text-slate-600 text-xl font-bold transition-colors">✕</button>
-            <PricingModule onPurchase={onPurchase} />
+          <div className="bg-[#fcfbf9] w-[95vw] max-w-4xl h-[95vh] max-h-[95vh] rounded-[2.5rem] relative flex flex-col">
+            <div className="absolute top-6 right-6 z-10">
+              <button onClick={() => setShowPricing(false)} className="p-2 text-slate-400 hover:text-slate-600 text-xl font-bold transition-colors bg-white/80 rounded-full w-10 h-10 flex items-center justify-center">✕</button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6 md:p-8 rounded-[2.5rem]">
+              <PricingModule onPurchase={onPurchase} />
+            </div>
           </div>
         </div>
       )}
