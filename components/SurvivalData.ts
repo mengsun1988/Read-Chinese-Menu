@@ -1,11 +1,12 @@
 export interface SurvivalCard {
-  id?: string;
+  id?: string;        // 众包卡片会有 KV 生成的 ID
   category: string;
   en: string;
   cn: string;
   icon: string;
   isOfficial?: boolean;
   votes?: number;
+  createdAt?: string;
 }
 
 export const SURVIVAL_CATEGORIES = [
@@ -120,7 +121,7 @@ export const OFFICIAL_CARDS: SurvivalCard[] = [
   { category: "Hotel", en: "I'd like to check out.", cn: "我想办理退房", icon: "🔑", isOfficial: true },
   { category: "Hotel", en: "Store luggage?", cn: "能寄存行李吗", icon: "👜", isOfficial: true },
   { category: "Hotel", en: "Call a taxi for me.", cn: "麻烦帮我叫车", icon: "🚕", isOfficial: true },
-  { category: "Hotel", en: "Gate closing time?", cn: "酒店大门几点关", icon: "🚪", isOfficial: true },
+  { category: "Hotel", en: "When should we checkout?", cn: "我们什么时候退房", icon: "🚪", isOfficial: true },
 
   // 10. Help
   { category: "Help", en: "Speak English?", cn: "你会说英语吗", icon: "🗣️", isOfficial: true },

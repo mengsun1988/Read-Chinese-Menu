@@ -23,13 +23,11 @@ function cleanBase64(base64: string): string {
 
 /**
  * 封装带重试机制的 Fetch
- * 专门处理 524 超时或其他临时性网络问题
  */
 async function fetchWithRetry(url: string, options: any, retries = 2): Promise<Response> {
   try {
     const response = await fetch(url, options);
     
-    // 如果是 524 或 504 超时，且还有重试次数
     if ((response.status === 524 || response.status === 504) && retries > 0) {
       console.warn(`检测到超时 (${response.status})，正在进行重试... 剩余次数: ${retries}`);
       return await fetchWithRetry(url, options, retries - 1);
@@ -44,7 +42,7 @@ async function fetchWithRetry(url: string, options: any, retries = 2): Promise<R
 }
 
 /**
- * 🆕 深度详情解析 (第二步)
+ * 🆕 深度详情解析 (第二步：点击卡片后触发)
  */
 export async function getDishDeepDetail(name_cn: string, name_en: string): Promise<any> {
   const userId = getOrCreateUserId();
@@ -66,10 +64,10 @@ export async function getDishDeepDetail(name_cn: string, name_en: string): Promi
     return {
       ingredients: Array.isArray(result.ingredients) ? result.ingredients : [],
       allergens: Array.isArray(result.allergens) ? result.allergens : [],
-      spiciness: Number(result.spiciness_level || result.spiciness || 0),
-      has_animal_fats: !!result.has_animal_fats,
-      pinyin: result.pinyin || "",
-      pronunciation_guide: result.pronunciation_guide || "",
+      // 包含辣度和过敏原等深度信息
+      spiciness: result.spiciness || "Not Spicy", 
+      health_note: result.health_note || "",
+      description: result.description || "",
       isFullyAnalyzed: true
     };
   } catch (err) {
@@ -79,7 +77,7 @@ export async function getDishDeepDetail(name_cn: string, name_en: string): Promi
 }
 
 /**
- * 处理菜单图片 (第一步)
+ * 处理菜单图片 (第一步：极速识别列表)
  */
 export async function processMenuImage(base64Image: string): Promise<any[]> {
   const cleanedBase64 = cleanBase64(base64Image);
@@ -93,18 +91,15 @@ export async function processMenuImage(base64Image: string): Promise<any[]> {
         image: cleanedBase64, 
         type: "menu",
         userId: userId,
-        mode: "fast_scan" 
+        mode: "fast_scan" // 告知后端只需返回名称、拼音、基础食材和价格
       }),
     });
 
     if (response.status === 403) throw new Error("You have run out of free scans for today.");
     
-    // 关键修复：先检查是否为 JSON 响应，防止解析 524 错误页文本
     const contentType = response.headers.get("content-type");
     if (!contentType || !contentType.includes("application/json")) {
-      const text = await response.text();
-      console.error("Server returned non-JSON:", text);
-      throw new Error("Server is busy or timed out. Please try again later.");
+      throw new Error("Server is busy. Please try again later.");
     }
 
     const result = await response.json();
@@ -114,24 +109,21 @@ export async function processMenuImage(base64Image: string): Promise<any[]> {
       rawArray = result;
     } else if (result.dishes && Array.isArray(result.dishes)) {
       rawArray = result.dishes;
-    } else if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
-      const text = result.candidates[0].content.parts[0].text;
-      const jsonMatch = text.match(/\[[\s\S]*\]/);
-      rawArray = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
     }
 
     if (!Array.isArray(rawArray)) return [];
 
     return rawArray.map((item: any, index: number) => ({
-      ...item,
       id: item.id || `dish-${Date.now()}-${index}`,
-      name_cn: item.name_cn || item.name || "未知菜品",
-      name_en: item.name_en || item.english_name || "Unknown Dish",
-      price: item.price ? (String(item.price).includes('CNY') ? item.price : `${item.price} CNY`) : "",
-      description: item.description || "No description provided.",
-      isFullyAnalyzed: false, 
-      ingredients: [],
-      allergens: []
+      name_cn: item.name_cn || item.name || "Unknown",
+      name_en: item.name_en || item.english_name || "Scanning...",
+      pinyin: item.pinyin || "",
+      price: item.price || "",
+      // 第一步只返回最核心食材，更深入的分析留给第二步
+      ingredients: Array.isArray(item.core_ingredients) ? item.core_ingredients : (item.ingredients || []),
+      description: item.description || "",
+      isFullyAnalyzed: false, // 标记为未完成深度分析
+      allergens: [] // 初始为空
     }));
   } catch (err: any) {
     console.error("Menu Image Error:", err);
@@ -159,35 +151,17 @@ export async function processStorefrontImage(base64Image: string): Promise<Store
 
     const contentType = response.headers.get("content-type");
     if (!response.ok || !contentType?.includes("application/json")) {
-      throw new Error("Store identification timed out. Please try again.");
+      throw new Error("Store identification timed out.");
     }
 
     const result = await response.json();
-    
-    // 如果后端直接返回了清洗好的对象
     if (result && (result.name || result.name_cn)) {
       return { ...fallback, ...result } as StoreResult;
-    }
-
-    // 如果返回的是 Gemini 原始格式，需要正则解析
-    let aiText = result.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    if (aiText) {
-      const jsonMatch = aiText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const data = JSON.parse(jsonMatch[0]);
-        return {
-          ...fallback,
-          ...data,
-          name: data.name || data.name_cn || data.store_name || "",
-          rating: Number(data.rating) || 4.5
-        } as StoreResult;
-      }
     }
     
     return fallback as StoreResult;
   } catch (err: any) {
     console.error("Storefront Analysis Error:", err);
-    // 抛出错误以便 App.tsx 捕获并显示 Error UI
     throw err;
   }
 }

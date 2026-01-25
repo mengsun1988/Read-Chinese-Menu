@@ -21,6 +21,7 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
   const [newCategory, setNewCategory] = useState(""); 
   const [isTranslating, setIsTranslating] = useState(false);
 
+  // 获取社区卡片数据
   const fetchCommunityCards = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -42,6 +43,7 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
     }
   }, [isOpen, fetchCommunityCards]);
 
+  // 语音播报逻辑
   const speak = useCallback((text: string) => {
     if (!window.speechSynthesis) return;
     window.speechSynthesis.cancel();
@@ -51,9 +53,9 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
     window.speechSynthesis.speak(utterance);
   }, []);
 
-  // 调用 Cloudflare Workers 上的 AI 翻译接口
+  // 核心：调用 Cloudflare AI 翻译
   const handleTranslate = async () => {
-    if (!newEn || newEn.length < 2) return;
+    if (!newEn || newEn.length < 3) return;
     setIsTranslating(true);
     try {
       const response = await fetch(`${API_BASE}/translate`, {
@@ -62,16 +64,20 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
         body: JSON.stringify({ text: newEn })
       });
       const data = await response.json();
-      setNewCn(data.translation || "Translation Error");
+      if (data.translation) {
+        setNewCn(data.translation);
+      }
     } catch (err) {
-      setNewCn("Translation failed, please type manually.");
+      console.error("Translation Error:", err);
     } finally {
       setIsTranslating(false);
     }
   };
 
+  // 核心：处理投票逻辑 (Optimistic UI)
   const handleVote = async (id: string, delta: number, e: React.MouseEvent) => {
     e.stopPropagation();
+    // 本地先更新，提升流畅感
     setCommunityCards(prev => 
       prev.map(c => c.id === id ? { ...c, votes: (c.votes || 0) + delta } : c)
     );
@@ -81,29 +87,49 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'vote', cardId: id, delta })
       });
-    } catch (err) { console.error("Vote failed:", err); }
+    } catch (err) { 
+      console.error("Vote failed:", err); 
+    }
   };
 
+  // 核心：提交新卡片
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEn || !newCn || !newCategory) return;
+    
+    setIsLoading(true);
     try {
       const response = await fetch(API_BASE, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           action: 'add', 
-          newCard: { category: newCategory, en: newEn, cn: newCn, icon: "✨", votes: 0 } 
+          newCard: { 
+            category: newCategory, 
+            en: newEn, 
+            cn: newCn, 
+            icon: "✨", 
+            votes: 0 
+          } 
         })
       });
+      
       if (response.ok) {
         setShowAddForm(false);
         setNewEn(""); setNewCn(""); setNewCategory("");
-        fetchCommunityCards();
+        await fetchCommunityCards();
+      } else {
+        const err = await response.json();
+        alert(err.error || "Submission failed");
       }
-    } catch (err) { console.error("Submit failed:", err); }
+    } catch (err) { 
+      console.error("Submit failed:", err); 
+    } finally {
+      setIsLoading(false);
+    }
   };
 
+  // 过滤显示逻辑
   const filteredCards = useMemo(() => {
     if (activeTab === "Community") {
       return [...communityCards].sort((a, b) => (b.votes || 0) - (a.votes || 0));
@@ -116,12 +142,12 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
   return (
     <div className="fixed inset-0 z-[300] bg-slate-50 flex flex-col animate-in slide-in-from-bottom duration-300">
       
-      {/* 1. Header */}
+      {/* Header */}
       <div className="bg-white border-b border-slate-100 shadow-sm shrink-0">
         <div className="max-w-3xl mx-auto px-6 pt-12 pb-6 flex justify-between items-end">
           <div className="text-left">
-            <p className="text-[10px] font-black text-rose-600 uppercase tracking-[0.2em] mb-1">China 100</p>
-            <h2 className="text-3xl font-black text-slate-900 tracking-tighter">Essential Cards</h2>
+            <p className="text-[10px] font-black text-rose-600 uppercase tracking-[0.2em] mb-1">Global CrowdSourced</p>
+            <h2 className="text-3xl font-black text-slate-900 tracking-tighter">Survival Cards</h2>
           </div>
           <button onClick={onClose} className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-900 active:scale-90 transition-all">
             <span className="text-xl font-bold">✕</span>
@@ -129,14 +155,14 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
         </div>
       </div>
 
-      {/* 2. Full Width Contribute Button & Tabs */}
+      {/* Control Bar: Contribute & Tabs */}
       <div className="bg-white border-b border-slate-50 shrink-0 sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-4 pt-4 pb-2 space-y-4">
           <button 
             onClick={() => setShowAddForm(true)}
             className="w-full py-5 bg-rose-600 text-white rounded-[1.5rem] text-xs font-black tracking-widest shadow-xl shadow-rose-100 active:scale-[0.98] transition-all flex items-center justify-center gap-2 uppercase"
           >
-            <span>+ Contribute New Survival Card</span>
+            <span>+ Share Your Experience</span>
           </button>
 
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2">
@@ -161,11 +187,11 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
         </div>
       </div>
 
-      {/* 3. Cards Grid - Text Enlarged by 30-50% */}
+      {/* Grid View */}
       <div className="flex-1 overflow-y-auto no-scrollbar bg-slate-50">
         <div className="max-w-3xl mx-auto p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 content-start pb-32">
           {isLoading && communityCards.length === 0 ? (
-            <div className="col-span-full py-20 text-center text-slate-400 font-black animate-pulse">LOADING...</div>
+            <div className="col-span-full py-20 text-center text-slate-400 font-black animate-pulse uppercase tracking-[0.3em] text-[10px]">Loading Knowledge...</div>
           ) : filteredCards.map((card) => (
             <div
               key={card.id || card.en}
@@ -174,9 +200,7 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
             >
               <div className="text-4xl shrink-0 group-hover:scale-110 transition-transform duration-300">{card.icon}</div>
               <div className="space-y-1 overflow-hidden">
-                {/* English Text: 12px -> 18px (50% up) */}
                 <p className="text-[18px] font-black text-slate-900 leading-tight line-clamp-2 italic tracking-tight">{card.en}</p>
-                {/* Chinese Text: 10px -> 14px (40% up) */}
                 <p className="text-[14px] font-bold text-slate-400 truncate">{card.cn}</p>
               </div>
 
@@ -192,44 +216,47 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
         </div>
       </div>
 
-      {/* 4. Big Text Mode - Substantially Enlarged */}
+      {/* Big Card Overlay */}
       {selectedCard && (
-        <div className="fixed inset-0 z-[400] bg-rose-600 p-8 flex flex-col items-center justify-center text-center animate-in zoom-in duration-200" onClick={() => setSelectedCard(null)}>
+        <div 
+          className="fixed inset-0 z-[400] bg-rose-600 p-8 flex flex-col items-center justify-center text-center animate-in zoom-in duration-200" 
+          onClick={() => setSelectedCard(null)}
+        >
           <div className="max-w-2xl w-full">
             <div className="mb-12 text-[10rem] animate-bounce-slow drop-shadow-2xl">{selectedCard.icon}</div>
             <div className="space-y-16">
               <div className="space-y-4">
-                <p className="text-rose-100/40 text-[12px] font-black uppercase tracking-[0.2em]">English Phrase</p>
-                {/* English enlarged to 5xl */}
-                <h3 className="text-white text-5xl font-black italic tracking-tighter">{selectedCard.en}</h3>
+                <p className="text-rose-100/40 text-[12px] font-black uppercase tracking-[0.2em]">Translate to Shop Staff</p>
+                <h3 className="text-white text-4xl md:text-5xl font-black italic tracking-tighter">{selectedCard.en}</h3>
               </div>
               <div className="space-y-4">
-                <p className="text-rose-100/40 text-[12px] font-black uppercase tracking-[0.2em]">Show to Staff</p>
-                {/* Chinese remains huge for readability */}
-                <h2 className="text-white text-7xl md:text-9xl font-black leading-tight drop-shadow-2xl">{selectedCard.cn}</h2>
+                <h2 className="text-white text-7xl md:text-9xl font-black leading-tight drop-shadow-2xl break-words">{selectedCard.cn}</h2>
               </div>
             </div>
-            <button className="mt-20 w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-3xl active:scale-90 transition-transform" onClick={(e) => { e.stopPropagation(); speak(selectedCard.cn); }}>
+            <button 
+              className="mt-20 w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-3xl active:scale-90 transition-transform" 
+              onClick={(e) => { e.stopPropagation(); speak(selectedCard.cn); }}
+            >
               <span className="text-4xl">🔊</span>
             </button>
           </div>
         </div>
       )}
 
-      {/* 5. Add Form Modal */}
+      {/* Add New Card Form Overlay */}
       {showAddForm && (
         <div className="fixed inset-0 z-[500] bg-slate-900/95 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in">
           <form onSubmit={handleSubmit} className="bg-white w-full max-w-md rounded-[3rem] p-10 space-y-8 shadow-2xl overflow-hidden relative">
             <button type="button" onClick={() => setShowAddForm(false)} className="absolute top-8 right-8 text-slate-300 hover:text-slate-900 font-bold text-xl">✕</button>
             
             <div className="text-center">
-              <h3 className="text-3xl font-black text-slate-900 tracking-tighter">New Survival Card</h3>
-              <p className="text-slate-400 text-[11px] font-bold uppercase mt-2">Powered by Cloudflare AI Translation</p>
+              <h3 className="text-3xl font-black text-slate-900 tracking-tighter">Share Wisdom</h3>
+              <p className="text-slate-400 text-[11px] font-bold uppercase mt-2">Help fellow travelers in China</p>
             </div>
 
             <div className="space-y-6">
               <div className="space-y-3">
-                <label className="text-[11px] font-black text-slate-400 ml-4 uppercase">1. Select Category</label>
+                <label className="text-[11px] font-black text-slate-400 ml-4 uppercase tracking-widest">Category</label>
                 <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
                   {SURVIVAL_CATEGORIES.map(cat => (
                     <button
@@ -246,14 +273,15 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
               </div>
 
               <div className="space-y-3">
-                <label className="text-[11px] font-black text-slate-400 ml-4 uppercase">2. English Phrase</label>
+                <label className="text-[11px] font-black text-slate-400 ml-4 uppercase tracking-widest">English Request</label>
                 <div className="relative">
                   <input 
                     required 
+                    autoFocus
                     value={newEn} 
                     onChange={e => setNewEn(e.target.value)}
                     onBlur={handleTranslate}
-                    placeholder="e.g. Can I have more napkins?" 
+                    placeholder="e.g. Please no coriander" 
                     className="w-full bg-slate-50 border-2 border-slate-50 focus:border-rose-200 rounded-2xl px-6 py-5 text-base font-bold text-slate-900 outline-none transition-all"
                   />
                   {isTranslating && <div className="absolute right-5 top-5 animate-spin text-rose-500">⏳</div>}
@@ -261,10 +289,10 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
               </div>
 
               <div className="space-y-3">
-                <label className="text-[11px] font-black text-slate-400 ml-4 uppercase">3. Chinese Preview (AI)</label>
+                <label className="text-[11px] font-black text-slate-400 ml-4 uppercase tracking-widest">AI Chinese Translation</label>
                 <div className="w-full bg-slate-900 rounded-2xl px-6 py-5 min-h-[64px] flex items-center">
                   <p className="text-white font-black text-xl tracking-tight">
-                    {newCn || (newEn ? "Translating..." : "Waiting for input...")}
+                    {newCn || (newEn ? "Translating..." : "...")}
                   </p>
                 </div>
               </div>
@@ -272,16 +300,17 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
 
             <button 
               type="submit" 
-              disabled={!newCn || !newCategory}
+              disabled={!newCn || !newCategory || isLoading}
               className={`w-full py-6 rounded-full font-black text-sm shadow-xl transition-all uppercase tracking-widest
-                ${(!newCn || !newCategory) ? 'bg-slate-100 text-slate-300 cursor-not-allowed' : 'bg-rose-600 text-white active:scale-95 shadow-rose-200'}`}
+                ${(!newCn || !newCategory || isLoading) ? 'bg-slate-100 text-slate-300 cursor-not-allowed' : 'bg-rose-600 text-white active:scale-95 shadow-rose-200'}`}
             >
-              Add to Community
+              {isLoading ? "Vetting..." : "Add to Knowledge Base"}
             </button>
           </form>
         </div>
       )}
 
+      {/* Global CSS for Animations */}
       <style dangerouslySetInnerHTML={{ __html: `
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
