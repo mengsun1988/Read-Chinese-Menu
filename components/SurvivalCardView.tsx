@@ -17,7 +17,7 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
   
   // Form State
   const [newEn, setNewEn] = useState("");
-  const [newCn, setNewCn] = useState(""); // 由 API 翻译填充
+  const [newCn, setNewCn] = useState(""); 
   const [newCategory, setNewCategory] = useState(""); 
   const [isTranslating, setIsTranslating] = useState(false);
 
@@ -51,12 +51,11 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
     window.speechSynthesis.speak(utterance);
   }, []);
 
-  // 模拟 API 获取翻译逻辑
+  // 调用 Cloudflare Workers 上的 AI 翻译接口
   const handleTranslate = async () => {
     if (!newEn || newEn.length < 2) return;
     setIsTranslating(true);
     try {
-      // 这里调用你的翻译接口
       const response = await fetch(`${API_BASE}/translate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -133,15 +132,13 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
       {/* 2. Full Width Contribute Button & Tabs */}
       <div className="bg-white border-b border-slate-50 shrink-0 sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-4 pt-4 pb-2 space-y-4">
-          {/* 长横条红色按钮 */}
           <button 
             onClick={() => setShowAddForm(true)}
-            className="w-full py-4 bg-rose-600 text-white rounded-2xl text-xs font-black tracking-widest shadow-xl shadow-rose-100 active:scale-[0.98] transition-all flex items-center justify-center gap-2 uppercase"
+            className="w-full py-5 bg-rose-600 text-white rounded-[1.5rem] text-xs font-black tracking-widest shadow-xl shadow-rose-100 active:scale-[0.98] transition-all flex items-center justify-center gap-2 uppercase"
           >
             <span>+ Contribute New Survival Card</span>
           </button>
 
-          {/* Tab List */}
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2">
             {SURVIVAL_CATEGORIES.map(cat => (
               <button
@@ -164,26 +161,27 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
         </div>
       </div>
 
-      {/* 3. Cards Grid */}
+      {/* 3. Cards Grid - Text Enlarged by 30-50% */}
       <div className="flex-1 overflow-y-auto no-scrollbar bg-slate-50">
-        <div className="max-w-3xl mx-auto p-5 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 content-start pb-32">
+        <div className="max-w-3xl mx-auto p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 content-start pb-32">
           {isLoading && communityCards.length === 0 ? (
             <div className="col-span-full py-20 text-center text-slate-400 font-black animate-pulse">LOADING...</div>
           ) : filteredCards.map((card) => (
             <div
               key={card.id || card.en}
               onClick={() => { setSelectedCard(card); speak(card.cn); }}
-              className="bg-white p-5 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col justify-between aspect-[4/5] active:scale-95 transition-all hover:border-rose-200 group relative cursor-pointer"
+              className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-5 active:scale-95 transition-all hover:border-rose-200 group relative cursor-pointer"
             >
-              <div className="text-4xl mb-2 group-hover:scale-110 transition-transform duration-300">{card.icon}</div>
-              <div className="space-y-1 mt-auto">
-                <p className="text-[12px] font-black text-slate-900 leading-tight line-clamp-2">{card.en}</p>
-                <p className="text-[10px] font-bold text-slate-400 truncate">{card.cn}</p>
+              <div className="text-4xl shrink-0 group-hover:scale-110 transition-transform duration-300">{card.icon}</div>
+              <div className="space-y-1 overflow-hidden">
+                {/* English Text: 12px -> 18px (50% up) */}
+                <p className="text-[18px] font-black text-slate-900 leading-tight line-clamp-2 italic tracking-tight">{card.en}</p>
+                {/* Chinese Text: 10px -> 14px (40% up) */}
+                <p className="text-[14px] font-bold text-slate-400 truncate">{card.cn}</p>
               </div>
 
-              {/* 评分审核系统：只有 Community Tab 显示 */}
               {activeTab === "Community" && (
-                <div className="absolute top-4 right-4 flex flex-col items-center bg-slate-50/80 backdrop-blur-sm rounded-full py-1 px-1.5 border border-slate-100 shadow-sm">
+                <div className="absolute top-4 right-4 flex flex-col items-center bg-slate-50/80 backdrop-blur-sm rounded-full py-1 px-1.5 border border-slate-100 shadow-sm scale-90">
                   <button onClick={(e) => handleVote(card.id!, 1, e)} className="text-[12px] p-0.5 hover:scale-125 transition-transform">👍</button>
                   <span className={`text-[8px] font-black my-0.5 ${(card.votes || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{card.votes || 0}</span>
                   <button onClick={(e) => handleVote(card.id!, -1, e)} className="text-[12px] p-0.5 hover:scale-125 transition-transform">👎</button>
@@ -194,50 +192,51 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
         </div>
       </div>
 
-      {/* 4. Big Text Mode */}
+      {/* 4. Big Text Mode - Substantially Enlarged */}
       {selectedCard && (
-        <div className="fixed inset-0 z-[400] bg-rose-600 p-6 flex flex-col items-center justify-center text-center animate-in zoom-in duration-200" onClick={() => setSelectedCard(null)}>
+        <div className="fixed inset-0 z-[400] bg-rose-600 p-8 flex flex-col items-center justify-center text-center animate-in zoom-in duration-200" onClick={() => setSelectedCard(null)}>
           <div className="max-w-2xl w-full">
-            <div className="mb-10 text-9xl animate-bounce-slow drop-shadow-2xl">{selectedCard.icon}</div>
-            <div className="space-y-12">
+            <div className="mb-12 text-[10rem] animate-bounce-slow drop-shadow-2xl">{selectedCard.icon}</div>
+            <div className="space-y-16">
               <div className="space-y-4">
-                <p className="text-rose-100/40 text-[10px] font-black uppercase tracking-[0.2em]">English</p>
-                <h3 className="text-white text-3xl font-black italic">{selectedCard.en}</h3>
+                <p className="text-rose-100/40 text-[12px] font-black uppercase tracking-[0.2em]">English Phrase</p>
+                {/* English enlarged to 5xl */}
+                <h3 className="text-white text-5xl font-black italic tracking-tighter">{selectedCard.en}</h3>
               </div>
               <div className="space-y-4">
-                <p className="text-rose-100/40 text-[10px] font-black uppercase tracking-[0.2em]">Show to Staff</p>
-                <h2 className="text-white text-6xl md:text-8xl font-black leading-tight drop-shadow-2xl">{selectedCard.cn}</h2>
+                <p className="text-rose-100/40 text-[12px] font-black uppercase tracking-[0.2em]">Show to Staff</p>
+                {/* Chinese remains huge for readability */}
+                <h2 className="text-white text-7xl md:text-9xl font-black leading-tight drop-shadow-2xl">{selectedCard.cn}</h2>
               </div>
             </div>
-            <button className="mt-16 w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-3xl active:scale-90" onClick={(e) => { e.stopPropagation(); speak(selectedCard.cn); }}>
-              <span className="text-3xl">🔊</span>
+            <button className="mt-20 w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-3xl active:scale-90 transition-transform" onClick={(e) => { e.stopPropagation(); speak(selectedCard.cn); }}>
+              <span className="text-4xl">🔊</span>
             </button>
           </div>
         </div>
       )}
 
-      {/* 5. Add Form Modal (重构逻辑) */}
+      {/* 5. Add Form Modal */}
       {showAddForm && (
         <div className="fixed inset-0 z-[500] bg-slate-900/95 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in">
-          <form onSubmit={handleSubmit} className="bg-white w-full max-w-md rounded-[3rem] p-8 space-y-6 shadow-2xl overflow-hidden relative">
-            <button type="button" onClick={() => setShowAddForm(false)} className="absolute top-6 right-6 text-slate-300 font-bold">✕</button>
+          <form onSubmit={handleSubmit} className="bg-white w-full max-w-md rounded-[3rem] p-10 space-y-8 shadow-2xl overflow-hidden relative">
+            <button type="button" onClick={() => setShowAddForm(false)} className="absolute top-8 right-8 text-slate-300 hover:text-slate-900 font-bold text-xl">✕</button>
             
             <div className="text-center">
-              <h3 className="text-2xl font-black text-slate-900 tracking-tighter">New Survival Card</h3>
-              <p className="text-slate-400 text-[10px] font-bold uppercase mt-1">Contribute to the traveler community</p>
+              <h3 className="text-3xl font-black text-slate-900 tracking-tighter">New Survival Card</h3>
+              <p className="text-slate-400 text-[11px] font-bold uppercase mt-2">Powered by Cloudflare AI Translation</p>
             </div>
 
-            <div className="space-y-5">
-              {/* 步骤 1: 选择分类 */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 ml-4 uppercase">1. Select Category</label>
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <label className="text-[11px] font-black text-slate-400 ml-4 uppercase">1. Select Category</label>
                 <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
                   {SURVIVAL_CATEGORIES.map(cat => (
                     <button
                       key={cat}
                       type="button"
                       onClick={() => setNewCategory(cat)}
-                      className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase transition-all border shrink-0
+                      className={`px-5 py-3 rounded-xl text-[10px] font-black uppercase transition-all border shrink-0
                         ${newCategory === cat ? 'bg-rose-600 border-rose-600 text-white shadow-md' : 'bg-slate-50 border-slate-100 text-slate-400'}`}
                     >
                       {cat}
@@ -246,9 +245,8 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
                 </div>
               </div>
 
-              {/* 步骤 2: 输入英文 */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 ml-4 uppercase">2. English Phrase</label>
+              <div className="space-y-3">
+                <label className="text-[11px] font-black text-slate-400 ml-4 uppercase">2. English Phrase</label>
                 <div className="relative">
                   <input 
                     required 
@@ -256,18 +254,17 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
                     onChange={e => setNewEn(e.target.value)}
                     onBlur={handleTranslate}
                     placeholder="e.g. Can I have more napkins?" 
-                    className="w-full bg-slate-50 border-2 border-slate-50 focus:border-rose-200 rounded-2xl px-5 py-4 text-sm font-bold text-slate-900 outline-none transition-all"
+                    className="w-full bg-slate-50 border-2 border-slate-50 focus:border-rose-200 rounded-2xl px-6 py-5 text-base font-bold text-slate-900 outline-none transition-all"
                   />
-                  {isTranslating && <div className="absolute right-4 top-4 animate-spin">⏳</div>}
+                  {isTranslating && <div className="absolute right-5 top-5 animate-spin text-rose-500">⏳</div>}
                 </div>
               </div>
 
-              {/* 步骤 3: 预览中文 (API 获取) */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 ml-4 uppercase">3. Chinese Preview (AI Translated)</label>
-                <div className="w-full bg-slate-900 rounded-2xl px-5 py-4 min-h-[56px] flex items-center">
-                  <p className="text-white font-black text-lg tracking-tight">
-                    {newCn || (newEn ? "Waiting for translation..." : "Type above first")}
+              <div className="space-y-3">
+                <label className="text-[11px] font-black text-slate-400 ml-4 uppercase">3. Chinese Preview (AI)</label>
+                <div className="w-full bg-slate-900 rounded-2xl px-6 py-5 min-h-[64px] flex items-center">
+                  <p className="text-white font-black text-xl tracking-tight">
+                    {newCn || (newEn ? "Translating..." : "Waiting for input...")}
                   </p>
                 </div>
               </div>
@@ -276,10 +273,10 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
             <button 
               type="submit" 
               disabled={!newCn || !newCategory}
-              className={`w-full py-5 rounded-full font-black text-xs shadow-xl transition-all
+              className={`w-full py-6 rounded-full font-black text-sm shadow-xl transition-all uppercase tracking-widest
                 ${(!newCn || !newCategory) ? 'bg-slate-100 text-slate-300 cursor-not-allowed' : 'bg-rose-600 text-white active:scale-95 shadow-rose-200'}`}
             >
-              SUBMIT FOR COMMUNITY REVIEW
+              Add to Community
             </button>
           </form>
         </div>
@@ -288,7 +285,7 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
       <style dangerouslySetInnerHTML={{ __html: `
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        @keyframes bounce-slow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes bounce-slow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
         .animate-bounce-slow { animation: bounce-slow 3s ease-in-out infinite; }
       `}} />
     </div>
