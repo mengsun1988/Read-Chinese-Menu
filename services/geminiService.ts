@@ -91,8 +91,8 @@ export async function processMenuImage(base64Image: string): Promise<any[]> {
         image: cleanedBase64, 
         type: "menu",
         userId: userId,
-        // 优化点：使用已修复的 fast_scan 模式加速初始识别（识别全部菜品）
-        mode: "fast_scan" 
+        // 恢复 standard 模式确保完整识别所有菜品
+        mode: "standard" 
       }),
     });
 
