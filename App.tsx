@@ -58,7 +58,7 @@ const App: React.FC = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(usage));
   }, [usage]);
 
-  /** PayPal SDK 注入 (保持原有逻辑) */
+  /** PayPal SDK 注入 */
   useEffect(() => {
     if (!showPricing) return;
     if ((window as any).paypal) { renderPaypal(); return; }
@@ -93,15 +93,9 @@ const App: React.FC = () => {
 
   const triggerUpload = () => fileInputRef.current?.click();
 
-  /** 核心修改：切换模式时彻底清理状态，防止 .map 报错 */
   const handleModeChange = (newMode: RecognitionMode) => {
     setMode(newMode);
-    setStatus(AppStatus.IDLE);
-    setDishes([]);
-    setStoreResult(null);
-    setError(null);
-    setPreviewUrl(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    reset();
   };
 
   const reset = () => {
@@ -146,27 +140,38 @@ const App: React.FC = () => {
     } catch (err) { console.log("Share cancelled", err); }
   };
 
-  /** 压缩图片助手函数 */
-  const compressImage = (base64Str: string): Promise<string> => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.src = base64Str;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 1600; 
-        let width = img.width;
-        let height = img.height;
-        if (width > MAX_WIDTH) {
-          height *= MAX_WIDTH / width;
-          width = MAX_WIDTH;
-        }
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0, width, height);
-        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
-        resolve(compressedBase64.split(',')[1]); 
+  /** * 极简图片压缩逻辑：直接从 File 对象读取并绘制，避免产生巨大的 originalBase64 字符串
+   */
+  const getCompressedBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 1200; // 调低到 1200px，确保 14MB 照片能顺利瘦身
+          let width = img.width;
+          let height = img.height;
+
+          if (width > MAX_WIDTH) {
+            height = (MAX_WIDTH / width) * height;
+            width = MAX_WIDTH;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          // 导出为 JPEG，质量设为 0.7 达到最佳体积平衡
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          resolve(dataUrl.split(',')[1]);
+        };
+        img.onerror = () => reject(new Error("Image Load Failed"));
       };
+      reader.onerror = () => reject(new Error("File Read Failed"));
     });
   };
 
@@ -183,54 +188,49 @@ const App: React.FC = () => {
     setPreviewUrl(URL.createObjectURL(file));
     setError(null);
 
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      try {
-        const originalBase64 = reader.result as string;
-        
-        // 1. 压缩图片 (将宽度提升到 1600px 以增加店面识别率)
-        const compressedBase64 = await compressImage(originalBase64);
+    try {
+      // 核心：直接压缩 File，不再读取完整 Base64 到变量
+      const base64ForAI = await getCompressedBase64(file);
 
-        if (mode === RecognitionMode.MENU) {
-          const result = await processMenuImage(compressedBase64);
-          if (Array.isArray(result) && result.length > 0) {
-            setDishes(result);
-            setStoreResult(null);
-            setStatus(AppStatus.SUCCESS);
-          } else {
-            throw new Error("No dishes found. Please try a clearer photo.");
-          }
+      if (mode === RecognitionMode.MENU) {
+        const result = await processMenuImage(base64ForAI);
+        // 增加 Array 判定，防止 AI 返回非数组导致渲染崩溃
+        const dishesArray = Array.isArray(result) ? result : (result.dishes || []);
+        if (dishesArray.length > 0) {
+          setDishes(dishesArray);
+          setStoreResult(null);
+          setStatus(AppStatus.SUCCESS);
         } else {
-          const result = await processStorefrontImage(compressedBase64);
-          // --- 修改这里：放宽校验条件 ---
-          if (result && (result.name || result.cuisine)) {
-            setStoreResult(result);
-            setDishes([]);
-            setStatus(AppStatus.SUCCESS);
-          } else {
-             throw new Error("Could not identify this store. Try a closer storefront shot.");
-          }
+          throw new Error("No dishes identified. Please try a closer, clearer photo.");
         }
-
-        if (!isUnlimited()) {
-          setUsage(prev => ({
-            ...prev,
-            paidCredits: prev.paidCredits > 0 ? prev.paidCredits - 1 : prev.paidCredits,
-            freeCredits: prev.paidCredits > 0 ? prev.freeCredits : Math.max(0, prev.freeCredits - 1)
-          }));
+      } else {
+        const result = await processStorefrontImage(base64ForAI);
+        if (result && (result.name || result.cuisine)) {
+          setStoreResult(result);
+          setDishes([]);
+          setStatus(AppStatus.SUCCESS);
+        } else {
+          throw new Error("Storefront not recognized. Try showing the sign more clearly.");
         }
-
-      } catch (err: any) {
-        console.error("Analysis Error:", err);
-        setError(err.message || "Failed to process image.");
-        setStatus(AppStatus.ERROR);
       }
-    };
-    reader.readAsDataURL(file);
+
+      if (!isUnlimited()) {
+        setUsage(prev => ({
+          ...prev,
+          paidCredits: prev.paidCredits > 0 ? prev.paidCredits - 1 : prev.paidCredits,
+          freeCredits: prev.paidCredits > 0 ? prev.freeCredits : Math.max(0, prev.freeCredits - 1)
+        }));
+      }
+
+    } catch (err: any) {
+      console.error("Analysis Error:", err);
+      setError(err.message || "Request failed. Check your connection or photo size.");
+      setStatus(AppStatus.ERROR);
+    }
   };
 
   return (
-    <div className="min-h-screen selection:bg-rose-600 selection:text-white pb-0 overflow-x-hidden">
+    <div className="min-h-screen selection:bg-rose-600 selection:text-white pb-0 overflow-x-hidden bg-[#fafafa]">
       <A2HSManager />
 
       <div className="max-w-5xl mx-auto px-6 py-16 md:py-24">
@@ -281,7 +281,7 @@ const App: React.FC = () => {
                 </div>
               </div>
 
-              <div className="modern-card p-12 md:p-20 text-center flex flex-col items-center shadow-xl mb-10 rounded-[3rem]">
+              <div className="bg-white border border-slate-100 p-12 md:p-20 text-center flex flex-col items-center shadow-xl mb-10 rounded-[3rem]">
                 <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
                 <button onClick={triggerUpload} className={`w-24 h-24 rounded-3xl flex items-center justify-center mb-10 shadow-2xl transition-transform active:scale-90 hover:scale-105 ${mode === RecognitionMode.MENU ? 'bg-rose-600 shadow-rose-200' : 'bg-slate-900 shadow-slate-200'}`}>
                   <CameraIcon className="w-12 h-12 text-white" />
@@ -292,13 +292,13 @@ const App: React.FC = () => {
             </>
           )}
 
-          {status === AppStatus.LOADING && <div className="modern-card overflow-hidden shadow-2xl rounded-[3rem]"><LoadingScreen /></div>}
+          {status === AppStatus.LOADING && <div className="bg-white p-12 rounded-[3rem] shadow-2xl"><LoadingScreen /></div>}
 
           {status === AppStatus.ERROR && (
             <div className="bg-white border-2 border-rose-100 rounded-[3rem] p-20 text-center space-y-8 shadow-sm">
               <div className="inline-flex items-center justify-center w-24 h-24 bg-rose-50 text-rose-600 rounded-full"><WarningIcon className="w-12 h-12" /></div>
               <h2 className="text-4xl font-semibold text-slate-900">Scan Failed</h2>
-              <p className="text-slate-500 max-sm mx-auto font-medium text-lg">{error}</p>
+              <p className="text-slate-500 max-w-sm mx-auto font-medium text-lg">{error}</p>
               <button onClick={reset} className="bg-rose-600 text-white font-semibold py-4 px-12 rounded-full shadow-xl">Try Again</button>
             </div>
           )}
@@ -307,17 +307,22 @@ const App: React.FC = () => {
             <div className="space-y-12 animate-in fade-in slide-in-from-bottom-10 duration-700">
               <div className="flex flex-col md:flex-row justify-between items-center gap-8 bg-slate-900 p-8 rounded-[2.5rem] shadow-2xl sticky top-6 z-20">
                 <div className="flex items-center gap-6">
-                  {previewUrl && <img src={previewUrl} className="w-24 h-24 object-cover rounded-2xl border-2 border-white/10" alt="Preview" />}
+                  {previewUrl && <img src={previewUrl} className="w-20 h-20 object-cover rounded-2xl border-2 border-white/10" alt="Preview" />}
                   <div className="text-left">
-                    <h3 className="font-semibold text-3xl text-white tracking-tight">{mode === RecognitionMode.MENU ? "Dish List" : "Shop Guide"}</h3>
+                    <h3 className="font-semibold text-2xl text-white tracking-tight">{mode === RecognitionMode.MENU ? "Dish List" : "Shop Guide"}</h3>
                     <p className="text-sm font-medium text-rose-400 uppercase tracking-widest">{mode === RecognitionMode.MENU ? `${dishes.length} Matches` : 'Storefront Identified'}</p>
                   </div>
                 </div>
-                <button onClick={reset} className="bg-white text-slate-900 font-semibold py-5 px-10 rounded-full shadow-xl">New Scan</button>
+                <button onClick={reset} className="bg-white text-slate-900 font-semibold py-4 px-8 rounded-full shadow-xl text-sm">New Scan</button>
               </div>
+              
               {mode === RecognitionMode.MENU ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {Array.isArray(dishes) && dishes.map((dish, index) => <DishCard key={index} dish={dish} onClick={() => setSelectedDish(dish)} />)}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-2">
+                  {dishes.map((dish, index) => (
+                    <div key={index} className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+                      <DishCard dish={dish} onClick={() => setSelectedDish(dish)} />
+                    </div>
+                  ))}
                 </div>
               ) : (storeResult && <StoreCard store={storeResult} onShowStaff={() => setShowStaffHelper(true)} />)}
             </div>
@@ -336,10 +341,11 @@ const App: React.FC = () => {
 
       <Footer onMenuScan={() => handleModeChange(RecognitionMode.MENU)} onStreetScan={() => handleModeChange(RecognitionMode.STREET)} onPricing={() => setShowPricing(true)} onPrivacy={() => setLegalView('privacy')} onTos={() => setLegalView('tos')} />
 
+      {/* Pricing Modal */}
       {showPricing && (
         <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md overflow-y-auto p-4 flex items-center justify-center">
           <div className="bg-[#fcfbf9] w-full max-w-5xl rounded-[3rem] relative p-8 animate-in zoom-in shadow-2xl">
-            <button onClick={() => setShowPricing(false)} className="absolute top-6 right-6 p-2 text-slate-400 text-2xl">✕</button>
+            <button onClick={() => setShowPricing(false)} className="absolute top-8 right-8 p-2 text-slate-400 text-2xl hover:text-slate-600">✕</button>
             <PricingModule onPurchase={onPurchase} />
             <div className="mt-12"><div id="paypal-button-container"></div></div>
           </div>
