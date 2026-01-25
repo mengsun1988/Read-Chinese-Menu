@@ -1,19 +1,16 @@
 import { Dish, StoreResult } from "../types";
 
 // 1. 核心：使用自定义子域名，绕过 Cloudflare 默认域名的拦截
-// 确保在 Cloudflare 后台已将 api.readchinesemenu.com 绑定到该 Worker
 const WORKER_URL = "https://api.readchinesemenu.com";
 
 /**
  * 获取或生成设备唯一 ID (UserId)
- * 用于后端 KV 数据库点数限制，不需要登录
  */
 function getOrCreateUserId(): string {
   const STORAGE_KEY = 'rmc_anonymous_user_id';
   let userId = localStorage.getItem(STORAGE_KEY);
   
   if (!userId) {
-    // 生成一个随机 ID
     userId = 'user-' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     localStorage.setItem(STORAGE_KEY, userId);
   }
@@ -22,11 +19,9 @@ function getOrCreateUserId(): string {
 
 /**
  * 清洗 Base64 数据
- * 配合 App.tsx 中的压缩逻辑，确保传给后端的是轻量化的图片文本
  */
 function cleanBase64(base64: string): string {
   if (!base64) return "";
-  // 移除 Data URL 前缀 (例如 data:image/jpeg;base64,)
   return base64.replace(/^data:image\/\w+;base64,/, "");
 }
 
@@ -36,13 +31,52 @@ function cleanBase64(base64: string): string {
 function handleNetworkError(err: any) {
   console.error("Network Error Detail:", err);
   if (err.message === 'Failed to fetch') {
-    throw new Error("Connection failed. If you are accessing from a restricted network, please try switching to a different connection or check your proxy.");
+    throw new Error("Connection failed. If you are accessing from a restricted network, please try switching to a different connection.");
   }
   throw err;
 }
 
 /**
- * 处理菜单图片 (Menu Mode)
+ * 🆕 深度详情解析 (第二步)
+ * 仅发送菜名，无需图片，响应速度极快
+ */
+export async function getDishDeepDetail(name_cn: string, name_en: string): Promise<any> {
+  const userId = getOrCreateUserId();
+  
+  try {
+    const response = await fetch(WORKER_URL, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        type: "dish_detail", // 告诉后端执行深度分析
+        name_cn: name_cn,
+        name_en: name_en,
+        userId: userId 
+      }),
+    });
+
+    if (!response.ok) throw new Error("Deep analysis failed");
+    const result = await response.json();
+    
+    // 返回深度解析的字段：食材、过敏原、辣度、猪油警告
+    return {
+      ingredients: Array.isArray(result.ingredients) ? result.ingredients : [],
+      allergens: Array.isArray(result.allergens) ? result.allergens : [],
+      spiciness: Number(result.spiciness_level || result.spiciness || 0),
+      has_animal_fats: !!result.has_animal_fats,
+      pinyin: result.pinyin || "",
+      pronunciation_guide: result.pronunciation_guide || "",
+      isFullyAnalyzed: true // 标记已完成深度解析
+    };
+  } catch (err) {
+    console.error("Deep Detail Error:", err);
+    return null;
+  }
+}
+
+/**
+ * 处理菜单图片 (第一步：快速识别)
  */
 export async function processMenuImage(base64Image: string): Promise<any[]> {
   const cleanedBase64 = cleanBase64(base64Image);
@@ -51,21 +85,22 @@ export async function processMenuImage(base64Image: string): Promise<any[]> {
   try {
     const response = await fetch(WORKER_URL, {
       method: "POST",
-      mode: "cors", // 显式使用跨域模式
+      mode: "cors",
       headers: { 
         "Content-Type": "application/json", 
         "Accept": "application/json" 
       },
       body: JSON.stringify({ 
         image: cleanedBase64, 
-        type: "menu",
-        userId: userId 
+        type: "menu", // 后端应优化此模式下的 Prompt 以减少生成时间
+        userId: userId,
+        // 提示后端：此时仅需要基础字段，以加快首屏速度
+        mode: "fast_scan" 
       }),
     });
 
-    // 针对点数耗尽的处理
     if (response.status === 403) {
-      throw new Error("You have run out of free scans for today. Please top up to continue.");
+      throw new Error("You have run out of free scans for today.");
     }
 
     if (!response.ok) {
@@ -76,7 +111,6 @@ export async function processMenuImage(base64Image: string): Promise<any[]> {
     const result = await response.json();
     let rawArray: any[] = [];
 
-    // 自动兼容不同的后端返回结构
     if (Array.isArray(result)) {
       rawArray = result;
     } else if (result.dishes && Array.isArray(result.dishes)) {
@@ -89,15 +123,9 @@ export async function processMenuImage(base64Image: string): Promise<any[]> {
 
     if (!Array.isArray(rawArray)) return [];
 
-    // 字段映射与数据清洗
     return rawArray.map((item: any, index: number) => {
       const rawPrice = String(item.price || "");
       const formattedPrice = rawPrice && !rawPrice.includes('CNY') ? `${rawPrice} CNY` : rawPrice;
-      const dietary = Array.isArray(item.dietary_flags) ? item.dietary_flags : [];
-
-      const animalFatDetected = item.has_animal_fats === true || 
-                               dietary.includes('contains_lard') || 
-                               dietary.includes('contains_pork');
 
       return {
         ...item,
@@ -106,13 +134,11 @@ export async function processMenuImage(base64Image: string): Promise<any[]> {
         name_en: item.name_en || item.english_name || "Unknown Dish",
         price: formattedPrice,
         description: item.description || "No description provided.",
-        spiciness: Number(item.spiciness_level || item.spiciness || 0),
-        ingredients: Array.isArray(item.ingredients) ? item.ingredients : [],
-        allergens: Array.isArray(item.allergens) ? item.allergens : [],
-        dietary_flags: dietary,
-        is_vegetarian: item.is_vegetarian || dietary.includes('vegetarian'),
-        has_animal_fats: animalFatDetected,
-        pinyin: item.pinyin || ""
+        // 第一步仅显示默认或简化的状态
+        isFullyAnalyzed: false, 
+        spiciness: item.spiciness || 0,
+        ingredients: [], // 初始置空，详情页再加载
+        allergens: []
       };
     });
   } catch (err: any) {
@@ -127,40 +153,25 @@ export async function processStorefrontImage(base64Image: string): Promise<Store
   const cleanedBase64 = cleanBase64(base64Image);
   const userId = getOrCreateUserId();
   const fallback: any = { 
-    name: "", 
-    rating: 0, 
-    cuisine: "",
-    description: "",
-    tags: [],
-    features: [],
-    highlights: []
+    name: "", rating: 0, cuisine: "", description: "",
+    tags: [], features: [], highlights: []
   };
   
   try {
     const response = await fetch(WORKER_URL, {
       method: "POST",
       mode: "cors",
-      headers: { 
-        "Content-Type": "application/json",
-        "Accept": "application/json"
-      },
-      body: JSON.stringify({ 
-        image: cleanedBase64, 
-        type: "storefront",
-        userId: userId 
-      }),
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify({ image: cleanedBase64, type: "storefront", userId: userId }),
     });
 
     if (!response.ok) throw new Error(`Server Error: ${response.status}`);
-
     const result = await response.json();
     
-    // 优先返回直接的对象结构
     if (result && result.name && result.name !== "Unknown Store") {
       return { ...fallback, ...result } as StoreResult;
     }
 
-    // 处理 AI 可能包装在 text 里的 JSON
     let aiText = "";
     if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
       aiText = result.candidates[0].content.parts[0].text;
@@ -178,11 +189,9 @@ export async function processStorefrontImage(base64Image: string): Promise<Store
         } as StoreResult;
       }
     }
-
     return fallback as StoreResult;
   } catch (err: any) {
     console.error("Storefront Analysis Error:", err);
-    // 这里选择不抛出错误，而是返回空状态，让 UI 显示识别失败
     return fallback as StoreResult;
   }
 }

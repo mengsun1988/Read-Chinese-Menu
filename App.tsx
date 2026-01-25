@@ -6,7 +6,8 @@ interface ExtendedStoreResult extends StoreResult {
   cuisine?: string;
   [key: string]: any; // Allow additional properties
 }
-import { processMenuImage, processStorefrontImage } from './services/geminiService';
+// 🆕 导入新增的 getDishDeepDetail
+import { processMenuImage, processStorefrontImage, getDishDeepDetail } from './services/geminiService';
 import { DishCard } from './components/DishCard';
 import { LoadingScreen } from './components/LoadingScreen';
 import { CameraIcon, WarningIcon } from './components/Icons';
@@ -57,6 +58,8 @@ const App: React.FC = () => {
   });
 
   const [selectedDish, setSelectedDish] = useState<any | null>(null);
+  // 🆕 新增：详情加载状态
+  const [loadingDetail, setLoadingDetail] = useState(false);
   const [waiterContext, setWaiterContext] = useState<{ type: 'ingredient' | 'spiciness'; content_en: string; content_cn: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -146,8 +149,7 @@ const App: React.FC = () => {
     } catch (err) { console.log("Share cancelled", err); }
   };
 
-  /** * 极简图片压缩逻辑：直接从 File 对象读取并绘制，避免产生巨大的 originalBase64 字符串
-   */
+  /** * 极简图片压缩逻辑 */
   const getCompressedBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -158,11 +160,10 @@ const App: React.FC = () => {
         img.onload = () => {
           const canvas = document.createElement('canvas');
           const MAX_WIDTH = 1200;
-          const MAX_HEIGHT = 1200; // 新增高度限制
+          const MAX_HEIGHT = 1200;
           let width = img.width;
           let height = img.height;
 
-          // 按比例缩放，同时限制宽高
           if (width > MAX_WIDTH || height > MAX_HEIGHT) {
             const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
             width = Math.round(width * ratio);
@@ -173,8 +174,6 @@ const App: React.FC = () => {
           canvas.height = height;
           const ctx = canvas.getContext('2d');
           ctx?.drawImage(img, 0, 0, width, height);
-
-          // 导出为 JPEG，质量设为 0.7 达到最佳体积平衡
           const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
           resolve(dataUrl.split(',')[1]);
         };
@@ -198,12 +197,10 @@ const App: React.FC = () => {
     setError(null);
 
     try {
-      // 核心：直接压缩 File，不再读取完整 Base64 到变量
       const base64ForAI = await getCompressedBase64(file);
 
       if (mode === RecognitionMode.MENU) {
         const result = await processMenuImage(base64ForAI);
-        // 增加 Array 判定，防止 AI 返回非数组导致渲染崩溃
         const dishesArray = Array.isArray(result) ? result : (result.dishes || []);
         if (dishesArray.length > 0) {
           setDishes(dishesArray);
@@ -235,6 +232,34 @@ const App: React.FC = () => {
       console.error("Analysis Error:", err);
       setError(err.message || "Request failed. Check your connection or photo size.");
       setStatus(AppStatus.ERROR);
+    }
+  };
+
+  // 🆕 核心修改：分步加载详情逻辑
+  const handleDishClick = async (dish: any) => {
+    // 1. 先展示已有数据，弹窗秒开
+    setSelectedDish(dish);
+    
+    // 2. 如果之前没解析过深度详情，则发起异步请求
+    if (!dish.isFullyAnalyzed) {
+      setLoadingDetail(true);
+      try {
+        const fullDetails = await getDishDeepDetail(dish.name_cn, dish.name_en);
+        
+        if (fullDetails) {
+          // 3. 更新当前选中的菜品数据，弹窗会自动更新显示内容
+          setSelectedDish(prev => (prev?.id === dish.id ? { ...prev, ...fullDetails } : prev));
+          
+          // 4. 同步更新列表中的数据，防止下次点击同一菜品再次请求
+          setDishes(prevDishes => prevDishes.map(d => 
+            d.id === dish.id ? { ...d, ...fullDetails } : d
+          ));
+        }
+      } catch (e) {
+        console.error("Failed to load deep details", e);
+      } finally {
+        setLoadingDetail(false);
+      }
     }
   };
 
@@ -328,8 +353,9 @@ const App: React.FC = () => {
               {mode === RecognitionMode.MENU ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-2">
                   {dishes.map((dish, index) => (
-                    <div key={index} className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-                      <DishCard dish={dish} onClick={() => setSelectedDish(dish)} />
+                    <div key={dish.id || index} className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+                      {/* 🆕 修改：点击调用新的 handleDishClick */}
+                      <DishCard dish={dish} onClick={() => handleDishClick(dish)} />
                     </div>
                   ))}
                 </div>
@@ -363,9 +389,11 @@ const App: React.FC = () => {
 
       {selectedDish && (
         <DishDetailModal 
-          dish={selectedDish} onClose={() => setSelectedDish(null)}
+          dish={selectedDish} 
+          onClose={() => setSelectedDish(null)}
           onIngredientClick={(ing: Ingredient) => setWaiterContext({ type: 'ingredient', content_en: ing.name_en, content_cn: ing.name_cn })}
           onSpicyClick={() => setWaiterContext({ type: 'spiciness', content_en: 'Spiciness', content_cn: '辣度' })}
+          isLoadingDetail={loadingDetail} // 🆕 传入详情加载状态
         />
       )}
 
