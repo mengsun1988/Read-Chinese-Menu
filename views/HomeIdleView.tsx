@@ -194,18 +194,18 @@ export const HomeIdleView: React.FC<Props> = ({
         {/* 6. Survival Cards */}
         <button 
           onClick={onOpenSurvival}
-          className="group relative w-full bg-white border border-slate-100 p-8 rounded-[3rem] flex items-center gap-6 shadow-sm active:scale-[0.98] transition-all hover:border-rose-200 mb-10"
+          className="group relative w-full bg-white border border-slate-100 p-10 rounded-[3.5rem] flex items-center gap-8 shadow-lg active:scale-[0.98] transition-all hover:border-rose-200 mb-10"
         >
-          <div className="w-20 h-20 bg-rose-50 rounded-[1.5rem] flex items-center justify-center text-rose-600 group-hover:scale-110 transition-transform duration-300 relative overflow-hidden shrink-0">
-              <MapIcon className="absolute w-16 h-16 opacity-10 -rotate-12 -right-2 -bottom-2" />
-              <MessageSquareIcon className="w-10 h-10 relative z-10" />
+          <div className="w-24 h-24 bg-rose-50 rounded-[1.8rem] flex items-center justify-center text-rose-600 group-hover:scale-110 transition-transform duration-300 relative overflow-hidden shrink-0">
+              <MapIcon className="absolute w-18 h-18 opacity-10 -rotate-12 -right-3 -bottom-3" />
+              <MessageSquareIcon className="w-12 h-12 relative z-10" />
           </div>
           <div className="text-left flex-1">
-              <h3 className="text-slate-900 text-xl font-black tracking-tight uppercase">China 100 Essential Cards</h3>
-              <p className="text-slate-400 text-xs font-bold leading-tight mt-1.5">Show cards to staff for allergies, help, or directions</p>
+              <h3 className="text-slate-900 text-2xl font-black tracking-tight uppercase">China 100 Survival Cards</h3>
+              <p className="text-slate-400 text-sm font-bold leading-tight mt-2">Essential phrases verified by travelers, plus your personal contributions</p>
           </div>
-          <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-rose-600 group-hover:text-white transition-colors">
-              <span className="text-sm font-bold">→</span>
+          <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-rose-600 group-hover:text-white transition-colors">
+              <span className="text-base font-bold">→</span>
           </div>
         </button>
       </main>
