@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 
 const CLASSIC_DISHES = [
   "Kung Pao Chicken (宫保鸡丁)", "Mapo Tofu (麻婆豆腐)", "Peking Duck (北京烤鸭)", 
-  "Soup Dumplings (小笼包)", "Hot Pot (火锅)", "Twice-Cooked Pork (回回锅肉)", 
+  "Soup Dumplings (小笼包)", "Hot Pot (火锅)", "Twice-Cooked Pork (回锅肉)", 
   "Dim Sum (点心)", "General Tso's Chicken (左宗棠鸡)", "Dan Dan Noodles (担担面)", 
   "Chow Mein (炒面)", "Scallion Pancake (葱油饼)", "Sweet and Sour Pork (糖醋里脊)",
   "Beef Broccoli (西兰花牛)", "Egg Fried Rice (蛋炒饭)", "Spring Rolls (春卷)",
@@ -19,44 +19,53 @@ interface RowProps {
   duration?: string;
 }
 
-const Row = ({ items, onItemClick, reverse = false, duration = "40s" }: RowProps) => (
-  <div className={`flex whitespace-nowrap gap-4 mb-4 ${reverse ? 'flex-row-reverse' : 'flex-row'}`}>
-    <div 
-      className={`flex gap-4 items-center shrink-0 ${reverse ? 'animate-marquee-reverse' : 'animate-marquee'}`}
-      style={{ animationDuration: duration }}
-    >
-      {[...items, ...items].map((item, i) => (
-        <button 
-          key={i} 
-          onClick={() => onItemClick(item)}
-          className={`px-5 py-2.5 border rounded-full shadow-sm flex items-center gap-3 transition-all group active:scale-95 ${
-            item.isHistory 
-              ? 'bg-rose-50 border-rose-200 hover:bg-rose-100 hover:border-rose-400 ring-1 ring-rose-100' 
-              : 'bg-white border-slate-100 hover:border-slate-300 hover:bg-slate-50'
-          }`}
-        >
-          <div className="flex flex-col items-start leading-none">
-            <span className={`text-[9px] font-black uppercase tracking-tighter mb-1 ${
-              item.isHistory ? 'text-rose-500' : 'text-slate-400 group-hover:text-slate-600'
-            }`}>
-              {item.en}
-            </span>
-            <span className={`text-sm font-bold ${
-              item.isHistory ? 'text-rose-700' : 'text-slate-800'
-            }`}>
-              {item.cn}
-            </span>
+const Row = ({ items, onItemClick, reverse = false, duration = "40s" }: RowProps) => {
+  if (!items.length) return null;
+  
+  return (
+    <div className="flex overflow-hidden mb-4 select-none">
+      <div 
+        className={`flex gap-4 items-center shrink-0 ${reverse ? 'animate-marquee-reverse' : 'animate-marquee'}`}
+        style={{ animationDuration: duration }}
+      >
+        {/* 渲染两组以实现无缝循环 */}
+        {Array.from({ length: 2 }).map((_, idx) => (
+          <div key={idx} className="flex gap-4 items-center">
+            {items.map((item, i) => (
+              <button 
+                key={`${idx}-${i}`} 
+                onClick={() => onItemClick(item)}
+                className={`px-5 py-2.5 border rounded-full shadow-sm flex items-center gap-3 transition-all active:scale-95 whitespace-nowrap ${
+                  item.isHistory 
+                    ? 'bg-rose-50 border-rose-200 ring-1 ring-rose-100' 
+                    : 'bg-white border-slate-100'
+                }`}
+              >
+                <div className="flex flex-col items-start leading-none">
+                  <span className={`text-[9px] font-black uppercase tracking-tighter mb-1 ${
+                    item.isHistory ? 'text-rose-500' : 'text-slate-400'
+                  }`}>
+                    {item.en}
+                  </span>
+                  <span className={`text-sm font-bold ${
+                    item.isHistory ? 'text-rose-700' : 'text-slate-800'
+                  }`}>
+                    {item.cn}
+                  </span>
+                </div>
+                {item.isHistory && (
+                  <div className="flex items-center gap-1 bg-rose-600 text-white text-[8px] font-black px-2 py-1 rounded-full animate-pulse">
+                    <span>LIVE</span>
+                  </div>
+                )}
+              </button>
+            ))}
           </div>
-          {item.isHistory && (
-            <div className="flex items-center gap-1 bg-rose-600 text-white text-[8px] font-black px-2 py-1 rounded-full animate-pulse">
-              <span>LIVE</span>
-            </div>
-          )}
-        </button>
-      ))}
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export const WordCloudMarquee: React.FC<{ onShowDetail: (d: any) => void }> = ({ onShowDetail }) => {
   const [displayItems, setDisplayItems] = useState<any[]>([]);
@@ -71,17 +80,17 @@ export const WordCloudMarquee: React.FC<{ onShowDetail: (d: any) => void }> = ({
       try {
         const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8787' : '';
         const response = await fetch(`${API_BASE}/api/history`);
+        if (!response.ok) throw new Error();
         const historyData = await response.json();
         
         const historyItems = historyData.map((d: any) => ({
           en: d.name_en, cn: d.name_cn, isHistory: true, fullData: d 
         }));
 
-        // 合并并限制在 300 个词以内
         const combined = [...historyItems, ...baseItems];
         setDisplayItems(combined.slice(0, 300));
       } catch (e) {
-        setDisplayItems(baseItems.slice(0, 300));
+        setDisplayItems(baseItems);
       }
     };
     loadCloudData();
@@ -98,41 +107,54 @@ export const WordCloudMarquee: React.FC<{ onShowDetail: (d: any) => void }> = ({
 
   if (displayItems.length === 0) return null;
 
+  // 将数据分配到 4 行
   const rowCount = 4;
-  const chunkSize = Math.ceil(displayItems.length / rowCount);
-  const rows = Array.from({ length: rowCount }, (_, i) => displayItems.slice(i * chunkSize, (i + 1) * chunkSize));
+  const rows = Array.from({ length: rowCount }, (_, i) => {
+    return displayItems.filter((_, idx) => idx % rowCount === i);
+  });
 
   return (
     <div className="w-full overflow-hidden bg-slate-50/50 py-16 border-t border-slate-100">
-      <div className="max-w-screen-xl mx-auto px-6 mb-10">
-        <div className="flex items-center gap-3">
+      <div className="max-w-xl mx-auto px-6 mb-10 text-center md:text-left">
+        <div className="flex items-center justify-center md:justify-start gap-3">
           <span className="flex h-3 w-3 relative">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
           </span>
           <div>
-            <h3 className="text-sm font-black uppercase tracking-[0.15em] text-slate-900">See what others are searching</h3>
-            <p className="text-[10px] font-bold text-rose-500 uppercase tracking-widest mt-1">Red bubbles = Recently identified by travelers</p>
+            <h3 className="text-sm font-black uppercase tracking-[0.15em] text-slate-900 leading-tight">Traveler Feed</h3>
+            <p className="text-[10px] font-bold text-rose-500 uppercase tracking-widest mt-1">Recently identified items</p>
           </div>
         </div>
       </div>
 
-      <div className="relative">
-        <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-slate-50 to-transparent z-10 pointer-events-none"></div>
-        <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-slate-50 to-transparent z-10 pointer-events-none"></div>
+      <div className="relative w-full">
+        {/* 左右渐变遮罩，增强视觉居中感 */}
+        <div className="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-slate-50 to-transparent z-10 pointer-events-none"></div>
+        <div className="absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-slate-50 to-transparent z-10 pointer-events-none"></div>
 
-        <Row items={rows[0] || []} onItemClick={handleItemClick} duration="120s" />
-        <Row items={rows[1] || []} onItemClick={handleItemClick} reverse duration="95s" />
-        <Row items={rows[2] || []} onItemClick={handleItemClick} duration="145s" />
-        <Row items={rows[3] || []} onItemClick={handleItemClick} reverse duration="110s" />
+        <Row items={rows[0]} onItemClick={handleItemClick} duration="80s" />
+        <Row items={rows[1]} onItemClick={handleItemClick} reverse duration="65s" />
+        <Row items={rows[2]} onItemClick={handleItemClick} duration="90s" />
+        <Row items={rows[3]} onItemClick={handleItemClick} reverse duration="75s" />
       </div>
 
-      <style>{`
-        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-        @keyframes marquee-reverse { 0% { transform: translateX(-50%); } 100% { transform: translateX(0); } }
-        .animate-marquee { animation: marquee linear infinite; }
-        .animate-marquee-reverse { animation: marquee-reverse linear infinite; }
-      `}</style>
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        @keyframes marquee-reverse {
+          0% { transform: translateX(-50%); }
+          100% { transform: translateX(0); }
+        }
+        .animate-marquee {
+          animation: marquee linear infinite;
+        }
+        .animate-marquee-reverse {
+          animation: marquee-reverse linear infinite;
+        }
+      `}} />
     </div>
   );
 };
