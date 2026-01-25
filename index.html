@@ -1,24 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
-<script>
-  // 初始化 vConsole
-  var vConsole = new window.VConsole();
-</script>
-
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#e11d48">
   <link rel="manifest" href="manifest.json">
   
-  <!-- Global Environment Shims: Required for SDKs to function -->
   <script>
     window.process = { env: { NODE_ENV: 'production' } };
     window.global = window;
   </script>
 
-  <!-- Meta Tags -->
   <title>Read Chinese Menu & Street Guide | AI Translation & Decoder</title>
   <meta name="description" content="Instantly translate Chinese menus and storefronts. Identify hidden lard, animal fats, and allergens.">
   
@@ -39,7 +31,7 @@
       margin: 0;
       -webkit-font-smoothing: antialiased;
     }
-    /* Simple CSS-only loader that disappears once React mounts */
+    /* 首屏加载动画：在 React 挂载前展示 */
     #root:empty {
       position: fixed;
       inset: 0;
@@ -62,8 +54,8 @@
     @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
   </style>
 
-  <!-- Tailwind CDN restored at the end of head for stability -->
   <script src="https://cdn.tailwindcss.com"></script>
+  
   <script type="importmap">
   {
     "imports": {
@@ -78,8 +70,9 @@
 </head>
 <body>
   <div id="root"></div>
-  <!-- Explicitly loading index.tsx as a module -->
+
   <script type="module" src="index.tsx"></script>
+  
   <script src="https://www.paypal.com/sdk/js?client-id=AdY7cjJGhxSVjZOPZr-LoHhX8JHtyQfNjmr6I8HjO4cv3cqW_U2zr1hpxa67nU8o4i6GoH0sFIh0P1aS&currency=USD"></script>
 
 </body>
