@@ -132,23 +132,30 @@ const App: React.FC = () => {
     try {
       const base64 = await getCompressedBase64(file);
       
-      if (mode === RecognitionMode.MENU) {
+if (mode === RecognitionMode.MENU) {
         // --- 模式 1: 菜谱识别 ---
         const result = await processMenuImage(base64);
         const list = Array.isArray(result) ? result : (result.dishes || []);
-        if (list.length > 0) {
+        
+        if (list && list.length > 0) {
+          setStoreResult(null); // 明确清理掉店铺数据，防止模式混淆
           setDishes(list);
           setStatus(AppStatus.SUCCESS);
-        } else throw new Error("No dishes found. Please try a clearer menu photo.");
+        } else {
+          throw new Error("No dishes found. Please try a clearer menu photo.");
+        }
       } else {
         // --- 模式 2: 店铺识别 (Street Mode) ---
         const rawResult = await processStorefrontImage(base64);
         const formattedStore = processStoreData(rawResult);
         
-        if (formattedStore.name) {
+        if (formattedStore && formattedStore.name) {
+          setDishes([]); // 核心修复：明确将 dishes 设为空数组，防止 .map() 报错
           setStoreResult(formattedStore);
           setStatus(AppStatus.SUCCESS);
-        } else throw new Error("Could not identify this storefront.");
+        } else {
+          throw new Error("Could not identify this storefront. Please try a clearer photo.");
+        }
       }
 
       // 扣点逻辑
@@ -266,13 +273,34 @@ const App: React.FC = () => {
               </div>
               
               {mode === RecognitionMode.MENU ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-2">
-                  {dishes.map((dish, index) => (
-                    <DishCard key={dish.id || index} dish={dish} onClick={() => handleDishClick(dish)} />
-                  ))}
-                </div>
-              ) : (storeResult && <StoreCard store={storeResult} onShowStaff={() => setShowStaffHelper(true)} />)}
-            </div>
+  // 增加 (dishes || []) 确保 map 始终作用于数组
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-2">
+    {(dishes || []).length > 0 ? (
+      (dishes || []).map((dish, index) => (
+        <DishCard 
+          key={dish.id || `dish-${index}`} 
+          dish={dish} 
+          onClick={() => handleDishClick(dish)} 
+        />
+      ))
+    ) : (
+      // 这里的兜底防止成功状态下数据却为空的尴尬
+      <div className="col-span-full py-20 text-center bg-white rounded-[2rem] border border-dashed border-slate-200">
+        <p className="text-slate-400 font-medium">No dish data available. Please try scanning again.</p>
+      </div>
+    )}
+  </div>
+) : (
+  // 店铺模式：增加更严谨的 storeResult 检查
+  storeResult ? (
+    <StoreCard 
+      store={storeResult} 
+      onShowStaff={() => setShowStaffHelper(true)} 
+    />
+  ) : (
+    <div className="py-20 text-center bg-white rounded-[2rem] border border-dashed border-slate-200">
+      <p className="text-slate-400 font-medium">Identifying storefront...</p>
+    </div>
           )}
         </main>
         
