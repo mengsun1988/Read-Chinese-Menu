@@ -67,10 +67,11 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
           
-          <div className="space-y-1 text-left relative z-0">
+          <div className="space-y-2 text-left relative z-0">
             <h2 className="text-[9px] font-black uppercase tracking-[0.2em] opacity-70 mb-1">Authentic Selection</h2>
+            <p className="text-4xl font-black tracking-tighter drop-shadow-sm">{nameEN}</p>
             <div className="flex items-center gap-3">
-              <p className="text-4xl font-black tracking-tighter drop-shadow-sm">{nameCN}</p>
+              <p className="text-3xl font-black tracking-tighter drop-shadow-sm">{nameCN}</p>
               <button 
                 onClick={speakDishName} 
                 className="bg-white text-red-600 w-10 h-10 rounded-xl flex items-center justify-center active:scale-90 transition-all shadow-lg"
@@ -78,7 +79,12 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
                 <SpeakerIcon className="w-5 h-5" />
               </button>
             </div>
-            <p className="text-lg font-bold opacity-90 mt-1 line-clamp-1">{nameEN}</p>
+            {dish.pinyin && (
+              <p className="text-lg font-bold opacity-70 text-center">{dish.pinyin}</p>
+            )}
+            {dish.pronunciation && (
+              <p className="text-lg font-bold opacity-60 text-center italic">{dish.pronunciation}</p>
+            )}
           </div>
 
           <div className="absolute -bottom-6 left-8 right-8 flex justify-between items-center">
@@ -105,7 +111,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
           )}
 
           {/* Description Section */}
-          <section className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+          <section className="bg-white p-6 rounded-[2.2rem] border border-slate-100 shadow-sm">
             <h4 className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] mb-3">AI Deep Insight</h4>
             {isLoadingDetail ? (
               <div className="space-y-2 py-1">

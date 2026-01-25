@@ -74,7 +74,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[500px] p-10 bg-white animate-in fade-in duration-500">
+    <div className="flex flex-col items-center justify-center min-h-[500px] p-10 bg-white rounded-[2.2rem] animate-in fade-in duration-500">
       
       {/* 动画中心 */}
       <div className="relative mb-14">

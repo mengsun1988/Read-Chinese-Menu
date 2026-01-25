@@ -113,8 +113,8 @@ export default {
       } else {
         // 菜单识别模式：修正食材为中英双语对象
         // 优化 fast_scan 提示词：明确要求"ALL"并移除可能导致提前终止的指令
-        const fastPrompt = `Extract ALL dishes. ${specialInstructions} Return JSON: { "dishes": [{"name_cn": "...", "name_en": "...", "price": "...", "ingredients": [{"name_cn": "...", "name_en": "..."}]}] }`;
-        const standardPrompt = `Analyze menu. ${specialInstructions} Return JSON: { "dishes": [{"name_cn": "...", "name_en": "...", "price": "...", "description": "...", "ingredients": [{"name_cn": "...", "name_en": "..."}], "spiciness_level": 0-5}] }`;
+        const fastPrompt = `Extract ALL dishes. ${specialInstructions} Return JSON: { "dishes": [{"name_cn": "...", "name_en": "...", "price": "...", "pinyin": "...", "pronunciation": "...", "ingredients": [{"name_cn": "...", "name_en": "..."}]}] }`;
+        const standardPrompt = `Analyze menu. ${specialInstructions} Return JSON: { "dishes": [{"name_cn": "...", "name_en": "...", "price": "...", "pinyin": "...", "pronunciation": "...", "description": "...", "ingredients": [{"name_cn": "...", "name_en": "..."}], "spiciness_level": 0-5}] }`;
         
         qwenPayload = {
           model: MODEL_NAME,
