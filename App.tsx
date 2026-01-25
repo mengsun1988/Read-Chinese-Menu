@@ -1,5 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { AppStatus, Dish, UserUsage, RecognitionMode, StoreResult, Ingredient } from './types';
+// Extend StoreResult type to include required properties
+interface ExtendedStoreResult extends StoreResult {
+  name?: string;
+  cuisine?: string;
+  [key: string]: any; // Allow additional properties
+}
 import { processMenuImage, processStorefrontImage } from './services/geminiService';
 import { DishCard } from './components/DishCard';
 import { LoadingScreen } from './components/LoadingScreen';
@@ -151,13 +157,16 @@ const App: React.FC = () => {
         img.src = event.target?.result as string;
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 1200; // 调低到 1200px，确保 14MB 照片能顺利瘦身
+          const MAX_WIDTH = 1200;
+          const MAX_HEIGHT = 1200; // 新增高度限制
           let width = img.width;
           let height = img.height;
 
-          if (width > MAX_WIDTH) {
-            height = (MAX_WIDTH / width) * height;
-            width = MAX_WIDTH;
+          // 按比例缩放，同时限制宽高
+          if (width > MAX_WIDTH || height > MAX_HEIGHT) {
+            const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
+            width = Math.round(width * ratio);
+            height = Math.round(height * ratio);
           }
 
           canvas.width = width;
