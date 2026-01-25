@@ -1,5 +1,4 @@
 import React from 'react';
-import { WordCloudMarquee } from './WordCloudMarquee';
 
 interface FooterProps {
   onMenuScan: () => void;
@@ -20,8 +19,7 @@ export const Footer: React.FC<FooterProps> = ({
 
   return (
     <footer className="w-full bg-white mt-12 overflow-hidden">
-      <WordCloudMarquee onItemClick={(d) => window.open(`https://www.google.com/search?q=${encodeURIComponent(d.dish_name_en! + " Chinese food")}`, '_blank')} />
-      
+          
       <div className="bg-[#fcfbf9] border-t border-slate-100 pt-16 pb-12">
         <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 md:gap-8">
           
