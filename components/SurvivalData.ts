@@ -31,7 +31,7 @@ export const OFFICIAL_CARDS: SurvivalCard[] = [
   { category: "Dining", en: "Menu, please.", cn: "麻烦给我菜单", icon: "📜", isOfficial: true },
   { category: "Dining", en: "What's the specialty?", cn: "招牌菜是什么", icon: "👑", isOfficial: true },
   { category: "Dining", en: "I'd like one of this.", cn: "我想要一份这个", icon: "☝️", isOfficial: true },
-  { category: "Dining", en: "Warm water, please.", cn: "麻烦给我温水", icon: "🍵", isOfficial: true },
+  { category: "Dining", en: "Do you have ice water?", cn: "有冰水吗", icon: "🧊", isOfficial: true },
   { category: "Dining", en: "Could I have a fork?", cn: "麻烦给我叉子", icon: "🍴", isOfficial: true },
   { category: "Dining", en: "Tissues, please.", cn: "麻烦给我纸巾", icon: "🧻", isOfficial: true },
   { category: "Dining", en: "Where's the restroom?", cn: "洗手间在哪里", icon: "🚻", isOfficial: true },

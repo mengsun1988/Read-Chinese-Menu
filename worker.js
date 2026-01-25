@@ -18,15 +18,48 @@ export default {
     if (request.method === 'POST' && url.pathname === '/api/survival/translate') {
       try {
         const { text } = await request.json();
+        
+        // First get Chinese translation
         const aiResponse = await env.AI.run("@cf/meta/m2m100-1.2b", {
           text: text,
           target_lang: "chinese",
         });
-        return new Response(JSON.stringify({ translation: aiResponse.translated_text }), {
+        
+        // Define categories for reference
+        const categories = [
+          "Safety", "Dining", "Payment", "Taxi", "Health", 
+          "Station", "Street", "Sightseeing", "Hotel", "Help"
+        ];
+        
+        // Determine category using a simple prompt
+        const categoryPrompt = `Classify this phrase into one of these categories: ${categories.join(', ')}. Phrase: "${text}"`;
+        const categoryResponse = await env.AI.run("@cf/meta-llama/llama-2-7b-chat-fp16", {
+          prompt: categoryPrompt
+        });
+        
+        // Extract the category from the response (simplified for example)
+        let determinedCategory = "Help"; // default
+        const categoryText = categoryResponse.response.toLowerCase();
+        for (const cat of categories) {
+          if (categoryText.includes(cat.toLowerCase())) {
+            determinedCategory = cat;
+            break;
+          }
+        }
+        
+        return new Response(JSON.stringify({ 
+          translation: aiResponse.translated_text,
+          category: determinedCategory
+        }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       } catch (err) {
-        return new Response(JSON.stringify({ error: "Translation failed" }), { status: 500, headers: corsHeaders });
+        console.error("Survival Card Processing Error:", err);
+        return new Response(JSON.stringify({ 
+          error: "Processing failed", 
+          translation: "请检查您的输入",
+          category: "Help"
+        }), { status: 500, headers: corsHeaders });
       }
     }
 
@@ -37,7 +70,9 @@ export default {
         const val = await env.CARDS_KV.get(key.name);
         if (val) cards.push(JSON.parse(val));
       }
-      return new Response(JSON.stringify(cards), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify(cards), { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
     }
 
     // ==========================================

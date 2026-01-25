@@ -74,28 +74,43 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
     }
   };
 
-  // 核心：处理投票逻辑 (Optimistic UI)
-  const handleVote = async (id: string, delta: number, e: React.MouseEvent) => {
+  // 核心：处理投票逻辑 (Optimistic UI) - Only upvotes now
+  const handleVote = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     // 本地先更新，提升流畅感
     setCommunityCards(prev => 
-      prev.map(c => c.id === id ? { ...c, votes: (c.votes || 0) + delta } : c)
+      prev.map(c => c.id === id ? { ...c, votes: (c.votes || 0) + 1 } : c)
     );
     try {
       await fetch(API_BASE, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'vote', cardId: id, delta })
+        body: JSON.stringify({ action: 'vote', cardId: id })
       });
     } catch (err) { 
-      console.error("Vote failed:", err); 
+      console.error("Vote failed:", err);
+      // Revert local change on failure
+      setCommunityCards(prev => 
+        prev.map(c => c.id === id ? { ...c, votes: Math.max(0, (c.votes || 0) - 1) } : c)
+      );
     }
   };
 
   // 核心：提交新卡片
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newEn || !newCn || !newCategory) return;
+    if (!newEn || !newCn) return;
+    
+    // Basic profanity check
+    const profanityWords = ['shit', 'fuck', 'bitch', 'asshole', 'piss', 'damn', 'hell', 'bastard', 'cunt', 'dick'];
+    const containsProfanity = profanityWords.some(word => 
+      newEn.toLowerCase().includes(word) || newCn.toLowerCase().includes(word)
+    );
+    
+    if (containsProfanity) {
+      alert("Your submission contains inappropriate language. Please revise and try again.");
+      return;
+    }
     
     setIsLoading(true);
     try {
@@ -105,7 +120,6 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
         body: JSON.stringify({ 
           action: 'add', 
           newCard: { 
-            category: newCategory, 
             en: newEn, 
             cn: newCn, 
             icon: "✨", 
@@ -116,14 +130,16 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
       
       if (response.ok) {
         setShowAddForm(false);
-        setNewEn(""); setNewCn(""); setNewCategory("");
+        setNewEn(""); 
+        setNewCn("");
         await fetchCommunityCards();
       } else {
         const err = await response.json();
-        alert(err.error || "Submission failed");
+        alert(err.error || "Submission failed. Please check your input.");
       }
     } catch (err) { 
       console.error("Submit failed:", err); 
+      alert("Network error. Please try again later.");
     } finally {
       setIsLoading(false);
     }
@@ -134,7 +150,13 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
     if (activeTab === "Community") {
       return [...communityCards].sort((a, b) => (b.votes || 0) - (a.votes || 0));
     }
-    return OFFICIAL_CARDS.filter(c => c.category === activeTab);
+    
+    // Include community cards with >= 20 votes in official categories
+    const promotedCards = communityCards.filter(c => 
+      c.category === activeTab && (c.votes || 0) >= 20
+    );
+    
+    return [...OFFICIAL_CARDS.filter(c => c.category === activeTab), ...promotedCards];
   }, [activeTab, communityCards]);
 
   if (!isOpen) return null;
@@ -206,9 +228,8 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
 
               {activeTab === "Community" && (
                 <div className="absolute top-4 right-4 flex flex-col items-center bg-slate-50/80 backdrop-blur-sm rounded-full py-1 px-1.5 border border-slate-100 shadow-sm scale-90">
-                  <button onClick={(e) => handleVote(card.id!, 1, e)} className="text-[12px] p-0.5 hover:scale-125 transition-transform">👍</button>
-                  <span className={`text-[8px] font-black my-0.5 ${(card.votes || 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{card.votes || 0}</span>
-                  <button onClick={(e) => handleVote(card.id!, -1, e)} className="text-[12px] p-0.5 hover:scale-125 transition-transform">👎</button>
+                  <button onClick={(e) => handleVote(card.id!, e)} className="text-[12px] p-0.5 hover:scale-125 transition-transform">👍</button>
+                  <span className="text-[8px] font-black my-0.5 text-emerald-600">{card.votes || 0}</span>
                 </div>
               )}
             </div>
@@ -256,23 +277,6 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
 
             <div className="space-y-6">
               <div className="space-y-3">
-                <label className="text-[11px] font-black text-slate-400 ml-4 uppercase tracking-widest">Category</label>
-                <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
-                  {SURVIVAL_CATEGORIES.map(cat => (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => setNewCategory(cat)}
-                      className={`px-5 py-3 rounded-xl text-[10px] font-black uppercase transition-all border shrink-0
-                        ${newCategory === cat ? 'bg-rose-600 border-rose-600 text-white shadow-md' : 'bg-slate-50 border-slate-100 text-slate-400'}`}
-                    >
-                      {cat}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-3">
                 <label className="text-[11px] font-black text-slate-400 ml-4 uppercase tracking-widest">English Request</label>
                 <div className="relative">
                   <input 
@@ -281,7 +285,7 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
                     value={newEn} 
                     onChange={e => setNewEn(e.target.value)}
                     onBlur={handleTranslate}
-                    placeholder="e.g. Please no coriander" 
+                    placeholder="e.g. Do you have ice water?" 
                     className="w-full bg-slate-50 border-2 border-slate-50 focus:border-rose-200 rounded-2xl px-6 py-5 text-base font-bold text-slate-900 outline-none transition-all"
                   />
                   {isTranslating && <div className="absolute right-5 top-5 animate-spin text-rose-500">⏳</div>}
@@ -300,9 +304,9 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
 
             <button 
               type="submit" 
-              disabled={!newCn || !newCategory || isLoading}
+              disabled={!newCn || isLoading}
               className={`w-full py-6 rounded-full font-black text-sm shadow-xl transition-all uppercase tracking-widest
-                ${(!newCn || !newCategory || isLoading) ? 'bg-slate-100 text-slate-300 cursor-not-allowed' : 'bg-rose-600 text-white active:scale-95 shadow-rose-200'}`}
+                ${(!newCn || isLoading) ? 'bg-slate-100 text-slate-300 cursor-not-allowed' : 'bg-rose-600 text-white active:scale-95 shadow-rose-200'}`}
             >
               {isLoading ? "Vetting..." : "Add to Knowledge Base"}
             </button>
