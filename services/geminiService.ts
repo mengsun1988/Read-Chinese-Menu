@@ -91,8 +91,8 @@ export async function processMenuImage(base64Image: string): Promise<any[]> {
         image: cleanedBase64, 
         type: "menu",
         userId: userId,
-        // 修改点：改为 standard 模式，确保 qwen3-vl-plus 扫描整个图片而不是快速截断
-        mode: "standard" 
+        // 优化点：使用已修复的 fast_scan 模式加速初始识别（识别全部菜品）
+        mode: "fast_scan" 
       }),
     });
 

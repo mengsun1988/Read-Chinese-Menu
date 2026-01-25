@@ -1,5 +1,6 @@
 import React from 'react';
 import { ChiliIcon } from './Icons';
+import { Ingredient } from '../types';
 
 // 内部定义的搜索图标
 const SearchIconInternal = ({ className }: { className?: string }) => (
@@ -24,7 +25,8 @@ export const DishCard: React.FC<{ dish: any; onClick: () => void }> = ({ dish, o
   const price = dish.price || "";
   const spiciness = Number(dish.spiciness_level || dish.spiciness || 0);
   
-  const getIngredientDisplay = (ing: any) => {
+  // 确保正确处理Ingredient类型
+  const getIngredientDisplay = (ing: Ingredient | string | any) => {
     if (!ing) return null;
     if (typeof ing === 'object' && (ing.name_en || ing.name_cn)) {
       return ing.name_en || ing.name_cn;
