@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { AppStatus, RecognitionMode, Ingredient } from './types';
+import { AppStatus, RecognitionMode, Ingredient, StoreResult } from './types';
 import { processMenuImage, processStorefrontImage, getDishDeepDetail } from './services/geminiService';
 
 // 基础组件
@@ -23,18 +23,15 @@ import { useUserUsage } from './hooks/useUserUsage';
 import { HomeIdleView } from './views/HomeIdleView';
 
 const App: React.FC = () => {
-  // 1. 核心状态逻辑（从 Hook 引入）
   const { usage, setUsage, totalCredits, isUnlimited, getRemainingDays, handleDailyShare } = useUserUsage();
 
-  // 2. 识别相关状态
   const [status, setStatus] = useState<AppStatus>(AppStatus.IDLE);
   const [mode, setMode] = useState<RecognitionMode>(RecognitionMode.MENU);
   const [dishes, setDishes] = useState<any[]>([]);
-  const [storeResult, setStoreResult] = useState<any | null>(null);
+  const [storeResult, setStoreResult] = useState<StoreResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  // 3. UI 交互状态
   const [showPricing, setShowPricing] = useState(false);
   const [showStaffHelper, setShowStaffHelper] = useState(false);
   const [legalView, setLegalView] = useState<'privacy' | 'tos' | null>(null);
@@ -44,7 +41,6 @@ const App: React.FC = () => {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 4. 功能函数
   const triggerUpload = () => fileInputRef.current?.click();
   const handleModeChange = (newMode: RecognitionMode) => { setMode(newMode); reset(); };
   
@@ -80,6 +76,50 @@ const App: React.FC = () => {
     });
   };
 
+  // 核心处理函数：店铺识别逻辑转换器
+  const processStoreData = (raw: any): StoreResult => {
+    // 兼容数组格式 [ { ... } ]
+    const data = Array.isArray(raw) ? raw[0] : raw;
+    
+    // 提取核心字段（无论 AI 把它当成菜品还是店铺返回）
+    const name_cn = data.name_cn || data.name || "Unknown Store";
+    const name_en = data.name_en || data.pinyin || "Local Business";
+    const originalDesc = data.description || "";
+    let cuisine = data.cuisine || "Storefront";
+
+    // 智能识别店铺类型并生成描述
+    let finalDesc = originalDesc;
+    const lowerName = name_cn.toLowerCase();
+    const lowerDesc = originalDesc.toLowerCase();
+
+    if (!finalDesc || finalDesc.length < 10) {
+      if (lowerName.includes('药') || lowerName.includes('pharmacy')) {
+        cuisine = "Pharmacy / Drugstore";
+        finalDesc = `A local pharmacy providing medical supplies, healthcare products, and prescription services.`;
+      } else if (lowerName.includes('发') || lowerName.includes('剪') || lowerName.includes('hair')) {
+        cuisine = "Hair Salon / Barber";
+        finalDesc = `A local hair salon offering haircutting, styling, and grooming services.`;
+      } else if (lowerName.includes('超市') || lowerName.includes('便利') || lowerName.includes('mart')) {
+        cuisine = "Convenience Store / Supermarket";
+        finalDesc = `A retail store selling daily groceries, snacks, and household essentials.`;
+      } else if (lowerName.includes('老娘舅') || lowerDesc.includes('rice') || lowerDesc.includes('fast food')) {
+        cuisine = "Chinese Fast Casual";
+        finalDesc = `A popular Chinese chain specializing in Jiangnan-style rice dishes and healthy home-style meals.`;
+      } else {
+        finalDesc = `A local establishment in China. This venue offers services or products to the neighborhood.`;
+      }
+    }
+
+    return {
+      name: name_cn,
+      name_en: name_en,
+      description: finalDesc,
+      cuisine: cuisine,
+      rating: data.rating || 4.5,
+      address: data.address || "Main Street"
+    };
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -91,53 +131,27 @@ const App: React.FC = () => {
 
     try {
       const base64 = await getCompressedBase64(file);
+      
       if (mode === RecognitionMode.MENU) {
+        // --- 模式 1: 菜谱识别 ---
         const result = await processMenuImage(base64);
         const list = Array.isArray(result) ? result : (result.dishes || []);
         if (list.length > 0) {
           setDishes(list);
           setStatus(AppStatus.SUCCESS);
-        } else throw new Error("No dishes found in this menu.");
- // ... 前面代码保持不变
-} else {
-  // --- Storefront 处理逻辑增强 ---
-  const rawResult = await processStorefrontImage(base64);
-  
-  // 核心修复逻辑：
-  // 兼容情况1: AI 返回了数组 [ {name_cn: '老娘舅', ...} ]
-  // 兼容情况2: AI 误把店铺当成菜品返回了
-  let result = Array.isArray(rawResult) ? rawResult[0] : rawResult;
+        } else throw new Error("No dishes found. Please try a clearer menu photo.");
+      } else {
+        // --- 模式 2: 店铺识别 (Street Mode) ---
+        const rawResult = await processStorefrontImage(base64);
+        const formattedStore = processStoreData(rawResult);
+        
+        if (formattedStore.name) {
+          setStoreResult(formattedStore);
+          setStatus(AppStatus.SUCCESS);
+        } else throw new Error("Could not identify this storefront.");
+      }
 
-  // 如果识别结果看起来像是一道菜（比如你发给我的 JSON），我们把它转换成店铺格式
-  if (result && !result.name_cn && result.dishes && result.dishes[0]) {
-    result = result.dishes[0];
-  }
-
-  if (result && (result.name_cn || result.name || result.cuisine)) {
-    let finalDesc = result.description || "";
-    
-    // 智能合成逻辑
-    if (!finalDesc || finalDesc.length < 5) {
-      const name = result.name_en || result.name_cn || "This establishment";
-      const cuisine = result.cuisine || "local specialties";
-      finalDesc = `A popular local spot. Known for its authentic flavors and welcoming atmosphere, it's a great choice to experience ${name}.`;
-    }
-
-    setStoreResult({
-      ...result,
-      name: result.name_cn || result.name, 
-      name_en: result.name_en || "Local Store",
-      description: finalDesc,
-      rating: result.rating || 4.5,
-      cuisine: result.cuisine || "Storefront"
-    });
-    setStatus(AppStatus.SUCCESS);
-  } else {
-    throw new Error("Could not identify this storefront. Please try a clearer photo.");
-  }
-}
-// ... 后面代码保持不变
-
+      // 扣点逻辑
       if (!isUnlimited()) {
         setUsage(prev => ({
           ...prev,
@@ -240,7 +254,6 @@ const App: React.FC = () => {
 
           {status === AppStatus.SUCCESS && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              {/* Results Top Bar */}
               <div className="flex justify-between items-center bg-slate-900 p-6 rounded-[2rem] shadow-2xl sticky top-4 z-20 mx-2 border border-white/5">
                 <div className="flex items-center gap-4">
                   {previewUrl && <img src={previewUrl} className="w-12 h-12 object-cover rounded-xl ring-2 ring-white/10" alt="Preview" />}
