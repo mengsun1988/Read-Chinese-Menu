@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { AppStatus, RecognitionMode, Ingredient, StoreResult } from './types';
 import { processMenuImage, processStorefrontImage, getDishDeepDetail } from './services/geminiService';
 
@@ -23,8 +23,10 @@ import { useUserUsage } from './hooks/useUserUsage';
 import { HomeIdleView } from './views/HomeIdleView';
 
 const App: React.FC = () => {
+  // 1. 核心状态逻辑
   const { usage, setUsage, totalCredits, isUnlimited, getRemainingDays, handleDailyShare } = useUserUsage();
 
+  // 2. 识别相关状态
   const [status, setStatus] = useState<AppStatus>(AppStatus.IDLE);
   const [mode, setMode] = useState<RecognitionMode>(RecognitionMode.MENU);
   const [dishes, setDishes] = useState<any[]>([]);
@@ -32,6 +34,7 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
+  // 3. UI 交互状态
   const [showPricing, setShowPricing] = useState(false);
   const [showStaffHelper, setShowStaffHelper] = useState(false);
   const [legalView, setLegalView] = useState<'privacy' | 'tos' | null>(null);
@@ -41,6 +44,7 @@ const App: React.FC = () => {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // 4. 功能函数
   const triggerUpload = () => fileInputRef.current?.click();
   const handleModeChange = (newMode: RecognitionMode) => { setMode(newMode); reset(); };
   
@@ -76,37 +80,27 @@ const App: React.FC = () => {
     });
   };
 
-  // 核心处理函数：店铺识别逻辑转换器
   const processStoreData = (raw: any): StoreResult => {
-    // 兼容数组格式 [ { ... } ]
     const data = Array.isArray(raw) ? raw[0] : raw;
-    
-    // 提取核心字段（无论 AI 把它当成菜品还是店铺返回）
     const name_cn = data.name_cn || data.name || "Unknown Store";
     const name_en = data.name_en || data.pinyin || "Local Business";
     const originalDesc = data.description || "";
     let cuisine = data.cuisine || "Storefront";
 
-    // 智能识别店铺类型并生成描述
     let finalDesc = originalDesc;
     const lowerName = name_cn.toLowerCase();
-    const lowerDesc = originalDesc.toLowerCase();
-
     if (!finalDesc || finalDesc.length < 10) {
       if (lowerName.includes('药') || lowerName.includes('pharmacy')) {
         cuisine = "Pharmacy / Drugstore";
-        finalDesc = `A local pharmacy providing medical supplies, healthcare products, and prescription services.`;
+        finalDesc = `A local pharmacy providing medical supplies and healthcare products.`;
       } else if (lowerName.includes('发') || lowerName.includes('剪') || lowerName.includes('hair')) {
         cuisine = "Hair Salon / Barber";
-        finalDesc = `A local hair salon offering haircutting, styling, and grooming services.`;
+        finalDesc = `A local hair salon offering styling and grooming services.`;
       } else if (lowerName.includes('超市') || lowerName.includes('便利') || lowerName.includes('mart')) {
-        cuisine = "Convenience Store / Supermarket";
-        finalDesc = `A retail store selling daily groceries, snacks, and household essentials.`;
-      } else if (lowerName.includes('老娘舅') || lowerDesc.includes('rice') || lowerDesc.includes('fast food')) {
-        cuisine = "Chinese Fast Casual";
-        finalDesc = `A popular Chinese chain specializing in Jiangnan-style rice dishes and healthy home-style meals.`;
+        cuisine = "Convenience Store";
+        finalDesc = `A retail store selling daily groceries and snacks.`;
       } else {
-        finalDesc = `A local establishment in China. This venue offers services or products to the neighborhood.`;
+        finalDesc = `A local establishment in China offering services to the neighborhood.`;
       }
     }
 
@@ -116,7 +110,7 @@ const App: React.FC = () => {
       description: finalDesc,
       cuisine: cuisine,
       rating: data.rating || 4.5,
-      address: data.address || "Main Street"
+      address: data.address || "Local Street"
     };
   };
 
@@ -132,33 +126,28 @@ const App: React.FC = () => {
     try {
       const base64 = await getCompressedBase64(file);
       
-if (mode === RecognitionMode.MENU) {
-        // --- 模式 1: 菜谱识别 ---
+      if (mode === RecognitionMode.MENU) {
         const result = await processMenuImage(base64);
         const list = Array.isArray(result) ? result : (result.dishes || []);
-        
         if (list && list.length > 0) {
-          setStoreResult(null); // 明确清理掉店铺数据，防止模式混淆
+          setStoreResult(null);
           setDishes(list);
           setStatus(AppStatus.SUCCESS);
         } else {
-          throw new Error("No dishes found. Please try a clearer menu photo.");
+          throw new Error("No dishes found. Please try a clearer photo.");
         }
       } else {
-        // --- 模式 2: 店铺识别 (Street Mode) ---
         const rawResult = await processStorefrontImage(base64);
         const formattedStore = processStoreData(rawResult);
-        
         if (formattedStore && formattedStore.name) {
-          setDishes([]); // 核心修复：明确将 dishes 设为空数组，防止 .map() 报错
+          setDishes([]);
           setStoreResult(formattedStore);
           setStatus(AppStatus.SUCCESS);
         } else {
-          throw new Error("Could not identify this storefront. Please try a clearer photo.");
+          throw new Error("Could not identify this storefront.");
         }
       }
 
-      // 扣点逻辑
       if (!isUnlimited()) {
         setUsage(prev => ({
           ...prev,
@@ -175,9 +164,8 @@ if (mode === RecognitionMode.MENU) {
   const handleDishClick = async (dish: any) => {
     let enhancedDesc = dish.description || "";
     if (enhancedDesc.length < 10 && dish.ingredients) {
-      const method = dish.cooking_method || ""; 
       const ingredients = dish.ingredients.slice(0, 3).map((i: any) => typeof i === 'string' ? i : i.name_en).join(', ');
-      enhancedDesc = method ? `Traditional ${method} dish with ${ingredients}.` : `Savory dish prepared with ${ingredients}.`;
+      enhancedDesc = `Savory dish prepared with ${ingredients}.`;
     }
     const currentDish = { ...dish, description: enhancedDesc };
     setSelectedDish(currentDish);
@@ -187,8 +175,8 @@ if (mode === RecognitionMode.MENU) {
       try {
         const full = await getDishDeepDetail(dish.name_cn, dish.name_en);
         if (full) {
-          const updated = { ...currentDish, ...full, isFullyAnalyzed: true, description: full.description || enhancedDesc };
-          setSelectedDish(prev => (prev?.id === dish.id ? updated : prev));
+          const updated = { ...currentDish, ...full, isFullyAnalyzed: true };
+          setSelectedDish(updated);
           setDishes(prev => prev.map(d => d.id === dish.id ? updated : d));
         }
       } catch (e) { console.error(e); } finally { setLoadingDetail(false); }
@@ -200,7 +188,6 @@ if (mode === RecognitionMode.MENU) {
       const updated = { ...prev };
       if (plan.id === 'starter') updated.paidCredits += 60;
       else if (plan.id === 'traveler') updated.passExpiryDate = new Date(Date.now() + 7 * 86400000).toISOString();
-      else if (plan.id === 'foodie') updated.passExpiryDate = new Date(Date.now() + 30 * 86400000).toISOString();
       return updated;
     });
     setShowPricing(false);
@@ -212,25 +199,18 @@ if (mode === RecognitionMode.MENU) {
 
       <div className="max-w-5xl mx-auto px-6 py-16 md:py-24">
         {/* Credits Badge */}
-        <div className="fixed bottom-6 right-6 z-[60] flex items-center gap-2 bg-white/95 backdrop-blur-md px-4 py-3 rounded-2xl border border-slate-200 shadow-2xl transition-all">
+        <div className="fixed bottom-6 right-6 z-[60] flex items-center gap-2 bg-white/95 backdrop-blur-md px-4 py-3 rounded-2xl border border-slate-200 shadow-2xl">
           <div className={`w-2 h-2 rounded-full ${isUnlimited() ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></div>
           <span className="text-[10px] font-bold uppercase tracking-widest text-slate-900">
             {isUnlimited() ? `${getRemainingDays()}d Premium` : `Credits: ${totalCredits}`}
           </span>
-          {!isUnlimited() && totalCredits <= 3 && (
-            <button onClick={() => setShowPricing(true)} className="ml-1 px-2 py-0.5 bg-rose-600 text-white text-[8px] rounded-full font-bold">TOP UP</button>
-          )}
         </div>
 
         <header className="mb-16 space-y-6 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-rose-50 border border-rose-100 rounded-full mb-4">
-            <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse"></span>
-            <span className="text-[9px] font-bold text-rose-600 uppercase tracking-widest">AI Vision v3.0</span>
-          </div>
           <h1 className="text-5xl md:text-7xl font-bold text-slate-900 tracking-tighter leading-none">
             Read <span className="text-rose-600">Chinese Menu</span>
           </h1>
-          <p className="text-slate-400 font-bold text-[10px] md:text-xs tracking-[0.2em] max-w-xl mx-auto uppercase">
+          <p className="text-slate-400 font-bold text-[10px] md:text-xs tracking-[0.2em] uppercase">
             Identify dishes • Check ingredients • Communicate with staff
           </p>
         </header>
@@ -239,13 +219,7 @@ if (mode === RecognitionMode.MENU) {
           <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
 
           {status === AppStatus.IDLE && (
-            <HomeIdleView 
-              mode={mode} 
-              onModeChange={handleModeChange} 
-              onUpload={triggerUpload} 
-              onShare={handleDailyShare}
-              onDishClick={handleDishClick}
-            />
+            <HomeIdleView mode={mode} onModeChange={handleModeChange} onUpload={triggerUpload} onShare={handleDailyShare} onDishClick={handleDishClick} />
           )}
 
           {status === AppStatus.LOADING && <LoadingScreen />}
@@ -266,41 +240,36 @@ if (mode === RecognitionMode.MENU) {
                   {previewUrl && <img src={previewUrl} className="w-12 h-12 object-cover rounded-xl ring-2 ring-white/10" alt="Preview" />}
                   <div className="text-left">
                     <h3 className="font-bold text-white tracking-tight">{mode === RecognitionMode.MENU ? "Results" : "Shop Details"}</h3>
-                    <p className="text-[10px] font-bold text-rose-400 uppercase tracking-widest">{mode === RecognitionMode.MENU ? `${dishes.length} Items` : 'Match Found'}</p>
+                    <p className="text-[10px] font-bold text-rose-400 uppercase tracking-widest">
+                      {mode === RecognitionMode.MENU ? `${(dishes || []).length} Items` : 'Match Found'}
+                    </p>
                   </div>
                 </div>
                 <button onClick={reset} className="bg-white/10 hover:bg-white/20 text-white font-bold py-2.5 px-6 rounded-full text-[10px] uppercase tracking-wider backdrop-blur-sm transition-colors border border-white/10">New</button>
               </div>
               
               {mode === RecognitionMode.MENU ? (
-  // 增加 (dishes || []) 确保 map 始终作用于数组
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-2">
-    {(dishes || []).length > 0 ? (
-      (dishes || []).map((dish, index) => (
-        <DishCard 
-          key={dish.id || `dish-${index}`} 
-          dish={dish} 
-          onClick={() => handleDishClick(dish)} 
-        />
-      ))
-    ) : (
-      // 这里的兜底防止成功状态下数据却为空的尴尬
-      <div className="col-span-full py-20 text-center bg-white rounded-[2rem] border border-dashed border-slate-200">
-        <p className="text-slate-400 font-medium">No dish data available. Please try scanning again.</p>
-      </div>
-    )}
-  </div>
-) : (
-  // 店铺模式：增加更严谨的 storeResult 检查
-  storeResult ? (
-    <StoreCard 
-      store={storeResult} 
-      onShowStaff={() => setShowStaffHelper(true)} 
-    />
-  ) : (
-    <div className="py-20 text-center bg-white rounded-[2rem] border border-dashed border-slate-200">
-      <p className="text-slate-400 font-medium">Identifying storefront...</p>
-    </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-2">
+                  {(dishes || []).length > 0 ? (
+                    (dishes || []).map((dish, index) => (
+                      <DishCard key={dish.id || `dish-${index}`} dish={dish} onClick={() => handleDishClick(dish)} />
+                    ))
+                  ) : (
+                    <div className="col-span-full py-20 text-center bg-white rounded-[2rem] border border-dashed border-slate-200">
+                      <p className="text-slate-400 font-medium">No dish data available.</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                storeResult ? (
+                  <StoreCard store={storeResult} onShowStaff={() => setShowStaffHelper(true)} />
+                ) : (
+                  <div className="py-20 text-center bg-white rounded-[2rem] border border-dashed border-slate-200">
+                    <p className="text-slate-400 font-medium">Identifying storefront...</p>
+                  </div>
+                )
+              )}
+            </div>
           )}
         </main>
         
@@ -314,13 +283,7 @@ if (mode === RecognitionMode.MENU) {
         )}
       </div>
 
-      <Footer 
-        onMenuScan={() => handleModeChange(RecognitionMode.MENU)} 
-        onStreetScan={() => handleModeChange(RecognitionMode.STREET)} 
-        onPricing={() => setShowPricing(true)} 
-        onPrivacy={() => setLegalView('privacy')} 
-        onTos={() => setLegalView('tos')} 
-      />
+      <Footer onMenuScan={() => handleModeChange(RecognitionMode.MENU)} onStreetScan={() => handleModeChange(RecognitionMode.STREET)} onPricing={() => setShowPricing(true)} onPrivacy={() => setLegalView('privacy')} onTos={() => setLegalView('tos')} />
 
       {/* Modals */}
       {showPricing && (
@@ -328,7 +291,6 @@ if (mode === RecognitionMode.MENU) {
           <div className="bg-[#fcfbf9] w-full max-w-4xl rounded-[3rem] relative p-8 shadow-2xl overflow-hidden">
             <button onClick={() => setShowPricing(false)} className="absolute top-8 right-8 p-2 text-slate-300 hover:text-slate-600 text-xl font-bold transition-colors">✕</button>
             <PricingModule onPurchase={onPurchase} />
-            <div className="mt-8 max-w-sm mx-auto" id="paypal-button-container"></div>
           </div>
         </div>
       )}
