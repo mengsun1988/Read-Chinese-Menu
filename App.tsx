@@ -35,6 +35,8 @@ const App: React.FC = () => {
   const [showStaffHelper, setShowStaffHelper] = useState(false);
   const [legalView, setLegalView] = useState<'privacy' | 'tos' | null>(null);
 
+
+  // ... 其余逻辑
   const [usage, setUsage] = useState<UserUsage>(() => {
     const todayStr = getBeijingDate();
     try {
@@ -188,20 +190,45 @@ const App: React.FC = () => {
     }
   };
 
-  const handleDishClick = async (dish: any) => {
-    setSelectedDish(dish);
-    if (!dish.isFullyAnalyzed) {
-      setLoadingDetail(true);
-      try {
-        const fullDetails = await getDishDeepDetail(dish.name_cn, dish.name_en);
-        if (fullDetails) {
-          const updatedDish = { ...dish, ...fullDetails, isFullyAnalyzed: true };
-          setSelectedDish(prev => (prev?.id === dish.id ? updatedDish : prev));
-          setDishes(prev => prev.map(d => d.id === dish.id ? updatedDish : d));
-        }
-      } catch (e) { console.error(e); } finally { setLoadingDetail(false); }
-    }
-  };
+const handleDishClick = async (dish: any) => {
+  // 1. 简介增强逻辑：如果描述太少，用做法+食材合成
+  let enhancedDesc = dish.description || "";
+  
+  if (enhancedDesc.length < 10 && dish.ingredients) {
+    const cookingMethod = dish.cooking_method || ""; // AI 结果通常包含做法
+    const mainIngredients = dish.ingredients
+      .slice(0, 3)
+      .map((i: any) => typeof i === 'string' ? i : i.name_en)
+      .join(', ');
+    
+    enhancedDesc = cookingMethod 
+      ? `A traditional ${cookingMethod} dish featuring ${mainIngredients}.` 
+      : `Savory dish prepared with ${mainIngredients}.`;
+  }
+
+  // 将增强后的描述存入 dish 对象展示
+  const currentDish = { ...dish, description: enhancedDesc };
+  setSelectedDish(currentDish);
+
+  if (!dish.isFullyAnalyzed) {
+    setLoadingDetail(true);
+    try {
+      const fullDetails = await getDishDeepDetail(dish.name_cn, dish.name_en);
+      if (fullDetails) {
+        // 如果深度解析返回了更棒的描述，则使用深度解析的
+        const updatedDish = { 
+          ...currentDish, 
+          ...fullDetails, 
+          isFullyAnalyzed: true,
+          // 深度解析时再次执行合成逻辑（防止返回内容仍为空）
+          description: fullDetails.description || enhancedDesc 
+        };
+        setSelectedDish(prev => (prev?.id === dish.id ? updatedDish : prev));
+        setDishes(prev => prev.map(d => d.id === dish.id ? updatedDish : d));
+      }
+    } catch (e) { console.error(e); } finally { setLoadingDetail(false); }
+  }
+};
 
   return (
     <div className="min-h-screen pb-0 overflow-x-hidden bg-[#fafafa] font-sans">

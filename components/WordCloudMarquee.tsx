@@ -1,93 +1,125 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dish } from '../types';
 
+// 初始静态词库（当 KV 为空或加载失败时展示）
 const CLASSIC_DISHES = [
   "Kung Pao Chicken (宫保鸡丁)", "Mapo Tofu (麻婆豆腐)", "Peking Duck (北京烤鸭)", 
   "Soup Dumplings (小笼包)", "Hot Pot (火锅)", "Twice-Cooked Pork (回锅肉)", 
   "Dim Sum (点心)", "General Tso's Chicken (左宗棠鸡)", "Dan Dan Noodles (担担面)", 
   "Chow Mein (炒面)", "Scallion Pancake (葱油饼)", "Sweet and Sour Pork (糖醋里脊)",
-  "Beef Broccoli (西兰花牛)", "Egg Fried Rice (蛋炒饭)", "Spring Rolls (春卷)", 
-  "Wonton Soup (馄饨汤)", "Ma Po Tofu (麻婆豆腐)", "Char Siu (叉烧)",
-  "Hainanese Chicken Rice (海南鸡饭)", "Laksa (喇沙)", "Zha Jiang Mian (炸酱面)",
-  "Biang Biang Noodles (油泼扯面)", "Rou Jia Mo (肉夹馍)", "Stinky Tofu (臭豆腐)",
-  "Bubble Tea (珍珠奶茶)", "Mooncake (月饼)", "Tangyuan (汤圆)",
-  "Lion's Head (狮子头)", "Ants Climbing Tree (蚂蚁上树)", "Dongpo Pork (东坡肉)",
-  "Beggar's Chicken (叫花鸡)", "Mandarin Fish (松鼠鳜鱼)", "Bridge Noodles (过桥米线)",
-  "Claypot Rice (煲仔饭)", "Beef Chow Fun (干炒牛河)", "Lo Mai Gai (糯米鸡)",
-  "Egg Tart (蛋挞)", "Pineapple Bun (菠萝包)", "White Cut Chicken (白切鸡)",
-  "Steamed Fish (清蒸鱼)", "Salt Pepper Squid (椒盐鱿鱼)", "Shrimp Dumplings (虾饺)",
-  "Shumai (烧卖)", "Cheung Fun (肠粉)", "Radish Cake (萝卜糕)",
-  "Turnip Cake (萝卜糕)", "Youtiao (油条)", "Soy Milk (豆浆)",
-  "Century Egg (皮蛋)", "Tea Egg (茶叶蛋)", "Hot Sour Soup (酸辣汤)",
-  "Egg Drop Soup (蛋花汤)", "Mashed Potatoes (土豆泥)", "Pickled Veg (泡菜)",
-  "Lamb Skewers (羊肉串)", "Spicy Crawfish (麻辣小龙虾)", "Chongqing Chicken (辣子鸡)",
-  "Yuxiang Pork (鱼香肉丝)", "Di San Xian (地三鲜)", "Braised Eggplant (红烧茄子)",
-  "Green Beans (干煸四季豆)", "Pea Shoots (清炒豆苗)", "Bok Choy (蒜蓉青菜)",
-  "Buddha Jumps (佛跳墙)", "Drunken Chicken (醉鸡)", "Pork Belly Bun (扣肉包)",
-  "Sesame Chicken (芝麻鸡)", "Orange Chicken (陈皮鸡)", "Cashew Chicken (腰果鸡)",
-  "Moo Shu Pork (木须肉)", "Sichuan Beef (水煮肉片)", "Black Pepper Beef (黑椒牛柳)",
-  "Oyster Sauce Beef (蚝油牛肉)", "Lemon Chicken (柠檬鸡)", "Pork Ribs (排骨)",
-  "Braised Pork (红烧肉)", "White Rice (白饭)", "Brown Rice (糙米)",
-  "Fried Mantou (炸馒头)", "Red Bean Soup (红豆汤)", "Mango Sago (杨枝甘露)",
-  "Grass Jelly (仙草)", "Abalone (鲍鱼)", "Bird's Nest (燕窝)",
-  "Sea Cucumber (海参)", "Shark Fin (鱼翅)", "Crispy Pork (脆皮烧肉)",
-  "Roast Pigeon (红烧乳鸽)", "Suckling Pig (乳猪)", "E-fu Noodles (伊面)",
-  "Singpore Noodles (星洲炒米)", "Yangzhou Rice (扬州炒饭)", "Fujian Rice (福建炒饭)"
+  "Beef Broccoli (西兰花牛)", "Egg Fried Rice (蛋炒饭)", "Spring Rolls (春卷)"
 ];
 
-const Row = ({ items, onItemClick, reverse = false, duration = "40s" }: { items: string[], onItemClick: (d: Partial<Dish>) => void, reverse?: boolean, duration?: string }) => (
+interface RowProps {
+  items: Array<{en: string, cn: string, isHistory?: boolean, fullData?: any}>;
+  onItemClick: (item: any) => void;
+  reverse?: boolean;
+  duration?: string;
+}
+
+const Row = ({ items, onItemClick, reverse = false, duration = "40s" }: RowProps) => (
   <div className={`flex whitespace-nowrap gap-4 mb-4 ${reverse ? 'flex-row-reverse' : 'flex-row'}`}>
     <div 
       className={`flex gap-4 items-center shrink-0 ${reverse ? 'animate-marquee-reverse' : 'animate-marquee'}`}
       style={{ animationDuration: duration }}
     >
-      {[...items, ...items, ...items].map((dish, i) => {
-        const [en, cnFull] = dish.split(' (');
-        const cn = cnFull.replace(')', '');
-        return (
-          <button 
-            key={i} 
-            onClick={() => onItemClick({ dish_name_en: en, dish_name_cn: cn })}
-            className="px-4 py-2 bg-white border border-slate-100 rounded-full shadow-sm flex items-center gap-3 hover:border-rose-400 hover:bg-rose-50 transition-all group active:scale-95"
-          >
-            <span className="text-[10px] font-medium text-slate-400 group-hover:text-rose-600 uppercase tracking-tighter transition-colors">{en}</span>
-            <span className="chinese-font text-sm font-bold text-slate-800">{cn}</span>
-          </button>
-        );
-      })}
+      {[...items, ...items, ...items].map((item, i) => (
+        <button 
+          key={i} 
+          onClick={() => onItemClick(item)}
+          className={`px-5 py-2.5 border rounded-full shadow-sm flex items-center gap-3 transition-all group active:scale-95 ${
+            item.isHistory 
+              ? 'bg-red-50 border-red-200 hover:bg-red-100 hover:border-red-400 ring-1 ring-red-100' 
+              : 'bg-white border-slate-100 hover:border-slate-300 hover:bg-slate-50'
+          }`}
+        >
+          <span className={`text-[10px] font-black uppercase tracking-tighter transition-colors ${
+            item.isHistory ? 'text-red-500' : 'text-slate-400 group-hover:text-slate-600'
+          }`}>
+            {item.en}
+          </span>
+          <span className={`text-sm font-bold ${
+            item.isHistory ? 'text-red-700' : 'text-slate-800'
+          }`}>
+            {item.cn}
+          </span>
+          {item.isHistory && <span className="animate-pulse">✨</span>}
+        </button>
+      ))}
     </div>
   </div>
 );
 
-export const WordCloudMarquee: React.FC<{ onItemClick: (d: Partial<Dish>) => void }> = ({ onItemClick }) => {
+export const WordCloudMarquee: React.FC<{ onShowDetail: (d: any) => void }> = ({ onShowDetail }) => {
+  const [displayItems, setDisplayItems] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadCloudData = async () => {
+      // 1. 准备静态基础词库
+      const baseItems = CLASSIC_DISHES.map(dish => {
+        const [en, cnFull] = dish.split(' (');
+        return { en, cn: cnFull.replace(')', ''), isHistory: false };
+      });
+
+      try {
+        // 2. 这里的地址请替换为你部署后的 Worker 域名
+        // 如果是本地开发环境，通常是 http://localhost:8787/api/history
+        const API_BASE = window.location.hostname === 'localhost' 
+          ? 'http://localhost:8787' 
+          : 'https://你的worker项目名.workers.dev'; // <--- 只需要修改这里
+
+        const response = await fetch(`${API_BASE}/api/history`);
+        const historyData = await response.json();
+        
+        const historyItems = historyData.map((d: any) => ({
+          en: d.name_en,
+          cn: d.name_cn,
+          isHistory: true,
+          fullData: d 
+        }));
+
+        // 3. 合并：历史词条放在最前面，增强视觉区分
+        setDisplayItems([...historyItems, ...baseItems]);
+      } catch (e) {
+        console.error("Failed to load history from KV:", e);
+        setDisplayItems(baseItems);
+      }
+    };
+
+    loadCloudData();
+  }, []);
+
+  const handleItemClick = (item: any) => {
+    if (item.isHistory) {
+      // 红色词条：直接打开详情卡片
+      onShowDetail(item.fullData);
+    } else {
+      // 普通词条：跳转 Bing 国际版图片搜索
+      const query = encodeURIComponent(`${item.en} ${item.cn} Chinese food`);
+      window.open(`https://www.bing.com/images/search?q=${query}`, '_blank');
+    }
+  };
+
+  if (displayItems.length === 0) return null;
+
   const rowCount = 4;
-  const chunkSize = Math.ceil(CLASSIC_DISHES.length / rowCount);
+  const chunkSize = Math.ceil(displayItems.length / rowCount);
   const rows = Array.from({ length: rowCount }, (_, i) => 
-    CLASSIC_DISHES.slice(i * chunkSize, (i + 1) * chunkSize)
+    displayItems.slice(i * chunkSize, (i + 1) * chunkSize)
   );
 
   return (
     <div className="w-full overflow-hidden bg-white/30 backdrop-blur-sm py-16 border-t border-slate-100">
-      <Row items={rows[0]} onItemClick={onItemClick} duration="80s" />
-      <Row items={rows[1]} onItemClick={onItemClick} reverse duration="65s" />
-      <Row items={rows[2]} onItemClick={onItemClick} duration="90s" />
-      <Row items={rows[3]} onItemClick={onItemClick} reverse duration="75s" />
+      <Row items={rows[0] || []} onItemClick={handleItemClick} duration="100s" />
+      <Row items={rows[1] || []} onItemClick={handleItemClick} reverse duration="80s" />
+      <Row items={rows[2] || []} onItemClick={handleItemClick} duration="110s" />
+      <Row items={rows[3] || []} onItemClick={handleItemClick} reverse duration="90s" />
       
       <style>{`
-        @keyframes marquee {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-33.33%); }
-        }
-        @keyframes marquee-reverse {
-          0% { transform: translateX(-33.33%); }
-          100% { transform: translateX(0); }
-        }
-        .animate-marquee {
-          animation: marquee linear infinite;
-        }
-        .animate-marquee-reverse {
-          animation: marquee-reverse linear infinite;
-        }
+        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-33.33%); } }
+        @keyframes marquee-reverse { 0% { transform: translateX(-33.33%); } 100% { transform: translateX(0); } }
+        .animate-marquee { animation: marquee linear infinite; }
+        .animate-marquee-reverse { animation: marquee-reverse linear infinite; }
       `}</style>
     </div>
   );
