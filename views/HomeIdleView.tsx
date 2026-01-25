@@ -7,7 +7,7 @@ import { AboutUs } from '../components/AboutUs';
 import { Reviews } from '../components/Reviews';
 import { SupportSection } from '../components/SupportSection';
 
-// 补齐缺失的 MapIcon 定义，确保 build 成功
+// 补齐缺失的 MapIcon 定义
 const MapIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
@@ -119,8 +119,8 @@ export const HomeIdleView: React.FC<Props> = ({
                 className={`relative flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === RecognitionMode.MENU ? 'bg-white text-rose-600 shadow-sm border border-slate-100' : 'text-slate-400'}`}
               >
                 Order Food
-                <span className={`absolute -top-2 -right-1 bg-emerald-500 text-[8px] text-white px-1.5 py-0.5 rounded-md font-black shadow-sm border border-white transition-opacity ${mode === RecognitionMode.MENU ? 'opacity-100' : 'opacity-50'}`}>
-                  {isUnlimited ? '∞' : totalCredits} LEFT
+                <span className={`absolute -top-2 -right-1 bg-emerald-500 text-[8px] text-white px-2 py-0.5 rounded-md font-black shadow-sm border border-white transition-opacity whitespace-nowrap ${mode === RecognitionMode.MENU ? 'opacity-100' : 'opacity-50'}`}>
+                  {isUnlimited ? '∞' : totalCredits} CREDITS LEFT
                 </span>
               </button>
               <button 
@@ -128,7 +128,7 @@ export const HomeIdleView: React.FC<Props> = ({
                 className={`relative flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === RecognitionMode.STREET ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-400'}`}
               >
                 Explore Streets
-                <span className="absolute -top-2 -right-1 bg-amber-400 text-[8px] text-slate-900 px-1.5 py-0.5 rounded-md font-black shadow-sm border border-white">FREE</span>
+                <span className="absolute -top-2 -right-1 bg-amber-400 text-[8px] text-slate-900 px-2 py-0.5 rounded-md font-black shadow-sm border border-white whitespace-nowrap">FREE</span>
               </button>
             </div>
           </div>
@@ -168,21 +168,21 @@ export const HomeIdleView: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* 6. Survival Cards */}
+        {/* 6. Survival Cards (Height Increased by 30%, Text/Icon Enlarged) */}
         <button 
           onClick={onOpenSurvival}
-          className="group relative w-full bg-white border border-slate-100 p-6 rounded-[2.5rem] flex items-center gap-5 shadow-sm active:scale-[0.98] transition-all hover:border-rose-200 mb-10"
+          className="group relative w-full bg-white border border-slate-100 p-8 rounded-[3rem] flex items-center gap-6 shadow-sm active:scale-[0.98] transition-all hover:border-rose-200 mb-10"
         >
-          <div className="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600 group-hover:scale-110 transition-transform duration-300 relative overflow-hidden">
-             <MapIcon className="absolute w-12 h-12 opacity-10 -rotate-12 -right-2 -bottom-2" />
-             <MessageSquareIcon className="w-8 h-8 relative z-10" />
+          <div className="w-20 h-20 bg-rose-50 rounded-[1.5rem] flex items-center justify-center text-rose-600 group-hover:scale-110 transition-transform duration-300 relative overflow-hidden shrink-0">
+              <MapIcon className="absolute w-16 h-16 opacity-10 -rotate-12 -right-2 -bottom-2" />
+              <MessageSquareIcon className="w-10 h-10 relative z-10" />
           </div>
           <div className="text-left flex-1">
-             <h3 className="text-slate-900 text-base font-black tracking-tight">Survival Phrases</h3>
-             <p className="text-slate-400 text-[11px] font-bold leading-tight mt-0.5">Show cards to staff for allergies, help, or directions</p>
+              <h3 className="text-slate-900 text-xl font-black tracking-tight uppercase">China 100 Essential Cards</h3>
+              <p className="text-slate-400 text-xs font-bold leading-tight mt-1.5">Show cards to staff for allergies, help, or directions</p>
           </div>
-          <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-rose-600 group-hover:text-white transition-colors">
-             <span className="text-xs font-bold">→</span>
+          <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-rose-600 group-hover:text-white transition-colors">
+              <span className="text-sm font-bold">→</span>
           </div>
         </button>
       </main>
