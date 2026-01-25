@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { AppStatus, RecognitionMode, StoreResult, Ingredient, UserUsage } from './types';
+import { AppStatus, RecognitionMode, Ingredient } from './types';
 import { processMenuImage, processStorefrontImage, getDishDeepDetail } from './services/geminiService';
+
+// 基础组件
 import { DishCard } from './components/DishCard';
 import { LoadingScreen } from './components/LoadingScreen';
-import { CameraIcon, WarningIcon } from './components/Icons';
+import { WarningIcon } from './components/Icons';
 import { DishDetailModal } from './components/DishDetailModal';
 import { WaiterCard } from './components/WaiterCard';
 import { AboutUs } from './components/AboutUs';
@@ -16,84 +18,36 @@ import { StaffHelperModal } from './components/StaffHelperModal';
 import { Footer } from './components/Footer';
 import { LegalModal } from './components/LegalModals';
 
-const STORAGE_KEY = 'rmc_user_usage_v3';
-
-const getBeijingDate = () => {
-  const d = new Date();
-  const beijingTime = new Date(d.getTime() + (8 * 60 * 60 * 1000));
-  return beijingTime.toISOString().split('T')[0];
-};
+// 拆分出的逻辑与视图
+import { useUserUsage } from './hooks/useUserUsage';
+import { HomeIdleView } from './views/HomeIdleView';
 
 const App: React.FC = () => {
+  // 1. 核心状态逻辑（从 Hook 引入）
+  const { usage, setUsage, totalCredits, isUnlimited, getRemainingDays, handleDailyShare } = useUserUsage();
+
+  // 2. 识别相关状态
   const [status, setStatus] = useState<AppStatus>(AppStatus.IDLE);
   const [mode, setMode] = useState<RecognitionMode>(RecognitionMode.MENU);
   const [dishes, setDishes] = useState<any[]>([]);
-  const [storeResult, setStoreResult] = useState<StoreResult | null>(null);
+  const [storeResult, setStoreResult] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // 3. UI 交互状态
   const [showPricing, setShowPricing] = useState(false);
   const [showStaffHelper, setShowStaffHelper] = useState(false);
   const [legalView, setLegalView] = useState<'privacy' | 'tos' | null>(null);
-
-
-  // ... 其余逻辑
-  const [usage, setUsage] = useState<UserUsage>(() => {
-    const todayStr = getBeijingDate();
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored) as UserUsage;
-        if (parsed.lastResetDate !== todayStr) {
-          return { ...parsed, freeCredits: 15, lastResetDate: todayStr };
-        }
-        return parsed;
-      }
-    } catch (e) { console.warn("Usage parsing failed", e); }
-    return { freeCredits: 15, paidCredits: 0, lastResetDate: todayStr };
-  });
-
   const [selectedDish, setSelectedDish] = useState<any | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [waiterContext, setWaiterContext] = useState<{ type: 'ingredient' | 'spiciness'; content_en: string; content_cn: string } | null>(null);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(usage));
-  }, [usage]);
-
-  /** PayPal SDK 初始化 */
-  useEffect(() => {
-    if (!showPricing) return;
-    if ((window as any).paypal) { renderPaypal(); return; }
-    const script = document.createElement('script');
-    script.src = `https://www.paypal.com/sdk/js?client-id=AdY7cjJGhxSVjZOPZr-LoHhX8JHtyQfNjmr6I8HjO4cv3cqW_U2zr1hpxa67nU8o4i6GoH0sFIh0P1aS&currency=USD&intent=capture`;
-    script.async = true;
-    script.onload = renderPaypal;
-    document.body.appendChild(script);
-
-    function renderPaypal() {
-      const paypal = (window as any).paypal;
-      if (!paypal || !document.getElementById('paypal-button-container')) return;
-      paypal.Buttons({
-        createOrder: (_: any, actions: any) => actions.order.create({ purchase_units: [{ amount: { value: '5.00' } }] }),
-        onApprove: async (_: any, actions: any) => {
-          await actions.order.capture();
-          onPurchase({ id: 'starter' });
-        }
-      }).render('#paypal-button-container');
-    }
-  }, [showPricing]);
-
-  const totalCredits = (usage.freeCredits || 0) + (usage.paidCredits || 0);
-  const isUnlimited = () => usage.passExpiryDate ? new Date(usage.passExpiryDate).getTime() > Date.now() : false;
-  const getRemainingDays = () => {
-    if (!usage.passExpiryDate) return 0;
-    const diff = new Date(usage.passExpiryDate).getTime() - Date.now();
-    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-  };
-
+  // 4. 功能函数
   const triggerUpload = () => fileInputRef.current?.click();
   const handleModeChange = (newMode: RecognitionMode) => { setMode(newMode); reset(); };
+  
   const reset = () => {
     setStatus(AppStatus.IDLE);
     setDishes([]);
@@ -103,33 +57,8 @@ const App: React.FC = () => {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const onPurchase = (plan: any) => {
-    setUsage(prev => {
-      const updated = { ...prev };
-      if (plan.id === 'starter') updated.paidCredits += 60;
-      else if (plan.id === 'traveler') updated.passExpiryDate = new Date(Date.now() + 7 * 86400000).toISOString();
-      else if (plan.id === 'foodie') updated.passExpiryDate = new Date(Date.now() + 30 * 86400000).toISOString();
-      return updated;
-    });
-    setShowPricing(false);
-  };
-
-  const handleDailyShare = async () => {
-    const today = getBeijingDate();
-    if (usage.lastShareDate === today) { alert("Already claimed today!"); return; }
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: 'Read Chinese Menu', url: window.location.origin });
-      } else {
-        await navigator.clipboard.writeText(window.location.origin);
-        alert("Link copied!");
-      }
-      setUsage(prev => ({ ...prev, freeCredits: (prev.freeCredits || 0) + 5, lastShareDate: today }));
-    } catch (err) { console.log("Share failed", err); }
-  };
-
   const getCompressedBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = (event) => {
@@ -168,11 +97,31 @@ const App: React.FC = () => {
         if (list.length > 0) {
           setDishes(list);
           setStatus(AppStatus.SUCCESS);
-        } else throw new Error("No dishes found.");
+        } else throw new Error("No dishes found in this menu.");
       } else {
-        const result = await processStorefrontImage(base64);
-        if (result && (result.name || result.cuisine)) {
-          setStoreResult(result);
+        const rawResult = await processStorefrontImage(base64);
+        const result = Array.isArray(rawResult) ? rawResult[0] : rawResult;
+
+        if (result && (result.name_cn || result.name || result.cuisine)) {
+          // 简介合成逻辑
+          let finalDesc = result.description || "";
+          if (!finalDesc || finalDesc.length < 5) {
+            const name = result.name_en || result.name_cn || "This establishment";
+            const cuisine = result.cuisine || "local specialties";
+            const isRestaurant = cuisine.toLowerCase().match(/food|cuisine|restaurant|cafe/);
+            finalDesc = isRestaurant 
+              ? `A popular local spot specializing in ${cuisine}. Known for its authentic flavors, it's a great choice to experience ${name}.`
+              : `A local ${cuisine} establishment. This venue offers a unique look into daily life and local services in the neighborhood.`;
+          }
+
+          setStoreResult({
+            ...result,
+            name: result.name_cn || result.name,
+            name_en: result.name_en || "Local Establishment",
+            description: finalDesc,
+            rating: result.rating || 4.5,
+            cuisine: result.cuisine || "Storefront"
+          });
           setStatus(AppStatus.SUCCESS);
         } else throw new Error("Storefront not recognized.");
       }
@@ -190,45 +139,39 @@ const App: React.FC = () => {
     }
   };
 
-const handleDishClick = async (dish: any) => {
-  // 1. 简介增强逻辑：如果描述太少，用做法+食材合成
-  let enhancedDesc = dish.description || "";
-  
-  if (enhancedDesc.length < 10 && dish.ingredients) {
-    const cookingMethod = dish.cooking_method || ""; // AI 结果通常包含做法
-    const mainIngredients = dish.ingredients
-      .slice(0, 3)
-      .map((i: any) => typeof i === 'string' ? i : i.name_en)
-      .join(', ');
-    
-    enhancedDesc = cookingMethod 
-      ? `A traditional ${cookingMethod} dish featuring ${mainIngredients}.` 
-      : `Savory dish prepared with ${mainIngredients}.`;
-  }
+  const handleDishClick = async (dish: any) => {
+    let enhancedDesc = dish.description || "";
+    if (enhancedDesc.length < 10 && dish.ingredients) {
+      const method = dish.cooking_method || ""; 
+      const ingredients = dish.ingredients.slice(0, 3).map((i: any) => typeof i === 'string' ? i : i.name_en).join(', ');
+      enhancedDesc = method ? `Traditional ${method} dish with ${ingredients}.` : `Savory dish prepared with ${ingredients}.`;
+    }
+    const currentDish = { ...dish, description: enhancedDesc };
+    setSelectedDish(currentDish);
 
-  // 将增强后的描述存入 dish 对象展示
-  const currentDish = { ...dish, description: enhancedDesc };
-  setSelectedDish(currentDish);
+    if (!dish.isFullyAnalyzed) {
+      setLoadingDetail(true);
+      try {
+        const full = await getDishDeepDetail(dish.name_cn, dish.name_en);
+        if (full) {
+          const updated = { ...currentDish, ...full, isFullyAnalyzed: true, description: full.description || enhancedDesc };
+          setSelectedDish(prev => (prev?.id === dish.id ? updated : prev));
+          setDishes(prev => prev.map(d => d.id === dish.id ? updated : d));
+        }
+      } catch (e) { console.error(e); } finally { setLoadingDetail(false); }
+    }
+  };
 
-  if (!dish.isFullyAnalyzed) {
-    setLoadingDetail(true);
-    try {
-      const fullDetails = await getDishDeepDetail(dish.name_cn, dish.name_en);
-      if (fullDetails) {
-        // 如果深度解析返回了更棒的描述，则使用深度解析的
-        const updatedDish = { 
-          ...currentDish, 
-          ...fullDetails, 
-          isFullyAnalyzed: true,
-          // 深度解析时再次执行合成逻辑（防止返回内容仍为空）
-          description: fullDetails.description || enhancedDesc 
-        };
-        setSelectedDish(prev => (prev?.id === dish.id ? updatedDish : prev));
-        setDishes(prev => prev.map(d => d.id === dish.id ? updatedDish : d));
-      }
-    } catch (e) { console.error(e); } finally { setLoadingDetail(false); }
-  }
-};
+  const onPurchase = (plan: any) => {
+    setUsage(prev => {
+      const updated = { ...prev };
+      if (plan.id === 'starter') updated.paidCredits += 60;
+      else if (plan.id === 'traveler') updated.passExpiryDate = new Date(Date.now() + 7 * 86400000).toISOString();
+      else if (plan.id === 'foodie') updated.passExpiryDate = new Date(Date.now() + 30 * 86400000).toISOString();
+      return updated;
+    });
+    setShowPricing(false);
+  };
 
   return (
     <div className="min-h-screen pb-0 overflow-x-hidden bg-[#fafafa] font-sans">
@@ -260,37 +203,16 @@ const handleDishClick = async (dish: any) => {
         </header>
 
         <main className="mb-20">
+          <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
+
           {status === AppStatus.IDLE && (
-            <>
-              <div className="max-w-xl mx-auto mb-10">
-                <button onClick={handleDailyShare} className="w-full bg-emerald-50/50 border border-emerald-100 p-6 rounded-[2.5rem] flex items-center justify-between group hover:bg-emerald-50 transition-all">
-                  <div className="flex items-center gap-4 text-left">
-                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-2xl shadow-sm">🎁</div>
-                    <div>
-                      <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest">Share Bonus</p>
-                      <p className="text-sm font-bold text-slate-900">+5 Free Credits Daily</p>
-                    </div>
-                  </div>
-                  <span className="bg-emerald-600 text-white px-4 py-2 rounded-full text-[9px] font-bold">SHARE</span>
-                </button>
-              </div>
-
-              <div className="flex justify-center mb-8">
-                <div className="bg-slate-100/50 p-1.5 rounded-2xl flex gap-1 border border-slate-200/50">
-                  <button onClick={() => handleModeChange(RecognitionMode.MENU)} className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === RecognitionMode.MENU ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-400'}`}>Menu</button>
-                  <button onClick={() => handleModeChange(RecognitionMode.STREET)} className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === RecognitionMode.STREET ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-400'}`}>Street</button>
-                </div>
-              </div>
-
-              <div className="bg-white border border-slate-100 p-12 md:p-20 text-center flex flex-col items-center shadow-xl mb-10 rounded-[3.5rem]">
-                <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
-                <button onClick={triggerUpload} className={`w-24 h-24 rounded-[2rem] flex items-center justify-center mb-10 shadow-2xl transition-transform active:scale-95 ${mode === RecognitionMode.MENU ? 'bg-rose-600' : 'bg-slate-900'}`}>
-                  <CameraIcon className="w-12 h-12 text-white" />
-                </button>
-                <h2 className="text-3xl font-bold text-slate-900 mb-6">{mode === RecognitionMode.MENU ? "Scan a Menu" : "Identify Storefront"}</h2>
-                <button onClick={triggerUpload} className="w-full max-w-xs bg-slate-900 text-white font-bold py-5 rounded-full shadow-xl hover:bg-slate-800 transition-colors">START SCAN</button>
-              </div>
-            </>
+            <HomeIdleView 
+              mode={mode} 
+              onModeChange={handleModeChange} 
+              onUpload={triggerUpload} 
+              onShare={handleDailyShare}
+              onDishClick={handleDishClick}
+            />
           )}
 
           {status === AppStatus.LOADING && <LoadingScreen />}
@@ -306,6 +228,7 @@ const handleDishClick = async (dish: any) => {
 
           {status === AppStatus.SUCCESS && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              {/* Results Top Bar */}
               <div className="flex justify-between items-center bg-slate-900 p-6 rounded-[2rem] shadow-2xl sticky top-4 z-20 mx-2 border border-white/5">
                 <div className="flex items-center gap-4">
                   {previewUrl && <img src={previewUrl} className="w-12 h-12 object-cover rounded-xl ring-2 ring-white/10" alt="Preview" />}
@@ -320,12 +243,7 @@ const handleDishClick = async (dish: any) => {
               {mode === RecognitionMode.MENU ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-2">
                   {dishes.map((dish, index) => (
-                    /* 修复：移除多余的外层包裹 div 和边框，直接渲染 DishCard */
-                    <DishCard 
-                      key={dish.id || index} 
-                      dish={dish} 
-                      onClick={() => handleDishClick(dish)} 
-                    />
+                    <DishCard key={dish.id || index} dish={dish} onClick={() => handleDishClick(dish)} />
                   ))}
                 </div>
               ) : (storeResult && <StoreCard store={storeResult} onShowStaff={() => setShowStaffHelper(true)} />)}
@@ -351,6 +269,7 @@ const handleDishClick = async (dish: any) => {
         onTos={() => setLegalView('tos')} 
       />
 
+      {/* Modals */}
       {showPricing && (
         <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md overflow-y-auto p-4 flex items-center justify-center">
           <div className="bg-[#fcfbf9] w-full max-w-4xl rounded-[3rem] relative p-8 shadow-2xl overflow-hidden">
