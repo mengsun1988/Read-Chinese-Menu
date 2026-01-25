@@ -17,6 +17,7 @@ import { StoreCard } from './components/StoreCard';
 import { StaffHelperModal } from './components/StaffHelperModal';
 import { Footer } from './components/Footer';
 import { LegalModal } from './components/LegalModals';
+import { SurvivalCardView } from './components/SurvivalCardView'; // 新增导入
 
 // 逻辑与视图
 import { useUserUsage } from './hooks/useUserUsage';
@@ -34,6 +35,7 @@ const App: React.FC = () => {
 
   const [showPricing, setShowPricing] = useState(false);
   const [showStaffHelper, setShowStaffHelper] = useState(false);
+  const [showSurvival, setShowSurvival] = useState(false); // 新增：求生卡显示状态
   const [legalView, setLegalView] = useState<'privacy' | 'tos' | null>(null);
   const [selectedDish, setSelectedDish] = useState<any | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
@@ -76,35 +78,21 @@ const App: React.FC = () => {
     });
   };
 
-  // 强化版店铺数据处理逻辑
   const processStoreData = (raw: any): StoreResult | null => {
     if (!raw || typeof raw !== 'object') return null;
-    
     const data = Array.isArray(raw) ? raw[0] : raw;
     const name_cn = data.name_cn || data.name || data.store_name || "";
-    
     if (!name_cn && !data.description) return null;
-
     const name_en = data.name_en || data.pinyin || "Local Business";
     let cuisine = data.cuisine || data.cuisine_type || "Storefront";
     let finalDesc = data.description || "";
-
-    const lowerName = name_cn.toLowerCase();
-    // 针对“老娘舅”或类似中式快餐的补全
-    if (lowerName.includes('老娘舅') || lowerName.includes('uncle')) {
-      cuisine = "Chinese Fast Casual";
-      if (finalDesc.length < 10) finalDesc = "A popular Chinese fast-food chain from the Yangtze Delta, famous for its high-quality rice sets and home-style side dishes.";
-    } else if (finalDesc.length < 5) {
-      finalDesc = `A local establishment identified as ${name_cn || 'this venue'}. It provides products or services to the local community.`;
-    }
-
     return {
       name: name_cn || "Local Shop",
       name_en: name_en,
-      description: finalDesc,
+      description: finalDesc || "Information provided by AI analysis.",
       cuisine: cuisine,
       rating: data.rating || 4.5,
-      address: data.address || "Main Street"
+      address: data.address || "Local Area"
     };
   };
 
@@ -119,7 +107,6 @@ const App: React.FC = () => {
 
     try {
       const base64 = await getCompressedBase64(file);
-      
       if (mode === RecognitionMode.MENU) {
         const result = await processMenuImage(base64);
         const list = Array.isArray(result) ? result : (result.dishes || []);
@@ -128,24 +115,17 @@ const App: React.FC = () => {
           setDishes(list);
           setStatus(AppStatus.SUCCESS);
         } else {
-          throw new Error("No dishes detected. Please try a clearer, top-down photo of the menu.");
+          throw new Error("No dishes detected. Please try a clearer photo.");
         }
       } else {
         const rawResult = await processStorefrontImage(base64);
-        console.log("Raw Storefront Response:", rawResult);
-
-        // 防崩溃检查：如果 rawResult 是字符串（通常是 Cloudflare 524 错误页）
-        if (typeof rawResult === 'string') {
-          throw new Error("The service timed out (524). This happens when the AI takes too long to respond. Please try again.");
-        }
-
         const formattedStore = processStoreData(rawResult);
         if (formattedStore) {
           setDishes([]);
           setStoreResult(formattedStore);
           setStatus(AppStatus.SUCCESS);
         } else {
-          throw new Error("Could not parse storefront details. Please ensure the sign is visible.");
+          throw new Error("Could not parse storefront details.");
         }
       }
 
@@ -157,7 +137,6 @@ const App: React.FC = () => {
         }));
       }
     } catch (err: any) {
-      console.error("Analysis Error:", err);
       setError(err.message || "An unexpected error occurred.");
       setStatus(AppStatus.ERROR);
     }
@@ -214,7 +193,14 @@ const App: React.FC = () => {
           <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
 
           {status === AppStatus.IDLE && (
-            <HomeIdleView mode={mode} onModeChange={handleModeChange} onUpload={triggerUpload} onShare={handleDailyShare} onDishClick={handleDishClick} />
+            <HomeIdleView 
+              mode={mode} 
+              onModeChange={handleModeChange} 
+              onUpload={triggerUpload} 
+              onShare={handleDailyShare} 
+              onDishClick={handleDishClick}
+              onOpenSurvivalCards={() => setShowSurvival(true)} // 连接求生卡入口
+            />
           )}
 
           {status === AppStatus.LOADING && <LoadingScreen />}
@@ -258,6 +244,11 @@ const App: React.FC = () => {
       </div>
 
       <Footer onMenuScan={() => handleModeChange(RecognitionMode.MENU)} onStreetScan={() => handleModeChange(RecognitionMode.STREET)} onPricing={() => setShowPricing(true)} onPrivacy={() => setLegalView('privacy')} onTos={() => setLegalView('tos')} />
+
+      {/* --- 全局模态框层 --- */}
+
+      {/* 求生卡视图 - 独立层级 */}
+      <SurvivalCardView isOpen={showSurvival} onClose={() => setShowSurvival(false)} />
 
       {showPricing && (
         <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md overflow-y-auto p-4 flex items-center justify-center">
