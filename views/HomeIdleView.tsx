@@ -1,11 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { RecognitionMode, UserUsage } from '../types';
-import { CameraIcon, MessageSquareIcon, WarningIcon, MapIcon } from '../components/Icons';
+import { CameraIcon, MessageSquareIcon, WarningIcon } from '../components/Icons';
 import { WordCloudMarquee } from '../components/WordCloudMarquee';
 import { PricingModule } from '../components/PricingModule';
 import { AboutUs } from '../components/AboutUs';
 import { Reviews } from '../components/Reviews';
 import { SupportSection } from '../components/SupportSection';
+
+// 补齐缺失的 MapIcon 定义，确保 build 成功
+const MapIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+    <line x1="8" y1="2" x2="8" y2="18"></line>
+    <line x1="16" y1="6" x2="16" y2="22"></line>
+  </svg>
+);
 
 interface Props {
   mode: RecognitionMode;
@@ -88,7 +97,7 @@ export const HomeIdleView: React.FC<Props> = ({
         <div className="mb-6">
           <button 
             onClick={onHandleDailyShare} 
-            className="w-full bg-emerald-50/40 border border-emerald-100 p-4 rounded-[2rem] flex items-center justify-between group hover:bg-emerald-50 transition-all active:scale-95"
+            className="w-full bg-emerald-50/40 border border-emerald-100 p-4 rounded-[2rem] flex items-center justify-between group hover:bg-emerald-50 transition-all active:scale-95 shadow-sm"
           >
             <div className="flex items-center gap-4 text-left">
               <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-xl shadow-sm group-hover:rotate-12 transition-transform">🎁</div>
@@ -159,7 +168,7 @@ export const HomeIdleView: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* 6. Survival Cards (Moved here, enhanced size) */}
+        {/* 6. Survival Cards */}
         <button 
           onClick={onOpenSurvival}
           className="group relative w-full bg-white border border-slate-100 p-6 rounded-[2.5rem] flex items-center gap-5 shadow-sm active:scale-[0.98] transition-all hover:border-rose-200 mb-10"
@@ -183,7 +192,7 @@ export const HomeIdleView: React.FC<Props> = ({
         <WordCloudMarquee onShowDetail={onShowDishDetail} />
       </div>
 
-      {/* 8. Footer Sections (Compressed spacing) */}
+      {/* 8. Footer Sections */}
       <div className="space-y-20 pb-20">
         <section id="pricing">
           <PricingModule onPurchase={onPurchase} />
