@@ -24,21 +24,14 @@ export const DishCard: React.FC<{ dish: any; onClick: () => void }> = ({ dish, o
   const price = dish.price || "";
   const spiciness = Number(dish.spiciness_level || dish.spiciness || 0);
   
-  // 核心修复：更智能的食材解析逻辑
   const getIngredientDisplay = (ing: any) => {
     if (!ing) return null;
-    
-    // 如果是对象结构 {"name_cn": "...", "name_en": "..."}
     if (typeof ing === 'object' && (ing.name_en || ing.name_cn)) {
-      // 优先显示英文，如果英文缺失则显示中文
       return ing.name_en || ing.name_cn;
     }
-    
-    // 如果直接是字符串
     if (typeof ing === 'string') {
       return ing;
     }
-    
     return null;
   };
 
@@ -66,18 +59,22 @@ export const DishCard: React.FC<{ dish: any; onClick: () => void }> = ({ dish, o
 
       <div className="p-5 md:p-7 flex flex-col justify-between h-full w-full">
         <div>
+          {/* 英文名称在上：红色、大字体、与价格同行 */}
           <div className="flex justify-between items-start gap-3 mb-1">
-            <h3 className="text-xl md:text-2xl font-black text-slate-900 leading-tight group-hover:text-rose-600 transition-colors">
-              {nameCN}
-            </h3>
+            <h4 className="text-lg font-black text-rose-600 tracking-tight leading-tight uppercase italic flex-1">
+              {nameEN}
+            </h4>
             {price && (
-              <span className="bg-rose-50 text-rose-600 font-black px-2 py-0.5 rounded-lg text-[10px] whitespace-nowrap border border-rose-100/50">
+              <span className="bg-rose-50 text-rose-600 font-black px-2 py-0.5 rounded-lg text-[10px] whitespace-nowrap border border-rose-100/50 mt-1">
                 {price}
               </span>
             )}
           </div>
           
-          <h4 className="text-sm font-bold text-slate-400 mb-4 tracking-tight leading-tight uppercase italic">{nameEN}</h4>
+          {/* 中文名称在下：灰色、小字体 */}
+          <h3 className="text-sm font-bold text-slate-500 mb-4 tracking-tight leading-tight">
+            {nameCN}
+          </h3>
           
           <div className="min-h-[32px] mb-4">
             {isAnalyzing ? (

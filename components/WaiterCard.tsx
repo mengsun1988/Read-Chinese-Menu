@@ -39,7 +39,6 @@ export const WaiterCard: React.FC<WaiterCardProps> = ({ type, content_en, conten
         { en: "Non-spicy / Mild?", cn: "可以做不辣或微辣吗？" }
       ];
 
-  // 使用 createPortal 将组件挂载到 document.body
   return createPortal(
     <div 
       className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md transition-opacity animate-in fade-in duration-200" 
@@ -52,34 +51,35 @@ export const WaiterCard: React.FC<WaiterCardProps> = ({ type, content_en, conten
         {/* Header: 红色警示色调 */}
         <div className="bg-red-600 px-6 py-4 text-center text-white relative">
           <p className="text-[9px] font-black uppercase tracking-[0.2em] opacity-80 mb-0.5">Communication</p>
-          <h3 className="text-lg font-black tracking-tight">Show to Waiter</h3>
+          <h3 className="text-lg font-black tracking-tight uppercase">Show to Waiter</h3>
           <button 
             onClick={onClose} 
             className="absolute top-3 right-4 text-white/60 hover:text-white p-2 active:scale-75 transition-all"
           >
-            <span className="text-xl">✕</span>
+            <span className="text-xl font-light">✕</span>
           </button>
         </div>
 
         {/* 内容区 */}
         <div className="p-5 space-y-4">
           {options.map((opt, i) => (
-            <div key={i} className="bg-red-600 rounded-[1.8rem] p-4 text-white shadow-lg active:bg-red-700 transition-colors">
+            <div key={i} className="bg-red-600 rounded-[2rem] p-5 text-white shadow-lg active:bg-red-700 transition-colors border border-white/10">
               <div className="flex flex-col">
-                {/* 英文提示 */}
+                {/* 英文提示：放大且置顶 */}
                 <div className="flex items-start justify-between mb-3 border-b border-white/20 pb-2">
-                   <p className="text-[10px] font-black text-white/70 leading-tight uppercase tracking-wide flex-1 pr-2">
-                     {opt.en}
-                   </p>
-                   <button 
+                  <p className="text-base font-black text-white leading-tight uppercase tracking-tight flex-1 pr-3">
+                    {opt.en}
+                  </p>
+                  <button 
                     onClick={() => speak(opt.cn)}
-                    className="w-9 h-9 bg-white text-red-600 rounded-full flex items-center justify-center shadow-xl active:scale-90 transition-transform flex-shrink-0"
+                    className="w-11 h-11 bg-white text-red-600 rounded-full flex items-center justify-center shadow-xl active:scale-90 transition-transform flex-shrink-0"
                   >
-                    <span className="text-base">🔊</span>
+                    <span className="text-xl">🔊</span>
                   </button>
                 </div>
-                {/* 中文核心内容 */}
-                <p className="text-[1.35rem] font-black leading-snug tracking-tight py-0.5">
+                
+                {/* 中文核心内容：保持醒目大尺寸供服务员阅读 */}
+                <p className="text-[1.35rem] font-black leading-snug tracking-tight py-1">
                   {opt.cn}
                 </p>
               </div>
@@ -116,7 +116,7 @@ export const WaiterCard: React.FC<WaiterCardProps> = ({ type, content_en, conten
         {/* 底部脚注 */}
         <div className="py-3 bg-slate-50 text-center border-t border-slate-100">
           <p className="text-[9px] font-black text-slate-300 tracking-[0.2em] uppercase">
-            Instant Translation Support
+            Communication Tool for Travelers
           </p>
         </div>
       </div>

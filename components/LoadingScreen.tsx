@@ -17,7 +17,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
   // 1. 感性文案：负责提供“情绪价值”
   const messages = mode === 'menu' 
     ? [
-        "Sharpening chopsticks... 🥢",
+        "Preparing chopsticks... 🥢",
         "Consulting the culinary database... 📚",
         "Decoding Grandma's secret recipe... 👵",
         "Identifying spicy levels & allergens... 🔥",

@@ -53,6 +53,17 @@ export const HomeIdleView: React.FC<Props> = ({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // 核心逻辑：点数为0时跳转到付费模块
+  const handleCreditClick = (e: React.MouseEvent) => {
+    if (totalCredits <= 0 && !isUnlimited) {
+      e.stopPropagation(); // 阻止触发 modeChange
+      const pricingEl = document.getElementById('pricing');
+      if (pricingEl) {
+        pricingEl.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  };
+
   const getRemainingDays = () => {
     if (!usage.passExpiryDate) return 0;
     const diff = new Date(usage.passExpiryDate).getTime() - Date.now();
@@ -110,31 +121,43 @@ export const HomeIdleView: React.FC<Props> = ({
           </button>
         </div>
 
-        {/* 4. Switcher */}
+        {/* 4. Switcher - 修复同高问题 */}
         <div className="flex flex-col gap-6 mb-6">
           <div className="flex justify-center">
             <div className="bg-slate-100/50 p-1.5 rounded-2xl flex gap-1 border border-slate-200/50 w-full relative">
               <button 
                 onClick={() => onModeChange(RecognitionMode.MENU)} 
-                className={`relative flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === RecognitionMode.MENU ? 'bg-white text-rose-600 shadow-sm border border-slate-100' : 'text-slate-400'}`}
+                className={`relative flex-1 h-[46px] flex items-center justify-center rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === RecognitionMode.MENU ? 'bg-white text-rose-600 shadow-sm border border-slate-100' : 'text-slate-400'}`}
               >
                 Order Food
-                <span className={`absolute -top-2 -right-1 bg-emerald-500 text-[8px] text-white px-2 py-0.5 rounded-md font-black shadow-sm border border-white transition-opacity whitespace-nowrap ${mode === RecognitionMode.MENU ? 'opacity-100' : 'opacity-50'}`}>
+                <span 
+                  onClick={handleCreditClick}
+                  className={`absolute -top-2 -right-1 px-2 py-0.5 rounded-md font-black shadow-sm border border-white transition-all whitespace-nowrap text-[8px] h-[18px] flex items-center ${
+                    isUnlimited 
+                      ? 'bg-emerald-500 text-white' 
+                      : totalCredits > 0 
+                        ? 'bg-emerald-500 text-white' 
+                        : 'bg-rose-600 text-white animate-bounce cursor-pointer'
+                  } ${mode === RecognitionMode.MENU ? 'opacity-100' : 'opacity-50'}`}
+                >
                   {isUnlimited ? '∞' : totalCredits} CREDITS LEFT
                 </span>
               </button>
+              
               <button 
                 onClick={() => onModeChange(RecognitionMode.STREET)} 
-                className={`relative flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === RecognitionMode.STREET ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-400'}`}
+                className={`relative flex-1 h-[46px] flex items-center justify-center rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === RecognitionMode.STREET ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-400'}`}
               >
                 Explore Streets
-                <span className="absolute -top-2 -right-1 bg-amber-400 text-[8px] text-slate-900 px-2 py-0.5 rounded-md font-black shadow-sm border border-white whitespace-nowrap">FREE</span>
+                <span className="absolute -top-2 -right-1 bg-amber-400 text-[8px] text-slate-900 px-2 py-0.5 rounded-md font-black shadow-sm border border-white whitespace-nowrap h-[18px] flex items-center">
+                  FREE
+                </span>
               </button>
             </div>
           </div>
         </div>
 
-        {/* 5. Camera Button Section - Added id for footer navigation */}
+        {/* 5. Camera Button Section */}
         <div id="camera-section" className="bg-white border border-slate-100 p-10 md:p-12 text-center flex flex-col items-center shadow-xl mb-6 rounded-[3rem] relative overflow-hidden group">
           <div className={`absolute -top-24 -right-24 w-48 h-48 blur-3xl opacity-10 rounded-full transition-colors ${mode === RecognitionMode.MENU ? 'bg-rose-500' : 'bg-slate-900'}`} />
           
@@ -168,7 +191,7 @@ export const HomeIdleView: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* 6. Survival Cards (Height Increased by 30%, Text/Icon Enlarged) */}
+        {/* 6. Survival Cards */}
         <button 
           onClick={onOpenSurvival}
           className="group relative w-full bg-white border border-slate-100 p-8 rounded-[3rem] flex items-center gap-6 shadow-sm active:scale-[0.98] transition-all hover:border-rose-200 mb-10"
@@ -187,7 +210,7 @@ export const HomeIdleView: React.FC<Props> = ({
         </button>
       </main>
 
-      {/* 7. 核心词云 (过渡带) */}
+      {/* 7. WordCloud Section */}
       <div className="py-12 border-t border-slate-50">
         <WordCloudMarquee onShowDetail={onShowDishDetail} />
       </div>
@@ -201,7 +224,7 @@ export const HomeIdleView: React.FC<Props> = ({
         <AboutUs />
         <Reviews />
         
-        <div className="px-4">
+        <div id="support" className="px-4">
            <SupportSection onPurchase={onPurchase} />
         </div>
 
