@@ -52,6 +52,14 @@ const App: React.FC = () => {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  // 处理 Footer 导航跳转逻辑
+  const scrollToCamera = () => {
+    const element = document.getElementById('camera-section');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
   const getCompressedBase64 = (file: File): Promise<string> => {
     return new Promise((resolve) => {
       const reader = new FileReader();
@@ -164,7 +172,6 @@ const App: React.FC = () => {
     <div className="min-h-screen pb-0 overflow-x-hidden bg-[#fafafa] font-sans">
       <A2HSManager />
       
-      {/* 这里的 max-w-5xl 移除了内部不必要的 py-12，让 HomeIdleView 自行管理间距 */}
       <div className="max-w-5xl mx-auto px-6 relative">
         <main>
           <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
@@ -225,8 +232,15 @@ const App: React.FC = () => {
       </div>
 
       <Footer 
-        onMenuScan={() => handleModeChange(RecognitionMode.MENU)} 
-        onStreetScan={() => handleModeChange(RecognitionMode.STREET)} 
+        onMenuScan={() => {
+          handleModeChange(RecognitionMode.MENU);
+          setTimeout(scrollToCamera, 100);
+        }} 
+        onStreetScan={() => {
+          handleModeChange(RecognitionMode.STREET);
+          setTimeout(scrollToCamera, 100);
+        }} 
+        onSurvivalOpen={() => setShowSurvival(true)}
         onPricing={() => setShowPricing(true)} 
         onPrivacy={() => setLegalView('privacy')} 
         onTos={() => setLegalView('tos')} 

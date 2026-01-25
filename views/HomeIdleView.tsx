@@ -134,8 +134,8 @@ export const HomeIdleView: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* 5. Camera Button Section */}
-        <div className="bg-white border border-slate-100 p-10 md:p-12 text-center flex flex-col items-center shadow-xl mb-6 rounded-[3rem] relative overflow-hidden group">
+        {/* 5. Camera Button Section - Added id for footer navigation */}
+        <div id="camera-section" className="bg-white border border-slate-100 p-10 md:p-12 text-center flex flex-col items-center shadow-xl mb-6 rounded-[3rem] relative overflow-hidden group">
           <div className={`absolute -top-24 -right-24 w-48 h-48 blur-3xl opacity-10 rounded-full transition-colors ${mode === RecognitionMode.MENU ? 'bg-rose-500' : 'bg-slate-900'}`} />
           
           <div className="relative mb-6">

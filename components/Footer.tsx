@@ -1,8 +1,9 @@
 import React from 'react';
 
 interface FooterProps {
-  onMenuScan: () => void;
-  onStreetScan: () => void;
+  onMenuScan: () => void; // 滚动并定位到 Scan 卡片
+  onStreetScan: () => void; // 切换模式并定位到 Scan 卡片
+  onSurvivalOpen: () => void; // 打开生存卡片弹窗
   onPricing: () => void;
   onPrivacy: () => void;
   onTos: () => void;
@@ -11,6 +12,7 @@ interface FooterProps {
 export const Footer: React.FC<FooterProps> = ({ 
   onMenuScan, 
   onStreetScan, 
+  onSurvivalOpen,
   onPricing, 
   onPrivacy, 
   onTos 
@@ -36,13 +38,37 @@ export const Footer: React.FC<FooterProps> = ({
             </div>
           </div>
 
-          {/* Tools Column */}
+          {/* Tools Column - Updated Links */}
           <div className="space-y-6">
             <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400">Core Tools</h4>
             <nav className="flex flex-col gap-3">
-              <button onClick={onMenuScan} className="text-left text-sm font-semibold text-slate-600 hover:text-rose-600 transition-colors">Menu Scanner</button>
-              <button onClick={onStreetScan} className="text-left text-sm font-semibold text-slate-600 hover:text-rose-600 transition-colors">Storefront Guide</button>
-              <button onClick={onPricing} className="text-left text-sm font-semibold text-slate-600 hover:text-rose-600 transition-colors">Premium Plans</button>
+              {/* 链接到 Menu 扫描卡片 */}
+              <button 
+                onClick={onMenuScan} 
+                className="text-left text-sm font-semibold text-slate-600 hover:text-rose-600 transition-colors"
+              >
+                Menu Scanner
+              </button>
+              {/* 链接到 Street 扫描模式 */}
+              <button 
+                onClick={onStreetScan} 
+                className="text-left text-sm font-semibold text-slate-600 hover:text-rose-600 transition-colors"
+              >
+                Storefront Explorer
+              </button>
+              {/* 链接到生存卡片 */}
+              <button 
+                onClick={onSurvivalOpen} 
+                className="text-left text-sm font-semibold text-slate-600 hover:text-rose-600 transition-colors"
+              >
+                Essential Phrases
+              </button>
+              <button 
+                onClick={onPricing} 
+                className="text-left text-sm font-semibold text-slate-600 hover:text-rose-600 transition-colors"
+              >
+                Premium Plans
+              </button>
             </nav>
           </div>
 
