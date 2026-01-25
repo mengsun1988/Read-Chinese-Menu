@@ -78,7 +78,7 @@ const App: React.FC = () => {
           }
           canvas.width = w; canvas.height = h;
           canvas.getContext('2d')?.drawImage(img, 0, 0, w, h);
-          resolve(canvas.toDataURL('image/jpeg', 0.7).split(',')[1]);
+          canvas.toDataURL('image/jpeg', 0.7).split(',')[1] && resolve(canvas.toDataURL('image/jpeg', 0.7).split(',')[1]);
         };
       };
     });
@@ -95,20 +95,22 @@ const App: React.FC = () => {
     setStatus(AppStatus.LOADING);
     setPreviewUrl(URL.createObjectURL(file));
     setError(null);
+    setDishes([]); // 清空之前的数据
 
     try {
       const base64 = await getCompressedBase64(file);
       
       if (mode === RecognitionMode.MENU) {
-        // 执行极速扫描
+        // 执行扫描：Worker 内部现在已配置强制提取所有可见菜品
         const list = await processMenuImage(base64);
-        if (list && list.length > 0) {
+        
+        // 关键修复：只有当识别出的数组有内容，且整个异步请求返回后才切换 SUCCESS
+        if (list && Array.isArray(list) && list.length > 0) {
           setDishes(list);
           setStoreResult(null);
-          // 关键：识别到列表立刻视为 SUCCESS，结束全局红色加载动画
           setStatus(AppStatus.SUCCESS);
         } else {
-          throw new Error("No dishes detected. Please try a clearer photo.");
+          throw new Error("No dishes detected. Please ensure the menu is clear and try again.");
         }
       } else {
         const rawResult = await processStorefrontImage(base64);
@@ -117,7 +119,7 @@ const App: React.FC = () => {
           setStoreResult(rawResult);
           setStatus(AppStatus.SUCCESS);
         } else {
-          throw new Error("Could not identification storefront.");
+          throw new Error("Could not identify the storefront. Try a different angle.");
         }
       }
 
@@ -139,19 +141,17 @@ const App: React.FC = () => {
    * 第二步：点击菜品，异步获取深度详情（辣度、过敏原、详细描述）
    */
   const handleDishClick = async (dish: any) => {
-    // 先打开 Modal 显示基础信息
     setSelectedDish(dish);
     
-    // 如果还没深度分析过，则在 Modal 内部触发二次请求
     if (!dish.isFullyAnalyzed) {
       setLoadingDetail(true);
       try {
+        // 这里的 getDishDeepDetail 也会通过 Worker 调用 qwen3-vl-plus 
+        // 并且会触法你要求的“红油=辣”的逻辑
         const deepInfo = await getDishDeepDetail(dish.name_cn, dish.name_en);
         if (deepInfo) {
           const updatedDish = { ...dish, ...deepInfo, isFullyAnalyzed: true };
-          // 更新 Modal 视图
           setSelectedDish(updatedDish);
-          // 同步更新背景列表中的数据，防止重复请求
           setDishes(prev => prev.map(d => d.id === dish.id ? updatedDish : d));
         }
       } catch (e) {
@@ -212,13 +212,12 @@ const App: React.FC = () => {
 
           {status === AppStatus.SUCCESS && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 mt-10 pb-32">
-              {/* 结果页顶栏 */}
               <div className="flex justify-between items-center bg-slate-900 p-6 rounded-[2rem] shadow-2xl sticky top-4 z-[110] mx-2 border border-white/5">
                 <div className="flex items-center gap-4">
                   {previewUrl && <img src={previewUrl} className="w-12 h-12 object-cover rounded-xl ring-2 ring-white/10" alt="Preview" />}
                   <div className="text-left">
                     <h3 className="font-bold text-white tracking-tight text-sm">
-                      {mode === RecognitionMode.MENU ? "Menu Items" : "Shop Identification"}
+                      {mode === RecognitionMode.MENU ? `Identified ${dishes.length} Items` : "Shop Identification"}
                     </h3>
                     <p className="text-[9px] font-bold text-rose-400 uppercase tracking-widest">
                       Bon Appétit!

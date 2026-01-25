@@ -65,7 +65,7 @@ export async function getDishDeepDetail(name_cn: string, name_en: string): Promi
       ingredients: Array.isArray(result.ingredients) ? result.ingredients : [],
       allergens: Array.isArray(result.allergens) ? result.allergens : [],
       // 包含辣度和过敏原等深度信息
-      spiciness: result.spiciness || "Not Spicy", 
+      spiciness: result.spiciness_level || result.spiciness || 0, 
       health_note: result.health_note || "",
       description: result.description || "",
       isFullyAnalyzed: true
@@ -77,7 +77,7 @@ export async function getDishDeepDetail(name_cn: string, name_en: string): Promi
 }
 
 /**
- * 处理菜单图片 (第一步：极速识别列表)
+ * 处理菜单图片 (第一步：识别所有可见菜品列表)
  */
 export async function processMenuImage(base64Image: string): Promise<any[]> {
   const cleanedBase64 = cleanBase64(base64Image);
@@ -91,7 +91,8 @@ export async function processMenuImage(base64Image: string): Promise<any[]> {
         image: cleanedBase64, 
         type: "menu",
         userId: userId,
-        mode: "fast_scan" // 告知后端只需返回名称、拼音、基础食材和价格
+        // 修改点：改为 standard 模式，确保 qwen3-vl-plus 扫描整个图片而不是快速截断
+        mode: "standard" 
       }),
     });
 
@@ -105,13 +106,19 @@ export async function processMenuImage(base64Image: string): Promise<any[]> {
     const result = await response.json();
     let rawArray: any[] = [];
 
+    // 兼容多种返回格式：数组、带 dishes 键的对象、或者单道菜的对象
     if (Array.isArray(result)) {
       rawArray = result;
     } else if (result.dishes && Array.isArray(result.dishes)) {
       rawArray = result.dishes;
+    } else if (result.name_cn || result.name_en) {
+      // 如果后端只返回了单道菜的对象，将其包装进数组
+      rawArray = [result];
     }
 
-    if (!Array.isArray(rawArray)) return [];
+    if (!Array.isArray(rawArray) || rawArray.length === 0) {
+      throw new Error("No dishes could be identified. Try a clearer photo.");
+    }
 
     return rawArray.map((item: any, index: number) => ({
       id: item.id || `dish-${Date.now()}-${index}`,
@@ -119,11 +126,12 @@ export async function processMenuImage(base64Image: string): Promise<any[]> {
       name_en: item.name_en || item.english_name || "Scanning...",
       pinyin: item.pinyin || "",
       price: item.price || "",
-      // 第一步只返回最核心食材，更深入的分析留给第二步
-      ingredients: Array.isArray(item.core_ingredients) ? item.core_ingredients : (item.ingredients || []),
+      // 确保食材结构兼容
+      ingredients: Array.isArray(item.ingredients) ? item.ingredients : (item.core_ingredients || []),
       description: item.description || "",
-      isFullyAnalyzed: false, // 标记为未完成深度分析
-      allergens: [] // 初始为空
+      isFullyAnalyzed: item.isFullyAnalyzed || false, 
+      spiciness_level: item.spiciness_level || 0,
+      allergens: item.allergens || []
     }));
   } catch (err: any) {
     console.error("Menu Image Error:", err);

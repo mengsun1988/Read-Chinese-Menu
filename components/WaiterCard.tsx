@@ -1,4 +1,5 @@
 import React, { useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 
 interface WaiterCardProps {
   type: 'ingredient' | 'spiciness';
@@ -31,16 +32,17 @@ export const WaiterCard: React.FC<WaiterCardProps> = ({ type, content_en, conten
   const options = type === 'ingredient' 
     ? [
         { en: `Contain ${content_en}?`, cn: `请问有${content_cn}吗？` },
-        { en: `No ${content_en}, allergic.`, cn: `不要放${content_cn}，过敏。` }
+        { en: `No ${content_en}, please.`, cn: `不要放${content_cn}，谢谢。` }
       ]
     : [
         { en: "Is it spicy?", cn: "请问这个菜辣吗？" },
         { en: "Non-spicy / Mild?", cn: "可以做不辣或微辣吗？" }
       ];
 
-  return (
+  // 使用 createPortal 将组件挂载到 document.body
+  return createPortal(
     <div 
-      className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md transition-opacity" 
+      className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md transition-opacity animate-in fade-in duration-200" 
       onClick={onClose}
     >
       <div 
@@ -64,7 +66,7 @@ export const WaiterCard: React.FC<WaiterCardProps> = ({ type, content_en, conten
           {options.map((opt, i) => (
             <div key={i} className="bg-red-600 rounded-[1.8rem] p-4 text-white shadow-lg active:bg-red-700 transition-colors">
               <div className="flex flex-col">
-                {/* 英文提示：置顶且缩小，不与中文重叠 */}
+                {/* 英文提示 */}
                 <div className="flex items-start justify-between mb-3 border-b border-white/20 pb-2">
                    <p className="text-[10px] font-black text-white/70 leading-tight uppercase tracking-wide flex-1 pr-2">
                      {opt.en}
@@ -76,7 +78,7 @@ export const WaiterCard: React.FC<WaiterCardProps> = ({ type, content_en, conten
                     <span className="text-base">🔊</span>
                   </button>
                 </div>
-                {/* 中文核心内容：保持醒目但修正行高 */}
+                {/* 中文核心内容 */}
                 <p className="text-[1.35rem] font-black leading-snug tracking-tight py-0.5">
                   {opt.cn}
                 </p>
@@ -118,6 +120,7 @@ export const WaiterCard: React.FC<WaiterCardProps> = ({ type, content_en, conten
           </p>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

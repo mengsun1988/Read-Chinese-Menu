@@ -14,10 +14,13 @@ interface DishDetailModalProps {
   isLoadingDetail?: boolean;
 }
 
+// 核心修复：完善辣度判断逻辑
 const getSpicyComparison = (level: number) => {
-  if (level <= 1) return { label: 'Mild', comparison: 'Jalapeño' };
-  if (level <= 3) return { label: 'Medium', comparison: 'Cayenne' };
-  return { label: 'Extra Spicy', comparison: 'Habanero' };
+  if (level <= 0) return { label: 'Not Spicy', comparison: 'None', color: 'text-slate-400' };
+  if (level <= 1) return { label: 'Mild', comparison: 'Poblano', color: 'text-yellow-400' };
+  if (level <= 2) return { label: 'Medium', comparison: 'Jalapeño', color: 'text-orange-400' };
+  if (level <= 3) return { label: 'Hot', comparison: 'Cayenne', color: 'text-rose-300' };
+  return { label: 'Extra Spicy', comparison: 'Habanero', color: 'text-red-400' };
 };
 
 export const DishDetailModal: React.FC<DishDetailModalProps> = ({ 
@@ -58,7 +61,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
         className="bg-[#fcfbf9] w-full max-w-lg rounded-t-[2.5rem] sm:rounded-[3rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-10 duration-300 max-h-[92vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header Section: 红色背景，精简高度 */}
+        {/* Header Section */}
         <div className="relative bg-red-600 pt-10 pb-12 px-8 text-white border-b-4 border-yellow-400 shrink-0">
           <button onClick={onClose} className="absolute top-5 right-5 w-10 h-10 flex items-center justify-center bg-black/10 text-white rounded-full hover:bg-black/20 active:scale-90 transition-all z-10">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -78,7 +81,6 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
             <p className="text-lg font-bold opacity-90 mt-1 line-clamp-1">{nameEN}</p>
           </div>
 
-          {/* 悬浮按钮组：更精致的视觉 */}
           <div className="absolute -bottom-6 left-8 right-8 flex justify-between items-center">
              {dish.price ? (
                <span className="bg-yellow-400 text-red-900 px-5 py-2 rounded-2xl font-black text-xl shadow-xl border-2 border-white">{dish.price}</span>
@@ -95,7 +97,6 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
         {/* Content Section */}
         <div className="p-8 pt-10 overflow-y-auto flex-1 space-y-8 text-slate-900 text-left custom-scrollbar">
           
-          {/* Animal Fat Alert (仅在识别到时显示) */}
           {!isLoadingDetail && dish.has_animal_fats && (
             <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex gap-3 animate-in zoom-in duration-300">
               <AnimalFatIcon className="w-5 h-5 text-red-600 shrink-0" />
@@ -150,16 +151,28 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <button 
               onClick={onSpicyClick} 
-              className={`p-6 rounded-[2rem] border-2 text-left transition-all active:scale-95 ${isLoadingDetail ? 'bg-slate-50 border-slate-100 opacity-60' : 'bg-red-600 border-red-700 shadow-lg shadow-red-50'}`}
+              className={`p-6 rounded-[2rem] border-2 text-left transition-all active:scale-95 ${
+                isLoadingDetail 
+                  ? 'bg-slate-50 border-slate-100 opacity-60' 
+                  : spicyLevel > 0 
+                    ? 'bg-red-600 border-red-700 shadow-lg shadow-red-50' 
+                    : 'bg-slate-100 border-slate-200 shadow-none'
+              }`}
             >
-              <h4 className={`text-[8px] font-black uppercase mb-3 tracking-widest ${isLoadingDetail ? 'text-slate-400' : 'text-white/70'}`}>Heat Level</h4>
+              <h4 className={`text-[8px] font-black uppercase mb-3 tracking-widest ${
+                isLoadingDetail ? 'text-slate-400' : spicyLevel > 0 ? 'text-white/70' : 'text-slate-400'
+              }`}>Heat Level</h4>
               <div className="flex items-center justify-between">
                 <div className="flex gap-0.5">
                   {[...Array(5)].map((_, i) => (
-                    <span key={i} className={`text-lg ${i < spicyLevel ? 'grayscale-0' : 'grayscale opacity-30'}`}>🌶️</span>
+                    <span key={i} className={`text-lg ${i < spicyLevel ? 'grayscale-0' : 'grayscale opacity-20'}`}>🌶️</span>
                   ))}
                 </div>
-                {!isLoadingDetail && <span className="text-[9px] font-black text-yellow-400 uppercase">{spicyInfo.label}</span>}
+                {!isLoadingDetail && (
+                  <span className={`text-[9px] font-black uppercase ${spicyInfo.color}`}>
+                    {spicyInfo.label}
+                  </span>
+                )}
               </div>
             </button>
 
@@ -179,7 +192,6 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
             </div>
           </div>
           
-          {/* Footer Button: 减小内边距 */}
           <button onClick={onClose} className="w-full bg-slate-900 text-white font-black py-5 rounded-[2rem] shadow-xl uppercase tracking-[0.2em] text-xs active:scale-[0.98] transition-all">
             Return to Menu
           </button>
