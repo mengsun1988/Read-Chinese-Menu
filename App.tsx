@@ -79,7 +79,6 @@ const App: React.FC = () => {
     if (!raw || typeof raw !== 'object') return null;
     const data = Array.isArray(raw) ? raw[0] : raw;
     const name_cn = data.name_cn || data.name || data.store_name || "";
-    if (!name_cn && !data.description) return null;
     return {
       name: name_cn || "Local Shop",
       name_en: data.name_en || data.pinyin || "Local Business",
@@ -164,19 +163,10 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen pb-0 overflow-x-hidden bg-[#fafafa] font-sans">
       <A2HSManager />
-
-      <div className="max-w-5xl mx-auto px-6">
-        {/* Credits Badge - 仅在非 IDLE 状态或需要时显示，IDLE 状态额度已集成在 HomeIdleView 内 */}
-        {status !== AppStatus.IDLE && (
-          <div className="fixed bottom-6 right-6 z-[60] flex items-center gap-2 bg-white/95 backdrop-blur-md px-4 py-3 rounded-2xl border border-slate-200 shadow-2xl transition-all animate-in fade-in zoom-in">
-            <div className={`w-2 h-2 rounded-full ${isUnlimited() ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></div>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-900">
-              {isUnlimited() ? `${getRemainingDays()}d Premium` : `Credits: ${totalCredits}`}
-            </span>
-          </div>
-        )}
-
-        <main className="py-12">
+      
+      {/* 这里的 max-w-5xl 移除了内部不必要的 py-12，让 HomeIdleView 自行管理间距 */}
+      <div className="max-w-5xl mx-auto px-6 relative">
+        <main>
           <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
 
           {status === AppStatus.IDLE && (
@@ -192,27 +182,27 @@ const App: React.FC = () => {
             />
           )}
 
-          {status === AppStatus.LOADING && <LoadingScreen />}
+          {status === AppStatus.LOADING && <div className="py-20"><LoadingScreen /></div>}
 
           {status === AppStatus.ERROR && (
-            <div className="bg-white border border-rose-100 rounded-[3rem] p-16 text-center space-y-6 shadow-sm mt-12">
+            <div className="bg-white border border-rose-100 rounded-[3rem] p-16 text-center space-y-6 shadow-sm mt-20">
               <div className="w-20 h-20 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto">
                 <WarningIcon className="w-10 h-10" />
               </div>
               <h2 className="text-3xl font-bold text-slate-900">Scan Failed</h2>
               <p className="text-slate-400 text-sm font-medium">{error}</p>
-              <button onClick={reset} className="bg-rose-600 text-white font-bold py-4 px-12 rounded-full shadow-lg active:scale-95 transition-transform">TRY AGAIN</button>
+              <button onClick={reset} className="bg-rose-600 text-white font-bold py-4 px-12 rounded-full shadow-lg active:scale-95 transition-transform uppercase tracking-widest text-xs">TRY AGAIN</button>
             </div>
           )}
 
           {status === AppStatus.SUCCESS && (
-            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 mt-4">
-              <div className="flex justify-between items-center bg-slate-900 p-6 rounded-[2rem] shadow-2xl sticky top-4 z-20 mx-2 border border-white/5">
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 mt-10 pb-32">
+              <div className="flex justify-between items-center bg-slate-900 p-6 rounded-[2rem] shadow-2xl sticky top-4 z-[110] mx-2 border border-white/5">
                 <div className="flex items-center gap-4">
                   {previewUrl && <img src={previewUrl} className="w-12 h-12 object-cover rounded-xl ring-2 ring-white/10" alt="Preview" />}
                   <div className="text-left">
-                    <h3 className="font-bold text-white tracking-tight">{mode === RecognitionMode.MENU ? "Results" : "Shop Details"}</h3>
-                    <p className="text-[10px] font-bold text-rose-400 uppercase tracking-widest">
+                    <h3 className="font-bold text-white tracking-tight text-sm">{mode === RecognitionMode.MENU ? "Results" : "Shop Details"}</h3>
+                    <p className="text-[9px] font-bold text-rose-400 uppercase tracking-widest">
                       {mode === RecognitionMode.MENU ? `${(dishes || []).length} Items Detected` : 'Match Found'}
                     </p>
                   </div>
@@ -242,18 +232,15 @@ const App: React.FC = () => {
         onTos={() => setLegalView('tos')} 
       />
 
-      {/* --- 全局模态框层 --- */}
       <SurvivalCardView isOpen={showSurvival} onClose={() => setShowSurvival(false)} />
-
       {showPricing && (
-        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md overflow-y-auto p-4 flex items-center justify-center">
-          <div className="bg-[#fcfbf9] w-full max-w-4xl rounded-[3rem] relative p-8 shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-md overflow-y-auto p-4 flex items-center justify-center">
+          <div className="bg-[#fcfbf9] w-full max-w-4xl rounded-[3rem] relative p-8 shadow-2xl">
             <button onClick={() => setShowPricing(false)} className="absolute top-8 right-8 p-2 text-slate-400 hover:text-slate-600 text-xl font-bold transition-colors">✕</button>
             <PricingModule onPurchase={onPurchase} />
           </div>
         </div>
       )}
-
       {selectedDish && (
         <DishDetailModal 
           dish={selectedDish} onClose={() => setSelectedDish(null)} isLoadingDetail={loadingDetail}
@@ -261,7 +248,6 @@ const App: React.FC = () => {
           onSpicyClick={() => setWaiterContext({ type: 'spiciness', content_en: 'Spiciness', content_cn: '辣度' })}
         />
       )}
-
       {waiterContext && <WaiterCard {...waiterContext} onClose={() => setWaiterContext(null)} />}
       {showStaffHelper && <StaffHelperModal onClose={() => setShowStaffHelper(false)} />}
       {legalView && <LegalModal type={legalView} onClose={() => setLegalView(null)} />}

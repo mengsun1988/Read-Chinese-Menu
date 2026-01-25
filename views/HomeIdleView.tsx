@@ -32,7 +32,6 @@ export const HomeIdleView: React.FC<Props> = ({
   const totalCredits = (usage.freeCredits || 0) + (usage.paidCredits || 0);
   const isUnlimited = usage.passExpiryDate ? new Date(usage.passExpiryDate).getTime() > Date.now() : false;
 
-  // 1. 顶部粘性 Header 滚动监听
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 150);
@@ -53,10 +52,10 @@ export const HomeIdleView: React.FC<Props> = ({
 
   return (
     <div className="animate-in fade-in duration-700">
-      {/* 1. 顶部粘性 Header (Sticky Bar) */}
+      {/* 1. Sticky Bar */}
       <div 
         onClick={scrollToTop}
-        className={`fixed top-0 left-0 right-0 z-[100] h-14 flex items-center justify-center transition-all duration-500 cursor-pointer ${
+        className={`fixed top-0 left-0 right-0 z-[150] h-14 flex items-center justify-center transition-all duration-500 cursor-pointer ${
           isScrolled 
             ? 'translate-y-0 opacity-100 bg-rose-600/90 backdrop-blur-md shadow-lg' 
             : '-translate-y-full opacity-0 bg-transparent'
@@ -65,8 +64,8 @@ export const HomeIdleView: React.FC<Props> = ({
         <span className="text-white font-black text-sm tracking-tighter">Read Chinese Menu</span>
       </div>
 
-      {/* 2. Header & 品牌 Slogan 升级 */}
-      <header className="mb-16 space-y-6 text-center pt-8">
+      {/* 2. Brand Header */}
+      <header className="mb-12 space-y-6 text-center pt-12">
         <div className="inline-flex items-center gap-2 px-3 py-1 bg-rose-50 border border-rose-100 rounded-full mb-4">
           <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse"></span>
           <span className="text-[9px] font-bold text-rose-600 uppercase tracking-widest">AI Vision v3.0</span>
@@ -78,7 +77,6 @@ export const HomeIdleView: React.FC<Props> = ({
           <p className="text-slate-400 font-bold text-[10px] md:text-xs tracking-[0.2em] max-w-xl mx-auto uppercase px-4">
             Identify dishes • Check ingredients • Communicate with staff
           </p>
-          {/* 新增轻量化信任标签 */}
           <p className="text-slate-300 font-bold text-[9px] tracking-[0.15em] uppercase flex items-center justify-center gap-2">
             No Ads <span>·</span> No Download <span>·</span> Built with Heart <span>·</span> Your China Travel Mate
           </p>
@@ -86,7 +84,7 @@ export const HomeIdleView: React.FC<Props> = ({
       </header>
 
       <main className="max-w-xl mx-auto px-2">
-        {/* 3. Share Bonus 模块 (文案优化) */}
+        {/* 3. Share Bonus */}
         <div className="mb-10">
           <button 
             onClick={onHandleDailyShare} 
@@ -103,7 +101,7 @@ export const HomeIdleView: React.FC<Props> = ({
           </button>
         </div>
 
-        {/* 4. Mode Switcher (带有 FREE 标签) */}
+        {/* 4. Switcher */}
         <div className="flex flex-col gap-4 mb-8">
           <div className="flex justify-center">
             <div className="bg-slate-100/50 p-1.5 rounded-2xl flex gap-1 border border-slate-200/50 w-full max-w-sm relative">
@@ -118,7 +116,6 @@ export const HomeIdleView: React.FC<Props> = ({
                 className={`relative flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === RecognitionMode.STREET ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-400'}`}
               >
                 Explore Streets
-                {/* FREE 标签 */}
                 <span className="absolute -top-2 -right-1 bg-amber-400 text-[8px] text-slate-900 px-1.5 py-0.5 rounded-md font-black shadow-sm border border-white">FREE</span>
               </button>
             </div>
@@ -132,7 +129,7 @@ export const HomeIdleView: React.FC<Props> = ({
                <MessageSquareIcon className="w-7 h-7 text-rose-600" />
             </div>
             <div className="text-left flex-1">
-               <h3 className="text-slate-900 text-base font-black tracking-tight">Survival Cards</h3>
+               <h3 className="text-slate-900 text-base font-black tracking-tight text-sm">Survival Cards</h3>
                <p className="text-slate-400 text-[11px] font-bold">Show phrases to staff for allergies & help</p>
             </div>
             <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-rose-600 group-hover:text-white transition-colors">
@@ -141,12 +138,11 @@ export const HomeIdleView: React.FC<Props> = ({
           </button>
         </div>
 
-        {/* 5. Main Scan Button (动效与气泡升级) */}
+        {/* 5. Camera Button Section */}
         <div className="bg-white border border-slate-100 p-12 md:p-16 text-center flex flex-col items-center shadow-xl mb-12 rounded-[3.5rem] relative overflow-hidden group">
           <div className={`absolute -top-24 -right-24 w-48 h-48 blur-3xl opacity-10 rounded-full transition-colors ${mode === RecognitionMode.MENU ? 'bg-rose-500' : 'bg-slate-900'}`} />
           
           <div className="relative mb-8">
-            {/* 提示气泡 */}
             <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[9px] font-black px-3 py-1.5 rounded-full whitespace-nowrap animate-bounce shadow-xl z-20">
               TAP TO SCAN
               <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45"></div>
@@ -182,13 +178,13 @@ export const HomeIdleView: React.FC<Props> = ({
         </div>
       </main>
 
-      {/* 6. 词云组件 (只保留这一个) */}
-      <div className="py-10">
+      {/* 6. 核心词云 (全站仅此一个) */}
+      <div className="py-20 border-t border-slate-50 mt-10">
         <WordCloudMarquee onShowDetail={onShowDishDetail} />
       </div>
 
-      {/* 7. 模块区 */}
-      <div className="space-y-32 mt-20 pb-32">
+      {/* 7. Footer Sections */}
+      <div className="space-y-32 pb-32">
         <section id="pricing">
           <PricingModule onPurchase={onPurchase} />
         </section>
@@ -204,7 +200,6 @@ export const HomeIdleView: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* 自定义动画样式 */}
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes pulse-slow {
           0%, 100% { transform: scale(1); }
