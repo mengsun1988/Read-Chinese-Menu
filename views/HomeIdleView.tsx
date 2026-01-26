@@ -1,19 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { RecognitionMode, UserUsage } from '../types';
-import { CameraIcon, MessageSquareIcon, WarningIcon } from '../components/Icons';
+import { CameraIcon, MessageSquareIcon, HeartIcon } from '../components/Icons';
 import { WordCloudMarquee } from '../components/WordCloudMarquee';
 import { PricingModule } from '../components/PricingModule';
 import { AboutUs } from '../components/AboutUs';
 import { Reviews } from '../components/Reviews';
 import { SupportSection } from '../components/SupportSection';
-
-const MapIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
-    <line x1="8" y1="2" x2="8" y2="18"></line>
-    <line x1="16" y1="6" x2="16" y2="22"></line>
-  </svg>
-);
 
 interface Props {
   mode: RecognitionMode;
@@ -22,7 +14,7 @@ interface Props {
   onOpenSurvival: () => void;
   onPurchase: (plan: any) => void;
   onHandleDailyShare: () => void;
-  usage: UserUsage; // 确保包含 credits, scanCount, achievementTriggered
+  usage: UserUsage;
   onShowDishDetail: (dish: any) => void;
 }
 
@@ -39,7 +31,6 @@ export const HomeIdleView: React.FC<Props> = ({
   const [isScrolled, setIsScrolled] = useState(false);
   const [showPricingModal, setShowPricingModal] = useState(false);
   
-  // 映射后端逻辑
   const credits = usage.credits ?? 150;
   const scanCount = usage.scanCount ?? 0;
   const isUnlimited = usage.passExpiryDate ? new Date(usage.passExpiryDate).getTime() > Date.now() : false;
@@ -50,17 +41,8 @@ export const HomeIdleView: React.FC<Props> = ({
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // 监听成就触发
-  useEffect(() => {
-    if (usage.achievementTriggered) {
-      // 这里可以触发你项目中的全局 Toast 或 Confetti 动画
-      console.log("Achievement Unlocked:", usage.achievementTriggered);
-    }
-  }, [usage.achievementTriggered]);
-
-  // 核心拦截逻辑：判断是否允许扫描
+  // 核心拦截：点数耗尽且已过免费期（第5顿后）则拦截
   const handleMainAction = () => {
-    // 如果是第 6 顿（index >= 5）且没钱了，弹出付费
     if (scanCount >= 5 && credits < 50 && !isUnlimited) {
       setShowPricingModal(true);
     } else {
@@ -68,11 +50,31 @@ export const HomeIdleView: React.FC<Props> = ({
     }
   };
 
-  // 动态渲染副标题文案
+  // 打卡成就勋章逻辑
+  const getAchievementTitle = () => {
+    if (scanCount >= 20) return "🏆 China Dining Master";
+    if (scanCount >= 10) return "🎖️ Gourmet Foodie";
+    if (scanCount >= 5) return "🥈 Brave Explorer";
+    return null;
+  };
+
   const renderSubtext = () => {
     if (isUnlimited) return `${Math.max(0, Math.ceil((new Date(usage.passExpiryDate!).getTime() - Date.now()) / 86400000))}d Premium Active`;
-    if (scanCount === 4) return <span className="text-rose-600 font-black animate-pulse">🎁 Reward meal · No payment needed</span>;
-    if (scanCount >= 5 && credits < 50) return <span className="text-amber-600 font-black text-[8px]">Support us or Share to unlock more meals</span>;
+    
+    // 动画状态衔接：如果当前正在触发成就动画
+    if (usage.achievementTriggered === 'milestone_4_reward') {
+      return <span className="text-rose-600 font-black animate-bounce">✨ Bonus Credits Added!</span>;
+    }
+
+    if (scanCount === 4) return <span className="text-rose-600 font-black animate-pulse">🎁 Reward meal · Free of charge</span>;
+    
+    const achievement = getAchievementTitle();
+    if (achievement && scanCount < 20) {
+      return <span className="text-slate-900 font-black opacity-60 uppercase tracking-widest">{achievement}</span>;
+    }
+
+    if (scanCount >= 5 && credits < 50) return <span className="text-amber-600 font-black text-[9px]">Credits exhausted · Support to unlock</span>;
+    
     return "Vision AI Connected";
   };
 
@@ -85,7 +87,7 @@ export const HomeIdleView: React.FC<Props> = ({
           isScrolled ? 'translate-y-0 opacity-100 bg-rose-600/90 backdrop-blur-md shadow-lg' : '-translate-y-full opacity-0 bg-transparent'
         }`}
       >
-        <span className="text-white font-black text-sm tracking-tighter">Read Chinese Menu</span>
+        <span className="text-white font-black text-sm tracking-tighter uppercase italic">Scan Chinese Menu</span>
       </div>
 
       {/* 2. Brand Header */}
@@ -98,14 +100,14 @@ export const HomeIdleView: React.FC<Props> = ({
           Read <span className="text-rose-600">Chinese Menu</span>
         </h1>
         <p className="text-slate-400 font-bold text-[10px] md:text-xs tracking-[0.2em] uppercase">
-          Identify dishes • Check ingredients • 30+ Milestones
+          NO ADS • NO LOGIN • NO DOWNLOAD
         </p>
       </header>
 
       <main className="max-w-xl mx-auto px-4">
         
-        {/* 3. Share Bonus - 仅在需要时或第5顿后突出显示 */}
-        {scanCount >= 5 && (
+        {/* 3. Share Bonus - 仅在点数不足或关键阶段显示 */}
+        {scanCount >= 5 && credits < 100 && (
           <div className="mb-6 animate-in slide-in-from-top-4 duration-500">
             <button 
               onClick={onHandleDailyShare} 
@@ -115,15 +117,15 @@ export const HomeIdleView: React.FC<Props> = ({
                 <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-xl shadow-sm group-hover:rotate-12 transition-transform">🎁</div>
                 <div>
                   <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-1">Daily Reward</p>
-                  <p className="text-xs font-bold text-slate-900">Share once for +50 Credits</p>
+                  <p className="text-xs font-bold text-slate-900">Share for +50 Credits</p>
                 </div>
               </div>
-              <span className="bg-emerald-600 text-white px-3 py-1.5 rounded-full text-[8px] font-black shadow-md">SHARE</span>
+              <span className="bg-emerald-600 text-white px-3 py-1.5 rounded-full text-[8px] font-black shadow-md uppercase tracking-wider">Share</span>
             </button>
           </div>
         )}
 
-        {/* 4. Switcher - 与 Credits 联动 */}
+        {/* 4. Mode Switcher */}
         <div className="flex flex-col gap-6 mb-6">
           <div className="bg-slate-100/50 p-1.5 rounded-2xl flex gap-1 border border-slate-200/50 w-full relative">
             <button 
@@ -150,7 +152,7 @@ export const HomeIdleView: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* 5. Camera Button Section */}
+        {/* 5. Main Camera Card */}
         <div className="bg-white border border-slate-100 p-10 md:p-12 text-center flex flex-col items-center shadow-xl mb-6 rounded-[3rem] relative overflow-hidden group">
           <div className={`absolute -top-24 -right-24 w-48 h-48 blur-3xl opacity-10 rounded-full transition-colors ${mode === RecognitionMode.MENU ? 'bg-rose-500' : 'bg-slate-900'}`} />
           
@@ -171,7 +173,7 @@ export const HomeIdleView: React.FC<Props> = ({
             onClick={handleMainAction} 
             className="w-full bg-slate-900 text-white font-black py-5 rounded-full shadow-xl hover:bg-slate-800 active:scale-[0.97] transition-all uppercase tracking-[0.2em] text-xs"
           >
-            {scanCount >= 5 && credits < 50 ? "Unlock More Meals" : "Scan or Upload"}
+            {scanCount >= 5 && credits < 50 ? "Unlock More Meals" : "Upload Image"}
           </button>
 
           <div className="mt-5 flex items-center gap-2 opacity-80">
@@ -182,23 +184,57 @@ export const HomeIdleView: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* 6. Survival Cards */}
+        {/* 6. Buy Me a Coffee Card - 仅在第5顿扫描完成后（scanCount >= 5）展示 */}
+        {scanCount >= 5 && (
+          <div className="mb-10 animate-in slide-in-from-bottom-6 duration-700">
+            <button 
+              onClick={() => setShowPricingModal(true)}
+              className="w-full bg-slate-900 p-8 rounded-[3rem] text-left relative overflow-hidden group shadow-2xl active:scale-[0.98] transition-all"
+            >
+              <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
+                <HeartIcon className="w-24 h-24 text-white" />
+              </div>
+
+              <div className="relative z-10 space-y-4">
+                <div className="inline-flex items-center gap-2 bg-rose-600 text-white px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest">
+                  Support the Dev
+                </div>
+                <div>
+                  <h3 className="text-white text-2xl font-black tracking-tighter leading-tight">Buy me a Coffee?</h3>
+                  <p className="text-slate-400 text-xs font-bold mt-1 max-w-[200px]">Keep the AI running. Get +60 Credits or a 7-Day Pass.</p>
+                </div>
+                <div className="flex gap-2 pt-2">
+                   <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10">
+                      <p className="text-[7px] font-black text-rose-400 uppercase leading-none mb-1">Single</p>
+                      <p className="text-[10px] font-bold text-white leading-none">+60 Credits</p>
+                   </div>
+                   <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10">
+                      <p className="text-[7px] font-black text-emerald-400 uppercase leading-none mb-1">Traveler</p>
+                      <p className="text-[10px] font-bold text-white leading-none">7-Day Pass</p>
+                   </div>
+                </div>
+              </div>
+            </button>
+          </div>
+        )}
+
+        {/* 7. Survival Cards */}
         <button 
           onClick={onOpenSurvival}
           className="group relative w-full bg-white border border-slate-100 p-8 rounded-[3rem] flex items-center gap-6 shadow-lg active:scale-[0.98] transition-all mb-10"
         >
-          <div className="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600 shrink-0">
+          <div className="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600 shrink-0 group-hover:bg-rose-100 transition-colors">
               <MessageSquareIcon className="w-8 h-8" />
           </div>
           <div className="text-left flex-1">
               <h3 className="text-slate-900 text-xl font-black tracking-tight uppercase leading-none">Survival Cards</h3>
               <p className="text-slate-400 text-[11px] font-bold mt-1">100+ phrases for safe travel</p>
           </div>
-          <span className="text-slate-300 font-bold">→</span>
+          <span className="text-slate-300 font-bold group-hover:translate-x-1 transition-transform">→</span>
         </button>
       </main>
 
-      {/* 7. Footer & Content */}
+      {/* 8. Footer & Content */}
       <div className="py-12 border-t border-slate-50">
         <WordCloudMarquee onShowDetail={onShowDishDetail} />
       </div>
@@ -207,11 +243,11 @@ export const HomeIdleView: React.FC<Props> = ({
         <AboutUs />
         <Reviews />
         <div id="support" className="px-4">
-           <SupportSection onPurchase={onPurchase} />
+            <SupportSection onPurchase={onPurchase} />
         </div>
       </div>
 
-      {/* 8. Fullscreen Pricing Modal (Only when triggered) */}
+      {/* Pricing Modal Overlay */}
       {showPricingModal && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 animate-in fade-in duration-300">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowPricingModal(false)} />
@@ -227,7 +263,7 @@ export const HomeIdleView: React.FC<Props> = ({
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes pulse-slow {
           0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.05); }
+          50% { transform: scale(1.03); }
         }
         .animate-pulse-slow {
           animation: pulse-slow 3s ease-in-out infinite;

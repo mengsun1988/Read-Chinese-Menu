@@ -16,9 +16,10 @@ import { Footer } from './components/Footer';
 import { LegalModal } from './components/LegalModals';
 import { SurvivalCardView } from './components/SurvivalCardView'; 
 
-// 逻辑与视图
+// 逻辑、视图与动画
 import { useUserUsage } from './hooks/useUserUsage';
 import { HomeIdleView } from './views/HomeIdleView';
+import { EffectLayer } from './components/EffectLayer';
 
 const App: React.FC = () => {
   const { usage, setUsage, totalCredits, isUnlimited, handleDailyShare } = useUserUsage();
@@ -82,14 +83,10 @@ const App: React.FC = () => {
     });
   };
 
-  /**
-   * 核心处理逻辑
-   */
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // 1. 拦截逻辑：如果是菜单模式，且点数不足以支持一顿饭（50点），且不是无限期会员
     if (mode === RecognitionMode.MENU && !isUnlimited() && totalCredits < 50) {
       setShowPricing(true);
       return;
@@ -109,17 +106,26 @@ const App: React.FC = () => {
           setDishes(list);
           setStatus(AppStatus.SUCCESS);
           
-          // 2. 状态更新：扣点 + 增加餐数
           if (!isUnlimited()) {
             setUsage(prev => {
               const nextScanCount = (prev.scanCount || 0) + 1;
               let nextCredits = Math.max(0, (prev.credits || 0) - 50);
               let achievement = null;
 
-              // 触发奖励逻辑：第4顿识别成功后，额外赠送50点用于第5顿
+              // --- 动画触发逻辑集成 ---
               if (nextScanCount === 4) {
+                // 第4次扫描：赠送点数动画
                 nextCredits += 50;
                 achievement = 'milestone_4_reward';
+              } else if (nextScanCount === 5) {
+                // 第5次扫描：解锁 Explorer 成就
+                achievement = 'milestone_5_explorer';
+              } else if (nextScanCount === 10) {
+                // 第10次扫描：解锁 Foodie 成就
+                achievement = 'milestone_10_foodie';
+              } else if (nextScanCount === 20) {
+                // 第20次扫描：解锁 Master 成就
+                achievement = 'milestone_20_master';
               }
 
               return {
@@ -131,10 +137,9 @@ const App: React.FC = () => {
             });
           }
         } else {
-          throw new Error("No dishes detected. Please ensure the menu is clear and try again.");
+          throw new Error("No dishes detected. Please try a clearer photo.");
         }
       } else {
-        // 街道/店面模式 (免费)
         const rawResult = await processStorefrontImage(base64);
         if (rawResult) {
           setStoreResult(rawResult);
@@ -173,9 +178,11 @@ const App: React.FC = () => {
       const updated = { ...prev };
       if (plan.type === 'donation') {
         updated.credits = (updated.credits || 0) + (plan.credits || 0);
+        updated.achievementTriggered = 'daily_share_bonus'; 
       } else if (plan.type === 'pass') {
         const days = plan.id === '3day' ? 3 : 7;
         updated.passExpiryDate = new Date(Date.now() + days * 86400000).toISOString();
+        updated.achievementTriggered = 'daily_share_bonus';
       }
       return updated;
     });
@@ -184,6 +191,11 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen pb-0 bg-[#fafafa] font-sans">
+      <EffectLayer 
+        trigger={usage.achievementTriggered} 
+        onComplete={() => setUsage(prev => ({ ...prev, achievementTriggered: null }))} 
+      />
+
       <A2HSManager />
       
       <div className="max-w-5xl mx-auto px-6 relative">
@@ -214,9 +226,9 @@ const App: React.FC = () => {
               <div className="w-20 h-20 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto">
                 <WarningIcon className="w-10 h-10" />
               </div>
-              <h2 className="text-3xl font-bold text-slate-900">Scan Failed</h2>
-              <p className="text-slate-400 text-sm font-medium">{error}</p>
-              <button onClick={reset} className="bg-rose-600 text-white font-bold py-4 px-12 rounded-full shadow-lg active:scale-95 transition-transform uppercase tracking-widest text-xs">TRY AGAIN</button>
+              <h2 className="text-3xl font-bold text-slate-900 uppercase italic tracking-tighter">Scan Failed</h2>
+              <p className="text-slate-400 text-xs font-bold leading-relaxed">{error}</p>
+              <button onClick={reset} className="bg-slate-900 text-white font-black py-4 px-12 rounded-full shadow-lg active:scale-95 transition-all uppercase tracking-widest text-[10px]">Retry Scan</button>
             </div>
           )}
 
@@ -226,15 +238,15 @@ const App: React.FC = () => {
                 <div className="flex items-center gap-4">
                   {previewUrl && <img src={previewUrl} className="w-12 h-12 object-cover rounded-xl ring-2 ring-white/10" alt="Preview" />}
                   <div className="text-left">
-                    <h3 className="font-bold text-white tracking-tight text-sm">
-                      {mode === RecognitionMode.MENU ? `Identified ${dishes.length} Items` : "Shop Found"}
+                    <h3 className="font-bold text-white tracking-tight text-sm leading-none mb-1">
+                      {mode === RecognitionMode.MENU ? `${dishes.length} Items Found` : "Shop Identified"}
                     </h3>
-                    <p className="text-[9px] font-bold text-rose-400 uppercase tracking-widest">
+                    <p className="text-[9px] font-black text-rose-400 uppercase tracking-widest leading-none">
                       {isUnlimited() ? "Premium Active" : `${usage.credits} Credits Left`}
                     </p>
                   </div>
                 </div>
-                <button onClick={reset} className="bg-white/10 hover:bg-white/20 text-white font-bold py-2.5 px-6 rounded-full text-[10px] uppercase tracking-wider backdrop-blur-sm transition-colors border border-white/10">New Scan</button>
+                <button onClick={reset} className="bg-white/10 hover:bg-white/20 text-white font-black py-2.5 px-6 rounded-full text-[10px] uppercase tracking-wider backdrop-blur-sm transition-colors border border-white/10">Done</button>
               </div>
               
               {mode === RecognitionMode.MENU ? (
