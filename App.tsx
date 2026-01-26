@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { AppStatus, RecognitionMode, Ingredient, StoreResult } from './types';
 import { processMenuImage, processStorefrontImage, getDishDeepDetail } from './services/geminiService';
-// 引入 PayPal Provider
 import { PayPalScriptProvider } from "@paypal/react-paypal-js";
 
 // 基础组件
@@ -85,10 +84,12 @@ const App: React.FC = () => {
     });
   };
 
+  // --- 核心逻辑 1: 使用权限与扣费闭环 ---
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // 检查权限：非无限模式 且 点数不足 50
     if (mode === RecognitionMode.MENU && !isUnlimited() && totalCredits < 50) {
       setShowPricing(true);
       return;
@@ -108,26 +109,20 @@ const App: React.FC = () => {
           setDishes(list);
           setStatus(AppStatus.SUCCESS);
           
+          // 仅在非无限模式下扣除点数
           if (!isUnlimited()) {
             setUsage(prev => {
               const nextScanCount = (prev.scanCount || 0) + 1;
-              let nextCredits = Math.max(0, (prev.credits || 0) - 50);
+              const nextCredits = Math.max(0, (prev.credits || 0) - 50);
+              
+              // 里程碑奖励逻辑
               let achievement = null;
-
-              if (nextScanCount === 4) {
-                nextCredits += 50;
-                achievement = 'milestone_4_reward';
-              } else if (nextScanCount === 5) {
-                achievement = 'milestone_5_explorer';
-              } else if (nextScanCount === 10) {
-                achievement = 'milestone_10_foodie';
-              } else if (nextScanCount === 20) {
-                achievement = 'milestone_20_master';
-              }
+              if (nextScanCount === 4) achievement = 'milestone_4_reward';
+              else if (nextScanCount === 5) achievement = 'milestone_5_explorer';
 
               return {
                 ...prev,
-                credits: nextCredits,
+                credits: nextScanCount === 4 ? nextCredits + 50 : nextCredits,
                 scanCount: nextScanCount,
                 achievementTriggered: achievement
               };
@@ -137,6 +132,7 @@ const App: React.FC = () => {
           throw new Error("No dishes detected. Please try a clearer photo.");
         }
       } else {
+        // 商店识别模式逻辑 (通常免费)
         const rawResult = await processStorefrontImage(base64);
         if (rawResult) {
           setStoreResult(rawResult);
@@ -149,6 +145,40 @@ const App: React.FC = () => {
       setError(err.message || "An unexpected error occurred.");
       setStatus(AppStatus.ERROR);
     }
+  };
+
+  // --- 核心逻辑 2: 购买更新闭环 ---
+  const onPurchase = (plan: any) => {
+    setUsage(prev => {
+      const updated = { ...prev };
+      
+      // A. 处理 Day Pass (天数顺延逻辑)
+      if (plan.id.endsWith('-day')) {
+        const days = parseInt(plan.id.split('-')[0]);
+        const msToAdd = days * 86400000;
+        
+        // 如果当前还在有效期内，从到期日开始顺延；否则从现在开始算
+        const currentExpiry = updated.passExpiryDate ? new Date(updated.passExpiryDate).getTime() : Date.now();
+        const baseTime = currentExpiry > Date.now() ? currentExpiry : Date.now();
+        
+        updated.passExpiryDate = new Date(baseTime + msToAdd).toISOString();
+        updated.achievementTriggered = 'purchase_bonus';
+      } 
+      // B. 处理 Donation (点数累加逻辑)
+      else if (plan.id === 'donation') {
+        const creditsMap: Record<number, number> = {
+          3.99: 500,
+          7.99: 1000,
+          15.99: 2500
+        };
+        const creditsToAdd = creditsMap[plan.amount] || 500;
+        updated.credits = (updated.credits || 0) + creditsToAdd;
+        updated.achievementTriggered = 'donation_bonus';
+      }
+      
+      return updated;
+    });
+    setShowPricing(false);
   };
 
   const handleDishClick = async (dish: any) => {
@@ -170,24 +200,7 @@ const App: React.FC = () => {
     }
   };
 
-  const onPurchase = (plan: any) => {
-    setUsage(prev => {
-      const updated = { ...prev };
-      if (plan.type === 'donation') {
-        updated.credits = (updated.credits || 0) + (plan.credits || 0);
-        updated.achievementTriggered = 'daily_share_bonus'; 
-      } else if (plan.type === 'pass') {
-        const days = plan.id === '3day' ? 3 : 7;
-        updated.passExpiryDate = new Date(Date.now() + days * 86400000).toISOString();
-        updated.achievementTriggered = 'daily_share_bonus';
-      }
-      return updated;
-    });
-    setShowPricing(false);
-  };
-
   return (
-    // 添加 PayPalScriptProvider，配置你 index.html 中的参数
     <PayPalScriptProvider options={{ 
       clientId: "AdY7cjJGhxSVjZOPZr-LoHhX8JHtyQfNjmr6I8HjO4cv3cqW_U2zr1hpxa67nU8o4i6GoH0sFIh0P1aS",
       currency: "USD",

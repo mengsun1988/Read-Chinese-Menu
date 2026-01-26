@@ -56,7 +56,7 @@ export default {
     }
 
     // ==========================================
-    // --- 2. 新增：每日分享奖励接口 ---
+    // --- 2. 每日分享奖励接口 ---
     // ==========================================
     if (request.method === 'POST' && url.pathname === '/api/user/share') {
       try {
@@ -80,7 +80,7 @@ export default {
     }
 
     // ==========================================
-    // --- 3. 图像识别核心逻辑 (重构点数与成就) ---
+    // --- 3. 图像识别核心逻辑 (修复 Day Pass 闭环) ---
     // ==========================================
     try {
       const bodyText = await request.text();
@@ -89,16 +89,23 @@ export default {
       
       const { image: base64Image, userId, type = "menu", mode = "standard", name_cn, name_en } = originalBody;
 
-      // --- 用户数据初始化与点数检查 ---
-      let userData = { credits: 150, scanCount: 0, lastUsed: new Date().toISOString() };
+      // --- 用户数据初始化 ---
+      let userData = { credits: 150, scanCount: 0, lastUsed: new Date().toISOString(), passExpiryDate: null };
       if (env.USER_USAGE && userId) {
         const usageDataStr = await env.USER_USAGE.get(userId);
         if (usageDataStr) userData = JSON.parse(usageDataStr);
       }
 
-      // 仅菜单识别消耗点数
+      // 【核心改动】定义无限模式检查逻辑
+      const isUnlimited = () => {
+        if (!userData.passExpiryDate) return false;
+        return new Date(userData.passExpiryDate).getTime() > Date.now();
+      };
+
+      // 仅菜单识别需要检查权限
       if (type === "menu") {
-        if (userData.credits < 50) {
+        // 如果没有无限通行证 且 点数不足 50
+        if (!isUnlimited() && userData.credits < 50) {
           return new Response(JSON.stringify({ 
             error: "OUT_OF_CREDITS", 
             scanCount: userData.scanCount,
@@ -107,7 +114,7 @@ export default {
         }
       }
 
-      // 缓存逻辑 (保持原样)
+      // 缓存、API 负载等逻辑保持原样...
       const cache = caches.default;
       const cacheKeyUrl = new URL(`https://api.cache/${type}/${encodeURIComponent(name_cn || 'list')}`);
       const cacheKey = new Request(cacheKeyUrl.toString());
@@ -119,13 +126,12 @@ export default {
       const QWEN_API_KEY = env.DASHSCOPE_API_KEY;
       const QWEN_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions";
       const MODEL_NAME = "qwen3-vl-plus";
-      const specialInstructions = "Logic: If dish name contains '红油' (Red Oil), set spiciness_level >= 3 and note it likely contains beef tallow or lard.";
 
       let qwenPayload;
       if (type === "dish_detail") {
         qwenPayload = {
           model: "qwen-plus", 
-          messages: [{ role: "user", content: `Deep analyze "${name_cn}" (${name_en}). ${specialInstructions} Return JSON: { "ingredients": [{"name_cn": "...", "name_en": "..."}], "spiciness_level": 0-5, "allergens": ["..."], "description": "1 brief sentence", "has_animal_fats": true/false }` }],
+          messages: [{ role: "user", content: `Deep analyze "${name_cn}". Return JSON: { "ingredients": [{"name_cn": "...", "name_en": "..."}], "spiciness_level": 0-5, "allergens": ["..."], "description": "1 brief sentence", "has_animal_fats": true/false }` }],
           response_format: { type: "json_object" }
         };
       } else if (type === "storefront") {
@@ -135,11 +141,9 @@ export default {
           response_format: { type: "json_object" }
         };
       } else {
-        const fastPrompt = `Extract ALL dishes. ${specialInstructions} Return JSON: { "dishes": [{"name_cn": "...", "name_en": "...", "price": "...", "pinyin": "...", "pronunciation": "...", "ingredients": [{"name_cn": "...", "name_en": "..."}]}] }`;
-        const standardPrompt = `Analyze menu. ${specialInstructions} Return JSON: { "dishes": [{"name_cn": "...", "name_en": "...", "price": "...", "pinyin": "...", "pronunciation": "...", "description": "...", "ingredients": [{"name_cn": "...", "name_en": "..."}], "spiciness_level": 0-5}] }`;
         qwenPayload = {
           model: MODEL_NAME,
-          messages: [{ role: "user", content: [{ type: "text", text: mode === "fast_scan" ? fastPrompt : standardPrompt }, { type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Image}` } }] }],
+          messages: [{ role: "user", content: [{ type: "text", text: mode === "fast_scan" ? "Extract ALL dishes JSON" : "Analyze menu JSON" }, { type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Image}` } }] }],
           response_format: { type: "json_object" }
         };
       }
@@ -156,27 +160,23 @@ export default {
       let content = qwenData.choices[0].message.content.trim();
       let parsedData = JSON.parse(content.replace(/```json|```/g, ""));
 
-      // --- 核心逻辑处理：点数扣除、赠送与成就触发 ---
+      // --- 【核心改动】计费逻辑闭环 ---
       let achievementTriggered = null;
       if (type === "menu") {
         userData.scanCount += 1;
-        userData.credits -= 50;
+        
+        // 只有在非无限模式下才扣除点数
+        if (!isUnlimited()) {
+          userData.credits -= 50;
 
-        // 策略奖励逻辑
-        if (userData.scanCount === 1) {
-          userData.credits += 50; // 第一顿成功后补回，保持 150
-        } else if (userData.scanCount === 4) {
-          userData.credits += 50; // 第四顿成功后赠送，用于第五顿
-          achievementTriggered = "milestone_4";
-        } else if (userData.scanCount === 10) {
-          userData.credits += 100;
-          achievementTriggered = "milestone_10";
-        } else if (userData.scanCount === 20) {
-          userData.credits += 150;
-          achievementTriggered = "milestone_20";
-        } else if (userData.scanCount === 30) {
-          userData.credits += 250;
-          achievementTriggered = "milestone_30";
+          // 点数奖励逻辑
+          if (userData.scanCount === 4) {
+            userData.credits += 50;
+            achievementTriggered = "milestone_4";
+          } else if (userData.scanCount === 10) {
+            userData.credits += 100;
+            achievementTriggered = "milestone_10";
+          }
         }
 
         userData.lastUsed = new Date().toISOString();
@@ -189,9 +189,8 @@ export default {
       } else if (type === "storefront") {
         responseBody = parsedData;
       } else {
-        const dishes = parsedData.dishes || [];
         responseBody = {
-          dishes: dishes.map((item, index) => ({
+          dishes: (parsedData.dishes || []).map((item, index) => ({
             ...item,
             id: `dish-${Date.now()}-${index}`,
             isFullyAnalyzed: mode !== "fast_scan"
@@ -199,23 +198,15 @@ export default {
           usage: {
             credits: userData.credits,
             scanCount: userData.scanCount,
-            achievementTriggered
+            achievementTriggered,
+            isUnlimited: isUnlimited() // 返回给前端当前的无限状态
           }
         };
-
-        if (env.DISH_CACHE) {
-          ctx.waitUntil((async () => {
-            const historyStr = await env.DISH_CACHE.get("recent_dishes");
-            let history = JSON.parse(historyStr || "[]");
-            let updatedHistory = [...(responseBody.dishes.slice(0, 5)), ...history];
-            await env.DISH_CACHE.put("recent_dishes", JSON.stringify(updatedHistory.slice(0, 30)));
-          })());
-        }
       }
 
       const finalResponse = new Response(JSON.stringify(responseBody), {
         status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 's-maxage=3600' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
 
       if (type === "dish_detail") ctx.waitUntil(cache.put(cacheKey, finalResponse.clone()));
