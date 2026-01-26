@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { RecognitionMode, UserUsage } from '../types';
-import { CameraIcon, MessageSquareIcon, HeartIcon } from '../components/Icons';
+import { CameraIcon, MessageSquareIcon } from '../components/Icons';
 import { WordCloudMarquee } from '../components/WordCloudMarquee';
 import { PricingModule } from '../components/PricingModule';
 import { AboutUs } from '../components/AboutUs';
@@ -41,7 +41,6 @@ export const HomeIdleView: React.FC<Props> = ({
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // 核心拦截：点数耗尽且已过免费期（第5顿后）则拦截
   const handleMainAction = () => {
     if (scanCount >= 5 && credits < 50 && !isUnlimited) {
       setShowPricingModal(true);
@@ -50,7 +49,6 @@ export const HomeIdleView: React.FC<Props> = ({
     }
   };
 
-  // 打卡成就勋章逻辑
   const getAchievementTitle = () => {
     if (scanCount >= 20) return "🏆 China Dining Master";
     if (scanCount >= 10) return "🎖️ Gourmet Foodie";
@@ -61,7 +59,6 @@ export const HomeIdleView: React.FC<Props> = ({
   const renderSubtext = () => {
     if (isUnlimited) return `${Math.max(0, Math.ceil((new Date(usage.passExpiryDate!).getTime() - Date.now()) / 86400000))}d Premium Active`;
     
-    // 动画状态衔接：如果当前正在触发成就动画
     if (usage.achievementTriggered === 'milestone_4_reward') {
       return <span className="text-rose-600 font-black animate-bounce">✨ Bonus Credits Added!</span>;
     }
@@ -80,14 +77,14 @@ export const HomeIdleView: React.FC<Props> = ({
 
   return (
     <div className="animate-in fade-in duration-700">
-      {/* 1. Sticky Bar */}
+      {/* 1. Sticky Bar - 移除 italic 属性 */}
       <div 
         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
         className={`fixed top-0 left-0 right-0 z-[150] h-14 flex items-center justify-center transition-all duration-500 cursor-pointer ${
           isScrolled ? 'translate-y-0 opacity-100 bg-rose-600/90 backdrop-blur-md shadow-lg' : '-translate-y-full opacity-0 bg-transparent'
         }`}
       >
-        <span className="text-white font-black text-sm tracking-tighter uppercase italic">Scan Chinese Menu</span>
+        <span className="text-white font-black text-sm tracking-tighter uppercase">Scan Chinese Menu</span>
       </div>
 
       {/* 2. Brand Header */}
@@ -106,7 +103,7 @@ export const HomeIdleView: React.FC<Props> = ({
 
       <main className="max-w-xl mx-auto px-4">
         
-        {/* 3. Share Bonus - 仅在点数不足或关键阶段显示 */}
+        {/* 3. Daily Share Reward */}
         {scanCount >= 5 && credits < 100 && (
           <div className="mb-6 animate-in slide-in-from-top-4 duration-500">
             <button 
@@ -184,37 +181,10 @@ export const HomeIdleView: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* 6. Buy Me a Coffee Card - 仅在第5顿扫描完成后（scanCount >= 5）展示 */}
+        {/* 6. SupportSection (已移动并配置显示逻辑) */}
         {scanCount >= 5 && (
           <div className="mb-10 animate-in slide-in-from-bottom-6 duration-700">
-            <button 
-              onClick={() => setShowPricingModal(true)}
-              className="w-full bg-slate-900 p-8 rounded-[3rem] text-left relative overflow-hidden group shadow-2xl active:scale-[0.98] transition-all"
-            >
-              <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
-                <HeartIcon className="w-24 h-24 text-white" />
-              </div>
-
-              <div className="relative z-10 space-y-4">
-                <div className="inline-flex items-center gap-2 bg-rose-600 text-white px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest">
-                  Support the Dev
-                </div>
-                <div>
-                  <h3 className="text-white text-2xl font-black tracking-tighter leading-tight">Buy me a Coffee?</h3>
-                  <p className="text-slate-400 text-xs font-bold mt-1 max-w-[200px]">Keep the AI running. Get +60 Credits or a 7-Day Pass.</p>
-                </div>
-                <div className="flex gap-2 pt-2">
-                   <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10">
-                      <p className="text-[7px] font-black text-rose-400 uppercase leading-none mb-1">Single</p>
-                      <p className="text-[10px] font-bold text-white leading-none">+60 Credits</p>
-                   </div>
-                   <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10">
-                      <p className="text-[7px] font-black text-emerald-400 uppercase leading-none mb-1">Traveler</p>
-                      <p className="text-[10px] font-bold text-white leading-none">7-Day Pass</p>
-                   </div>
-                </div>
-              </div>
-            </button>
+            <SupportSection onPurchase={onPurchase} />
           </div>
         )}
 
@@ -234,7 +204,7 @@ export const HomeIdleView: React.FC<Props> = ({
         </button>
       </main>
 
-      {/* 8. Footer & Content */}
+      {/* 8. Footer Content */}
       <div className="py-12 border-t border-slate-50">
         <WordCloudMarquee onShowDetail={onShowDishDetail} />
       </div>
@@ -242,12 +212,10 @@ export const HomeIdleView: React.FC<Props> = ({
       <div className="space-y-20 pb-20">
         <AboutUs />
         <Reviews />
-        <div id="support" className="px-4">
-            <SupportSection onPurchase={onPurchase} />
-        </div>
+        {/* 底部不再渲染重复的 SupportSection */}
       </div>
 
-      {/* Pricing Modal Overlay */}
+      {/* Pricing Modal */}
       {showPricingModal && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 animate-in fade-in duration-300">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowPricingModal(false)} />

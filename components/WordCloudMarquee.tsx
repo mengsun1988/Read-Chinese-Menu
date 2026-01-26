@@ -114,7 +114,8 @@ export const WordCloudMarquee: React.FC<{ onShowDetail: (d: any) => void }> = ({
   });
 
   return (
-    <div className="w-full overflow-hidden bg-slate-50/50 py-16 border-t border-slate-100">
+    // 修改点：去掉了 bg-slate-50/50 和 border-t，改为透明背景
+    <div className="w-full overflow-hidden bg-transparent py-16">
       <div className="max-w-xl mx-auto px-6 mb-10 text-center md:text-left">
         <div className="flex items-center justify-center md:justify-start gap-3">
           <span className="flex h-3 w-3 relative">
@@ -129,9 +130,9 @@ export const WordCloudMarquee: React.FC<{ onShowDetail: (d: any) => void }> = ({
       </div>
 
       <div className="relative w-full">
-        {/* 左右渐变遮罩，增强视觉居中感 */}
-        <div className="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-slate-50 to-transparent z-10 pointer-events-none"></div>
-        <div className="absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-slate-50 to-transparent z-10 pointer-events-none"></div>
+        {/* 修改点：遮罩颜色从 slate-50 改为 transparent，确保过渡自然 */}
+        <div className="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-white via-white/80 to-transparent z-10 pointer-events-none"></div>
+        <div className="absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-white via-white/80 to-transparent z-10 pointer-events-none"></div>
 
         <Row items={rows[0]} onItemClick={handleItemClick} duration="80s" />
         <Row items={rows[1]} onItemClick={handleItemClick} reverse duration="65s" />
