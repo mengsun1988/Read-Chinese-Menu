@@ -1,86 +1,66 @@
 import { useState, useEffect } from 'react';
 import { UserUsage } from '../types';
 
-const STORAGE_KEY = 'rmc_user_usage_v3';
+const STORAGE_KEY = 'china_menu_usage';
 
-// 获取北京时间日期字符串
-const getBeijingDate = () => {
-  const d = new Date();
-  const beijingTime = new Date(d.getTime() + (8 * 60 * 60 * 1000));
-  return beijingTime.toISOString().split('T')[0];
+const DEFAULT_USAGE: UserUsage = {
+  credits: 150,        // 初始赠送 150 点 (3 顿饭)
+  scanCount: 0,       // 已扫描餐数
+  freeCredits: 0,     // 兼容旧字段
+  paidCredits: 0,     // 兼容旧字段
+  passExpiryDate: null,
+  dailyShareDate: null,
+  achievementTriggered: null
 };
 
 export const useUserUsage = () => {
   const [usage, setUsage] = useState<UserUsage>(() => {
-    const todayStr = getBeijingDate();
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return DEFAULT_USAGE;
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored) as UserUsage;
-        // 跨天重置免费点数
-        if (parsed.lastResetDate !== todayStr) {
-          return { ...parsed, freeCredits: 15, lastResetDate: todayStr };
-        }
-        return parsed;
-      }
-    } catch (e) {
-      console.warn("Usage parsing failed", e);
+      return JSON.parse(saved);
+    } catch {
+      return DEFAULT_USAGE;
     }
-    return { freeCredits: 15, paidCredits: 0, lastResetDate: todayStr };
   });
 
-  // 状态持久化
+  // 每次 usage 变化时自动持久化
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(usage));
   }, [usage]);
 
-  // 计算属性
-  const totalCredits = (usage.freeCredits || 0) + (usage.paidCredits || 0);
-  
+  // 计算属性：当前总点数
+  const totalCredits = usage.credits ?? 0;
+
+  // 计算属性：是否处于无限次通行证有效期
   const isUnlimited = () => {
-    return usage.passExpiryDate ? new Date(usage.passExpiryDate).getTime() > Date.now() : false;
+    if (!usage.passExpiryDate) return false;
+    return new Date(usage.passExpiryDate).getTime() > Date.now();
   };
 
-  const getRemainingDays = () => {
-    if (!usage.passExpiryDate) return 0;
-    const diff = new Date(usage.passExpiryDate).getTime() - Date.now();
-    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-  };
-
-  // 分享奖励逻辑
-  const handleDailyShare = async () => {
-    const today = getBeijingDate();
-    if (usage.lastShareDate === today) {
-      alert("Already claimed today!");
+  // 处理每日分享奖励
+  const handleDailyShare = () => {
+    const today = new Date().toDateString();
+    if (usage.dailyShareDate === today) {
+      alert("You've already claimed today's reward! Come back tomorrow.");
       return;
     }
-    try {
-      if (navigator.share) {
-        await navigator.share({ 
-          title: 'Read Chinese Menu', 
-          url: window.location.origin 
-        });
-      } else {
-        await navigator.clipboard.writeText(window.location.origin);
-        alert("Link copied!");
-      }
-      setUsage(prev => ({ 
-        ...prev, 
-        freeCredits: (prev.freeCredits || 0) + 5, 
-        lastShareDate: today 
-      }));
-    } catch (err) {
-      console.log("Share failed", err);
-    }
+
+    setUsage(prev => ({
+      ...prev,
+      credits: (prev.credits || 0) + 50, // 分享奖励 50 点 (1 顿饭)
+      dailyShareDate: today,
+      achievementTriggered: 'daily_share_bonus'
+    }));
+    
+    alert("Reward Claimed! +50 Credits added.");
   };
 
-  return { 
-    usage, 
-    setUsage, 
-    totalCredits, 
-    isUnlimited, 
-    getRemainingDays, 
-    handleDailyShare,
-    getBeijingDate 
+  return {
+    usage,
+    setUsage,
+    totalCredits,
+    isUnlimited,
+    handleDailyShare
   };
 };

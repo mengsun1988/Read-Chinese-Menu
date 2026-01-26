@@ -2,7 +2,6 @@ import React from 'react';
 import { ChiliIcon } from './Icons';
 import { Ingredient } from '../types';
 
-// 内部定义的搜索图标
 const SearchIconInternal = ({ className }: { className?: string }) => (
   <svg 
     viewBox="0 0 24 24" 
@@ -19,26 +18,24 @@ const SearchIconInternal = ({ className }: { className?: string }) => (
 );
 
 export const DishCard: React.FC<{ dish: any; onClick: () => void }> = ({ dish, onClick }) => {
-  const nameCN = dish.name_cn || dish.dish_name_cn || dish.name || "未知菜名";
-  const nameEN = dish.name_en || dish.dish_name_en || dish.english_name || "Unknown Dish";
-  const description = dish.description || dish.desc || "";
+  // 统一字段读取逻辑，与 Worker 映射一致
+  const nameCN = dish.name_cn || "未知菜名";
+  const nameEN = dish.name_en || "Unknown Dish";
+  const description = dish.description || "";
   const price = dish.price || "";
-  const spiciness = Number(dish.spiciness_level || dish.spiciness || 0);
+  const spiciness = Number(dish.spiciness_level || 0);
   
-  // 确保正确处理Ingredient类型
+  // 核心逻辑：是否已经完成了深度分析（由 App.tsx 触发 getDishDeepDetail 后标记）
+  const isAnalyzed = dish.isFullyAnalyzed;
+  const ingredients = Array.isArray(dish.ingredients) ? dish.ingredients : [];
+
   const getIngredientDisplay = (ing: Ingredient | string | any) => {
     if (!ing) return null;
     if (typeof ing === 'object' && (ing.name_en || ing.name_cn)) {
       return ing.name_en || ing.name_cn;
     }
-    if (typeof ing === 'string') {
-      return ing;
-    }
-    return null;
+    return typeof ing === 'string' ? ing : null;
   };
-
-  const ingredients = Array.isArray(dish.ingredients) ? dish.ingredients : [];
-  const isAnalyzing = !dish.ingredients || ingredients.length === 0;
 
   const getSpicyReference = (lvl: number) => {
     if (lvl <= 0) return "";
@@ -51,41 +48,50 @@ export const DishCard: React.FC<{ dish: any; onClick: () => void }> = ({ dish, o
   return (
     <button 
       onClick={onClick} 
-      className="group relative text-left overflow-hidden bg-white border border-slate-100 rounded-[2.2rem] shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 w-full h-full flex flex-col"
+      className={`group relative text-left overflow-hidden bg-white border rounded-[2.2rem] transition-all duration-500 w-full h-full flex flex-col ${
+        isAnalyzed 
+          ? 'border-rose-100 shadow-md hover:shadow-xl' 
+          : 'border-slate-100 shadow-sm hover:border-rose-200'
+      }`}
     >
-      {isAnalyzing && (
-        <div className="absolute top-0 left-0 w-full h-1 overflow-hidden bg-slate-50">
-          <div className="h-full bg-rose-500 animate-[shimmer_2s_infinite] w-1/2"></div>
+      {/* 顶部进度条：仅在未分析时显示微弱动效，提示可以点击查看详情 */}
+      {!isAnalyzed && (
+        <div className="absolute top-0 left-0 w-full h-1 overflow-hidden bg-slate-50/50">
+          <div className="h-full bg-slate-200 animate-[shimmer_3s_infinite] w-1/3"></div>
         </div>
       )}
 
       <div className="p-5 md:p-7 flex flex-col justify-between h-full w-full">
         <div>
-          {/* 英文名称在上：红色、大字体、与价格同行 */}
           <div className="flex justify-between items-start gap-3 mb-1">
             <h4 className="text-lg font-black text-rose-600 tracking-tight leading-tight uppercase italic flex-1">
               {nameEN}
             </h4>
-            {price && (
+            {price ? (
               <span className="bg-rose-50 text-rose-600 font-black px-2 py-0.5 rounded-lg text-[10px] whitespace-nowrap border border-rose-100/50 mt-1">
                 {price}
+              </span>
+            ) : isAnalyzed && (
+              <span className="bg-emerald-50 text-emerald-600 font-black px-2 py-0.5 rounded-lg text-[8px] uppercase tracking-tighter border border-emerald-100/50 mt-1">
+                Analyzed
               </span>
             )}
           </div>
           
-          {/* 中文名称在下：灰色、小字体 */}
           <h3 className="text-sm font-bold text-slate-500 mb-4 tracking-tight leading-tight">
             {nameCN}
           </h3>
           
+          {/* 食材展示区：如果未分析，显示占位符 */}
           <div className="min-h-[32px] mb-4">
-            {isAnalyzing ? (
-              <div className="flex gap-2 animate-pulse">
-                <div className="h-6 w-16 bg-slate-50 rounded-lg"></div>
-                <div className="h-6 w-20 bg-slate-50 rounded-lg"></div>
+            {!isAnalyzed ? (
+              <div className="flex items-center gap-2">
+                <div className="h-5 w-24 bg-slate-50 rounded-md border border-slate-100/50 flex items-center px-2">
+                  <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">Tap for Details</span>
+                </div>
               </div>
             ) : (
-              <div className="flex flex-wrap gap-1.5 animate-in fade-in duration-700">
+              <div className="flex flex-wrap gap-1.5 animate-in fade-in zoom-in duration-500">
                 {ingredients.slice(0, 4).map((ing: any, i: number) => {
                   const label = getIngredientDisplay(ing);
                   if (!label) return null;
@@ -103,7 +109,7 @@ export const DishCard: React.FC<{ dish: any; onClick: () => void }> = ({ dish, o
           </div>
 
           <p className="text-slate-400 text-[11px] line-clamp-2 mb-4 leading-relaxed font-medium italic">
-            {description || "Discovering the ingredients and flavors..."}
+            {description || (isAnalyzed ? "No further description available." : "Tap to analyze ingredients, hidden fats, and pronunciation...")}
           </p>
         </div>
         
@@ -113,7 +119,9 @@ export const DishCard: React.FC<{ dish: any; onClick: () => void }> = ({ dish, o
               {[...Array(5)].map((_, i) => (
                 <ChiliIcon 
                   key={i} 
-                  className={`w-3.5 h-3.5 transition-all duration-300 ${i < spiciness ? 'text-rose-600 scale-110 drop-shadow-sm' : 'text-slate-100'}`} 
+                  className={`w-3.5 h-3.5 transition-all duration-300 ${
+                    i < spiciness ? 'text-rose-600 scale-110 drop-shadow-sm' : 'text-slate-100'
+                  }`} 
                   filled={i < spiciness} 
                 />
               ))}
@@ -126,11 +134,17 @@ export const DishCard: React.FC<{ dish: any; onClick: () => void }> = ({ dish, o
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-full border border-slate-200 flex items-center justify-center text-slate-300 group-hover:border-rose-500 group-hover:text-rose-500 group-hover:bg-rose-50 transition-all">
+            <div className={`h-7 w-7 rounded-full border flex items-center justify-center transition-all ${
+              isAnalyzed 
+                ? 'bg-rose-600 border-rose-600 text-white' 
+                : 'border-slate-200 text-slate-300 group-hover:border-rose-500 group-hover:text-rose-500 group-hover:bg-rose-50'
+            }`}>
               <SearchIconInternal className="w-3.5 h-3.5" />
             </div>
-            <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.15em] group-hover:text-rose-600 transition-colors">
-              Details
+            <span className={`text-[9px] font-black uppercase tracking-[0.15em] transition-colors ${
+              isAnalyzed ? 'text-rose-600' : 'text-slate-300 group-hover:text-rose-600'
+            }`}>
+              {isAnalyzed ? 'Full Info' : 'Details'}
             </span>
           </div>
         </div>

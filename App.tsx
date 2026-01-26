@@ -35,11 +35,8 @@ const App: React.FC = () => {
   const [showSurvival, setShowSurvival] = useState(false); 
   const [legalView, setLegalView] = useState<'privacy' | 'tos' | null>(null);
   
-  // 详情弹窗状态
   const [selectedDish, setSelectedDish] = useState<any | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
-  
-  // 传话卡片状态
   const [waiterContext, setWaiterContext] = useState<{ type: 'ingredient' | 'spiciness'; content_en: string; content_cn: string } | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -78,58 +75,73 @@ const App: React.FC = () => {
           }
           canvas.width = w; canvas.height = h;
           canvas.getContext('2d')?.drawImage(img, 0, 0, w, h);
-          canvas.toDataURL('image/jpeg', 0.7).split(',')[1] && resolve(canvas.toDataURL('image/jpeg', 0.7).split(',')[1]);
+          const base = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
+          if (base) resolve(base);
         };
       };
     });
   };
 
   /**
-   * 第一步：处理图片上传，获取初步列表并结束全局加载
+   * 核心处理逻辑
    */
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!isUnlimited() && totalCredits <= 0) { setShowPricing(true); return; }
+
+    // 1. 拦截逻辑：如果是菜单模式，且点数不足以支持一顿饭（50点），且不是无限期会员
+    if (mode === RecognitionMode.MENU && !isUnlimited() && totalCredits < 50) {
+      setShowPricing(true);
+      return;
+    }
 
     setStatus(AppStatus.LOADING);
     setPreviewUrl(URL.createObjectURL(file));
     setError(null);
-    setDishes([]); // 清空之前的数据
 
     try {
       const base64 = await getCompressedBase64(file);
       
       if (mode === RecognitionMode.MENU) {
-        // 执行扫描：Worker 内部现在已配置强制提取所有可见菜品
         const list = await processMenuImage(base64);
         
-        // 关键修复：只有当识别出的数组有内容，且整个异步请求返回后才切换 SUCCESS
         if (list && Array.isArray(list) && list.length > 0) {
           setDishes(list);
-          setStoreResult(null);
           setStatus(AppStatus.SUCCESS);
+          
+          // 2. 状态更新：扣点 + 增加餐数
+          if (!isUnlimited()) {
+            setUsage(prev => {
+              const nextScanCount = (prev.scanCount || 0) + 1;
+              let nextCredits = Math.max(0, (prev.credits || 0) - 50);
+              let achievement = null;
+
+              // 触发奖励逻辑：第4顿识别成功后，额外赠送50点用于第5顿
+              if (nextScanCount === 4) {
+                nextCredits += 50;
+                achievement = 'milestone_4_reward';
+              }
+
+              return {
+                ...prev,
+                credits: nextCredits,
+                scanCount: nextScanCount,
+                achievementTriggered: achievement
+              };
+            });
+          }
         } else {
           throw new Error("No dishes detected. Please ensure the menu is clear and try again.");
         }
       } else {
+        // 街道/店面模式 (免费)
         const rawResult = await processStorefrontImage(base64);
         if (rawResult) {
-          setDishes([]);
           setStoreResult(rawResult);
           setStatus(AppStatus.SUCCESS);
         } else {
-          throw new Error("Could not identify the storefront. Try a different angle.");
+          throw new Error("Could not identify the storefront.");
         }
-      }
-
-      // 扣除点数逻辑
-      if (!isUnlimited()) {
-        setUsage(prev => ({
-          ...prev,
-          paidCredits: prev.paidCredits > 0 ? prev.paidCredits - 1 : prev.paidCredits,
-          freeCredits: prev.paidCredits > 0 ? prev.freeCredits : Math.max(0, prev.freeCredits - 1)
-        }));
       }
     } catch (err: any) {
       setError(err.message || "An unexpected error occurred.");
@@ -137,17 +149,11 @@ const App: React.FC = () => {
     }
   };
 
-  /**
-   * 第二步：点击菜品，异步获取深度详情（辣度、过敏原、详细描述）
-   */
   const handleDishClick = async (dish: any) => {
     setSelectedDish(dish);
-    
     if (!dish.isFullyAnalyzed) {
       setLoadingDetail(true);
       try {
-        // 这里的 getDishDeepDetail 也会通过 Worker 调用 qwen3-vl-plus 
-        // 并且会触法你要求的“红油=辣”的逻辑
         const deepInfo = await getDishDeepDetail(dish.name_cn, dish.name_en);
         if (deepInfo) {
           const updatedDish = { ...dish, ...deepInfo, isFullyAnalyzed: true };
@@ -155,7 +161,7 @@ const App: React.FC = () => {
           setDishes(prev => prev.map(d => d.id === dish.id ? updatedDish : d));
         }
       } catch (e) {
-        console.error("Deep Analysis Failed:", e);
+        console.error("Analysis Failed:", e);
       } finally {
         setLoadingDetail(false);
       }
@@ -165,15 +171,19 @@ const App: React.FC = () => {
   const onPurchase = (plan: any) => {
     setUsage(prev => {
       const updated = { ...prev };
-      if (plan.id === 'starter') updated.paidCredits += 60;
-      else if (plan.id === 'traveler') updated.passExpiryDate = new Date(Date.now() + 7 * 86400000).toISOString();
+      if (plan.type === 'donation') {
+        updated.credits = (updated.credits || 0) + (plan.credits || 0);
+      } else if (plan.type === 'pass') {
+        const days = plan.id === '3day' ? 3 : 7;
+        updated.passExpiryDate = new Date(Date.now() + days * 86400000).toISOString();
+      }
       return updated;
     });
     setShowPricing(false);
   };
 
   return (
-    <div className="min-h-screen pb-0 overflow-x-hidden bg-[#fafafa] font-sans">
+    <div className="min-h-screen pb-0 bg-[#fafafa] font-sans">
       <A2HSManager />
       
       <div className="max-w-5xl mx-auto px-6 relative">
@@ -217,10 +227,10 @@ const App: React.FC = () => {
                   {previewUrl && <img src={previewUrl} className="w-12 h-12 object-cover rounded-xl ring-2 ring-white/10" alt="Preview" />}
                   <div className="text-left">
                     <h3 className="font-bold text-white tracking-tight text-sm">
-                      {mode === RecognitionMode.MENU ? `Identified ${dishes.length} Items` : "Shop Identification"}
+                      {mode === RecognitionMode.MENU ? `Identified ${dishes.length} Items` : "Shop Found"}
                     </h3>
                     <p className="text-[9px] font-bold text-rose-400 uppercase tracking-widest">
-                      Bon Appétit!
+                      {isUnlimited() ? "Premium Active" : `${usage.credits} Credits Left`}
                     </p>
                   </div>
                 </div>
@@ -253,15 +263,11 @@ const App: React.FC = () => {
       <SurvivalCardView isOpen={showSurvival} onClose={() => setShowSurvival(false)} />
       
       {showPricing && (
-        <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-md overflow-y-auto p-4 flex items-center justify-center">
-          <div className="bg-[#fcfbf9] w-[95vw] max-w-4xl h-[95vh] max-h-[95vh] rounded-[2.5rem] relative flex flex-col">
-            <div className="absolute top-6 right-6 z-10">
-              <button onClick={() => setShowPricing(false)} className="p-2 text-slate-400 hover:text-slate-600 text-xl font-bold transition-colors bg-white/80 rounded-full w-10 h-10 flex items-center justify-center">✕</button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-6 md:p-8 rounded-[2.5rem]">
-              <PricingModule onPurchase={onPurchase} />
-            </div>
-          </div>
+        <div className="fixed inset-0 z-[2000] bg-slate-900/60 backdrop-blur-md p-4 flex items-center justify-center animate-in fade-in duration-300">
+          <PricingModule 
+            onPurchase={onPurchase} 
+            onLater={() => setShowPricing(false)} 
+          />
         </div>
       )}
 
