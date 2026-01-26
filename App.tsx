@@ -1,6 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { AppStatus, RecognitionMode, Ingredient, StoreResult } from './types';
 import { processMenuImage, processStorefrontImage, getDishDeepDetail } from './services/geminiService';
+// 引入 PayPal Provider
+import { PayPalScriptProvider } from "@paypal/react-paypal-js";
 
 // 基础组件
 import { DishCard } from './components/DishCard';
@@ -112,19 +114,14 @@ const App: React.FC = () => {
               let nextCredits = Math.max(0, (prev.credits || 0) - 50);
               let achievement = null;
 
-              // --- 动画触发逻辑集成 ---
               if (nextScanCount === 4) {
-                // 第4次扫描：赠送点数动画
                 nextCredits += 50;
                 achievement = 'milestone_4_reward';
               } else if (nextScanCount === 5) {
-                // 第5次扫描：解锁 Explorer 成就
                 achievement = 'milestone_5_explorer';
               } else if (nextScanCount === 10) {
-                // 第10次扫描：解锁 Foodie 成就
                 achievement = 'milestone_10_foodie';
               } else if (nextScanCount === 20) {
-                // 第20次扫描：解锁 Master 成就
                 achievement = 'milestone_20_master';
               }
 
@@ -190,121 +187,128 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen pb-0 bg-[#fafafa] font-sans">
-      <EffectLayer 
-        trigger={usage.achievementTriggered} 
-        onComplete={() => setUsage(prev => ({ ...prev, achievementTriggered: null }))} 
-      />
-
-      <A2HSManager />
-      
-      <div className="max-w-5xl mx-auto px-6 relative">
-        <main>
-          <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
-
-          {status === AppStatus.IDLE && (
-            <HomeIdleView 
-              mode={mode}
-              onModeChange={handleModeChange}
-              onTriggerUpload={triggerUpload}
-              onOpenSurvival={() => setShowSurvival(true)}
-              onPurchase={onPurchase}
-              onHandleDailyShare={handleDailyShare}
-              usage={usage}
-              onShowDishDetail={handleDishClick}
-            />
-          )}
-
-          {status === AppStatus.LOADING && (
-            <div className="py-20 animate-in fade-in duration-500">
-              <LoadingScreen />
-            </div>
-          )}
-
-          {status === AppStatus.ERROR && (
-            <div className="bg-white border border-rose-100 rounded-[3rem] p-16 text-center space-y-6 shadow-sm mt-20">
-              <div className="w-20 h-20 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto">
-                <WarningIcon className="w-10 h-10" />
-              </div>
-              <h2 className="text-3xl font-bold text-slate-900 uppercase italic tracking-tighter">Scan Failed</h2>
-              <p className="text-slate-400 text-xs font-bold leading-relaxed">{error}</p>
-              <button onClick={reset} className="bg-slate-900 text-white font-black py-4 px-12 rounded-full shadow-lg active:scale-95 transition-all uppercase tracking-widest text-[10px]">Retry Scan</button>
-            </div>
-          )}
-
-          {status === AppStatus.SUCCESS && (
-            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 mt-10 pb-32">
-              <div className="flex justify-between items-center bg-slate-900 p-6 rounded-[2rem] shadow-2xl sticky top-4 z-[110] mx-2 border border-white/5">
-                <div className="flex items-center gap-4">
-                  {previewUrl && <img src={previewUrl} className="w-12 h-12 object-cover rounded-xl ring-2 ring-white/10" alt="Preview" />}
-                  <div className="text-left">
-                    <h3 className="font-bold text-white tracking-tight text-sm leading-none mb-1">
-                      {mode === RecognitionMode.MENU ? `${dishes.length} Items Found` : "Shop Identified"}
-                    </h3>
-                    <p className="text-[9px] font-black text-rose-400 uppercase tracking-widest leading-none">
-                      {isUnlimited() ? "Premium Active" : `${usage.credits} Credits Left`}
-                    </p>
-                  </div>
-                </div>
-                <button onClick={reset} className="bg-white/10 hover:bg-white/20 text-white font-black py-2.5 px-6 rounded-full text-[10px] uppercase tracking-wider backdrop-blur-sm transition-colors border border-white/10">Done</button>
-              </div>
-              
-              {mode === RecognitionMode.MENU ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-2">
-                  {dishes.map((dish, index) => (
-                    <DishCard key={dish.id || `dish-${index}`} dish={dish} onClick={() => handleDishClick(dish)} />
-                  ))}
-                </div>
-              ) : (
-                storeResult && <StoreCard store={storeResult} onShowStaff={() => setShowStaffHelper(true)} />
-              )}
-            </div>
-          )}
-        </main>
-      </div>
-
-      <Footer 
-        onMenuScan={() => { handleModeChange(RecognitionMode.MENU); setTimeout(scrollToCamera, 100); }} 
-        onStreetScan={() => { handleModeChange(RecognitionMode.STREET); setTimeout(scrollToCamera, 100); }} 
-        onSurvivalOpen={() => setShowSurvival(true)}
-        onPricing={() => setShowPricing(true)} 
-        onPrivacy={() => setLegalView('privacy')} 
-        onTos={() => setLegalView('tos')} 
-      />
-
-      <SurvivalCardView isOpen={showSurvival} onClose={() => setShowSurvival(false)} />
-      
-      {showPricing && (
-        <div className="fixed inset-0 z-[2000] bg-slate-900/60 backdrop-blur-md p-4 flex items-center justify-center animate-in fade-in duration-300">
-          <PricingModule 
-            onPurchase={onPurchase} 
-            onLater={() => setShowPricing(false)} 
-          />
-        </div>
-      )}
-
-      {selectedDish && (
-        <DishDetailModal 
-          dish={selectedDish} 
-          onClose={() => setSelectedDish(null)} 
-          isLoadingDetail={loadingDetail}
-          onIngredientClick={(ing: Ingredient) => setWaiterContext({ 
-            type: 'ingredient', 
-            content_en: ing.name_en, 
-            content_cn: ing.name_cn 
-          })}
-          onSpicyClick={() => setWaiterContext({ 
-            type: 'spiciness', 
-            content_en: 'Spiciness preference', 
-            content_cn: '辣度要求' 
-          })}
+    // 添加 PayPalScriptProvider，配置你 index.html 中的参数
+    <PayPalScriptProvider options={{ 
+      clientId: "AdY7cjJGhxSVjZOPZr-LoHhX8JHtyQfNjmr6I8HjO4cv3cqW_U2zr1hpxa67nU8o4i6GoH0sFIh0P1aS",
+      currency: "USD",
+      intent: "capture"
+    }}>
+      <div className="min-h-screen pb-0 bg-[#fafafa] font-sans">
+        <EffectLayer 
+          trigger={usage.achievementTriggered} 
+          onComplete={() => setUsage(prev => ({ ...prev, achievementTriggered: null }))} 
         />
-      )}
 
-      {waiterContext && <WaiterCard {...waiterContext} onClose={() => setWaiterContext(null)} />}
-      {showStaffHelper && <StaffHelperModal onClose={() => setShowStaffHelper(false)} />}
-      {legalView && <LegalModal type={legalView} onClose={() => setLegalView(null)} />}
-    </div>
+        <A2HSManager />
+        
+        <div className="max-w-5xl mx-auto px-6 relative">
+          <main>
+            <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
+
+            {status === AppStatus.IDLE && (
+              <HomeIdleView 
+                mode={mode}
+                onModeChange={handleModeChange}
+                onTriggerUpload={triggerUpload}
+                onOpenSurvival={() => setShowSurvival(true)}
+                onPurchase={onPurchase}
+                onHandleDailyShare={handleDailyShare}
+                usage={usage}
+                onShowDishDetail={handleDishClick}
+              />
+            )}
+
+            {status === AppStatus.LOADING && (
+              <div className="py-20 animate-in fade-in duration-500">
+                <LoadingScreen />
+              </div>
+            )}
+
+            {status === AppStatus.ERROR && (
+              <div className="bg-white border border-rose-100 rounded-[3rem] p-16 text-center space-y-6 shadow-sm mt-20">
+                <div className="w-20 h-20 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto">
+                  <WarningIcon className="w-10 h-10" />
+                </div>
+                <h2 className="text-3xl font-bold text-slate-900 uppercase italic tracking-tighter">Scan Failed</h2>
+                <p className="text-slate-400 text-xs font-bold leading-relaxed">{error}</p>
+                <button onClick={reset} className="bg-slate-900 text-white font-black py-4 px-12 rounded-full shadow-lg active:scale-95 transition-all uppercase tracking-widest text-[10px]">Retry Scan</button>
+              </div>
+            )}
+
+            {status === AppStatus.SUCCESS && (
+              <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 mt-10 pb-32">
+                <div className="flex justify-between items-center bg-slate-900 p-6 rounded-[2rem] shadow-2xl sticky top-4 z-[110] mx-2 border border-white/5">
+                  <div className="flex items-center gap-4">
+                    {previewUrl && <img src={previewUrl} className="w-12 h-12 object-cover rounded-xl ring-2 ring-white/10" alt="Preview" />}
+                    <div className="text-left">
+                      <h3 className="font-bold text-white tracking-tight text-sm leading-none mb-1">
+                        {mode === RecognitionMode.MENU ? `${dishes.length} Items Found` : "Shop Identified"}
+                      </h3>
+                      <p className="text-[9px] font-black text-rose-400 uppercase tracking-widest leading-none">
+                        {isUnlimited() ? "Premium Active" : `${usage.credits} Credits Left`}
+                      </p>
+                    </div>
+                  </div>
+                  <button onClick={reset} className="bg-white/10 hover:bg-white/20 text-white font-black py-2.5 px-6 rounded-full text-[10px] uppercase tracking-wider backdrop-blur-sm transition-colors border border-white/10">Done</button>
+                </div>
+                
+                {mode === RecognitionMode.MENU ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-2">
+                    {dishes.map((dish, index) => (
+                      <DishCard key={dish.id || `dish-${index}`} dish={dish} onClick={() => handleDishClick(dish)} />
+                    ))}
+                  </div>
+                ) : (
+                  storeResult && <StoreCard store={storeResult} onShowStaff={() => setShowStaffHelper(true)} />
+                )}
+              </div>
+            )}
+          </main>
+        </div>
+
+        <Footer 
+          onMenuScan={() => { handleModeChange(RecognitionMode.MENU); setTimeout(scrollToCamera, 100); }} 
+          onStreetScan={() => { handleModeChange(RecognitionMode.STREET); setTimeout(scrollToCamera, 100); }} 
+          onSurvivalOpen={() => setShowSurvival(true)}
+          onPricing={() => setShowPricing(true)} 
+          onPrivacy={() => setLegalView('privacy')} 
+          onTos={() => setLegalView('tos')} 
+        />
+
+        <SurvivalCardView isOpen={showSurvival} onClose={() => setShowSurvival(false)} />
+        
+        {showPricing && (
+          <div className="fixed inset-0 z-[2000] bg-slate-900/60 backdrop-blur-md p-4 flex items-center justify-center animate-in fade-in duration-300">
+            <PricingModule 
+              onPurchase={onPurchase} 
+              onLater={() => setShowPricing(false)} 
+            />
+          </div>
+        )}
+
+        {selectedDish && (
+          <DishDetailModal 
+            dish={selectedDish} 
+            onClose={() => setSelectedDish(null)} 
+            isLoadingDetail={loadingDetail}
+            onIngredientClick={(ing: Ingredient) => setWaiterContext({ 
+              type: 'ingredient', 
+              content_en: ing.name_en, 
+              content_cn: ing.name_cn 
+            })}
+            onSpicyClick={() => setWaiterContext({ 
+              type: 'spiciness', 
+              content_en: 'Spiciness preference', 
+              content_cn: '辣度要求' 
+            })}
+          />
+        )}
+
+        {waiterContext && <WaiterCard {...waiterContext} onClose={() => setWaiterContext(null)} />}
+        {showStaffHelper && <StaffHelperModal onClose={() => setShowStaffHelper(false)} />}
+        {legalView && <LegalModal type={legalView} onClose={() => setLegalView(null)} />}
+      </div>
+    </PayPalScriptProvider>
   );
 };
 

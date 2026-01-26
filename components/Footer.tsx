@@ -20,18 +20,19 @@ export const Footer: React.FC<FooterProps> = ({
   const currentYear = new Date().getFullYear();
 
   return (
-    /* 外层容器负责全屏深色背景 */
+    /* 1. 外层 footer 设置 w-full 和背景色，确保全屏拉通 */
     <footer className="w-full bg-slate-900 overflow-hidden">
       
+      {/* 2. 内部容器负责间距和最大宽度限制 */}
       <div className="pt-20 pb-12">
         <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 md:gap-8">
           
-          {/* Brand Column - 已修正 Mission 文本大小和重叠问题 */}
+          {/* Brand Column */}
           <div className="space-y-6">
             <h3 className="text-xl font-bold tracking-tighter text-white">
               Read <span className="text-rose-500">Chinese Menu</span>
             </h3>
-            <p className="text-slate-400 text-xs font-medium leading-relaxed max-w-[240px]">
+            <p className="text-slate-400 text-sm font-medium leading-relaxed max-w-xs">
               Bridging cultures through flavors. Our mission is to make authentic Chinese dining accessible to everyone, everywhere.
             </p>
           </div>
@@ -88,7 +89,7 @@ export const Footer: React.FC<FooterProps> = ({
           </div>
         </div>
 
-        {/* Bottom Copyright Bar */}
+        {/* Bottom Bar */}
         <div className="max-w-6xl mx-auto px-6 mt-16 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-[0.2em]">
             © {currentYear} Read Chinese Menu. All Rights Reserved.
