@@ -14,7 +14,6 @@ interface DishDetailModalProps {
   isLoadingDetail?: boolean;
 }
 
-// 辣度判断逻辑
 const getSpicyComparison = (level: number) => {
   if (level <= 0) return { label: 'Not Spicy', comparison: 'None', color: 'text-slate-400' };
   if (level <= 1) return { label: 'Mild', comparison: 'Poblano', color: 'text-yellow-400' };
@@ -36,7 +35,6 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
   let displayDescription = dish.description || "";
   const ingredients = Array.isArray(dish.ingredients) ? dish.ingredients : [];
   
-  // 语音播放
   const speakDishName = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!('speechSynthesis' in window)) return;
@@ -61,29 +59,42 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
         className="bg-[#fcfbf9] w-full max-w-lg rounded-t-[2.5rem] sm:rounded-[3rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-10 duration-300 max-h-[92vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header Section */}
-        <div className="relative bg-red-600 pt-10 pb-12 px-8 text-white border-b-4 border-yellow-400 shrink-0">
+        {/* Header Section - 移除固定高度限制，确保内容能撑开 */}
+        <div className="relative bg-red-600 pt-10 pb-14 px-8 text-white border-b-4 border-yellow-400 shrink-0">
           <button onClick={onClose} className="absolute top-5 right-5 w-10 h-10 flex items-center justify-center bg-black/10 text-white rounded-full hover:bg-black/20 active:scale-90 transition-all z-10">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
           
-          <div className="space-y-2 text-left relative z-0">
+          <div className="space-y-3 text-left relative z-0">
             <h2 className="text-[9px] font-black uppercase tracking-[0.2em] opacity-70 mb-1">Authentic Selection</h2>
-            <p className="text-4xl font-black tracking-tighter drop-shadow-sm">{nameEN}</p>
-            <div className="flex items-center gap-3">
-              <p className="text-3xl font-black tracking-tighter drop-shadow-sm">{nameCN}</p>
-              <button 
-                onClick={speakDishName} 
-                className="bg-white text-red-600 w-10 h-10 rounded-xl flex items-center justify-center active:scale-90 transition-all shadow-lg"
-              >
-                <SpeakerIcon className="w-5 h-5" />
-              </button>
+            
+            <div className="space-y-1">
+                <p className="text-4xl font-black tracking-tighter drop-shadow-sm leading-none">{nameEN}</p>
+                <div className="flex items-center gap-3 py-1">
+                  <p className="text-3xl font-black tracking-tighter drop-shadow-sm">{nameCN}</p>
+                  <button 
+                    onClick={speakDishName} 
+                    className="bg-white text-red-600 w-8 h-8 rounded-lg flex items-center justify-center active:scale-90 transition-all shadow-lg shrink-0"
+                  >
+                    <SpeakerIcon className="w-4 h-4" />
+                  </button>
+                </div>
             </div>
-            {dish.pinyin && (
-              <p className="text-lg font-bold opacity-70 text-center">{dish.pinyin}</p>
-            )}
-            {dish.pronunciation && (
-              <p className="text-lg font-bold opacity-60 text-center italic">{dish.pronunciation}</p>
+
+            {/* 拼音与发音区域 - 统一左对齐并增强对比度 */}
+            {(dish.pinyin || dish.pronunciation) && (
+              <div className="flex flex-col gap-0.5 pt-1 border-t border-white/10 w-fit">
+                {dish.pinyin && (
+                  <p className="text-sm font-black tracking-widest text-yellow-200 uppercase">
+                    {dish.pinyin}
+                  </p>
+                )}
+                {dish.pronunciation && (
+                  <p className="text-xs font-bold opacity-80 italic flex items-center gap-2">
+                    <span className="opacity-50">Sounds like:</span> "{dish.pronunciation}"
+                  </p>
+                )}
+              </div>
             )}
           </div>
 
@@ -101,7 +112,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
         </div>
 
         {/* Content Section */}
-        <div className="p-8 pt-10 overflow-y-auto flex-1 space-y-8 text-slate-900 text-left custom-scrollbar">
+        <div className="p-8 pt-12 overflow-y-auto flex-1 space-y-8 text-slate-900 text-left custom-scrollbar">
           
           {!isLoadingDetail && dish.has_animal_fats && (
             <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex gap-3 animate-in zoom-in duration-300">
@@ -125,7 +136,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
             )}
           </section>
 
-          {/* Ingredients Grid - 核心修改部分 */}
+          {/* Ingredients Grid */}
           <section>
             <h4 className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] mb-4 flex items-center justify-between">
               Core Components
@@ -144,11 +155,9 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
                       onClick={() => onIngredientClick(ing)} 
                       className="group p-4 bg-white hover:bg-slate-50 rounded-2xl text-left border border-slate-100 transition-all active:scale-95 flex flex-col justify-center h-24 shadow-sm"
                     >
-                      {/* 英文：大一些，红色 */}
                       <span className="text-sm font-black text-rose-600 leading-tight mb-1 line-clamp-2 uppercase tracking-tight">
                         {en}
                       </span>
-                      {/* 中文：小一些，灰色 */}
                       <span className="text-[11px] font-bold text-slate-400 tracking-wide">
                         {cn}
                       </span>
