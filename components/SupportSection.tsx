@@ -26,44 +26,25 @@ export const SupportSection: React.FC<{ onPurchase: (plan: any) => void }> = ({ 
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (middleCardRef.current && !selectedId) {
-        middleCardRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      if (middleCardRef.current) {
+        middleCardRef.current.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'nearest', 
+          inline: 'center' 
+        });
       }
     }, 400);
     return () => clearTimeout(timer);
   }, [selectedId]);
 
-  useEffect(() => {
-    const container = scrollRef.current;
-    if (!container || selectedId) return;
-
-    const handleScroll = () => {
-      const containerRect = container.getBoundingClientRect();
-      const centerX = containerRect.left + containerRect.width / 2;
-
-      let closestId = activeId;
-      let minDistance = Infinity;
-
-      container.querySelectorAll('[data-tier-id]').forEach((el) => {
-        const rect = el.getBoundingClientRect();
-        const cardCenterX = rect.left + rect.width / 2;
-        const distance = Math.abs(centerX - cardCenterX);
-
-        if (distance < minDistance) {
-          minDistance = distance;
-          closestId = el.getAttribute('data-tier-id');
-        }
-      });
-
-      if (closestId !== activeId) setActiveId(closestId);
-    };
-
-    container.addEventListener('scroll', handleScroll);
-    return () => container.removeEventListener('scroll', handleScroll);
-  }, [activeId, selectedId]);
-
   const handleSuccess = (tier: SupportTier, details: any) => {
-    onPurchase({ id: tier.id, name: tier.name, credits: parseInt(tier.credits), isDonation: true });
+    onPurchase({ 
+      id: tier.id, 
+      name: tier.name, 
+      amount: tier.amount,
+      credits: parseInt(tier.credits.replace(' Credits', '')), 
+      isDonation: true 
+    });
     setSelectedId(null);
   };
 
@@ -79,14 +60,12 @@ export const SupportSection: React.FC<{ onPurchase: (plan: any) => void }> = ({ 
       <div className="relative w-full">
         <div 
           ref={scrollRef}
-          className={`flex flex-row md:grid md:grid-cols-3 gap-6 no-scrollbar overflow-x-auto px-20 md:px-0 -mx-8 md:mx-0 py-12 -my-12 ${
-            selectedId ? '' : 'snap-x snap-mandatory'
-          }`}
+          className="flex flex-row md:grid md:grid-cols-3 gap-6 no-scrollbar overflow-x-auto px-20 md:px-0 -mx-8 md:mx-0 py-12 -my-12"
         >
           <div className="shrink-0 w-4 md:hidden" />
           
           {TIERS.map((tier) => {
-            const isActive = activeId === tier.id || selectedId === tier.id;
+            const isActive = selectedId === tier.id;
             
             return (
               <div 
@@ -94,13 +73,9 @@ export const SupportSection: React.FC<{ onPurchase: (plan: any) => void }> = ({ 
                 data-tier-id={tier.id}
                 ref={tier.id === 'coffee' ? middleCardRef : null}
                 className={`shrink-0 w-[210px] md:w-full bg-white/95 backdrop-blur-md p-6 rounded-[2.5rem] border transition-all duration-500 ease-out flex flex-col items-center group relative ${
-                  selectedId === null ? 'snap-center' : ''
-                } ${
                   isActive 
                     ? 'border-orange-400 ring-[6px] ring-orange-100 scale-100 opacity-100 z-10 shadow-xl' 
-                    : 'border-orange-100 scale-90 opacity-50 shadow-sm'
-                } ${
-                  selectedId && selectedId !== tier.id ? 'hidden md:flex opacity-0' : ''
+                    : 'border-orange-100 scale-95 opacity-75 shadow-sm'
                 }`}
               >
                 {/* Status Badge Area */}
@@ -136,7 +111,7 @@ export const SupportSection: React.FC<{ onPurchase: (plan: any) => void }> = ({ 
                 <div className="w-full mt-auto">
                   {selectedId === tier.id ? (
                     <div className="w-full animate-in zoom-in duration-500 min-h-[140px] flex flex-col items-center justify-center">
-                      <div className="w-full transform scale-90 origin-top">
+                      <div className="w-full max-w-[300px] mx-auto">
                         <PayPalButton 
                           amount={tier.amount.toString()} 
                           planName={tier.name} 
@@ -153,7 +128,7 @@ export const SupportSection: React.FC<{ onPurchase: (plan: any) => void }> = ({ 
                   ) : (
                     <button 
                       onClick={() => setSelectedId(tier.id)}
-                      className={`w-full py-4 bg-slate-900 text-white rounded-full font-black text-[9px] uppercase tracking-[0.2em] shadow-lg hover:bg-orange-600 transition-all active:scale-95 ${isActive ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'}`}
+                      className="w-full py-4 bg-slate-900 text-white rounded-full font-black text-[9px] uppercase tracking-[0.2em] shadow-lg hover:bg-orange-600 transition-all active:scale-95"
                     >
                       Send Support
                     </button>

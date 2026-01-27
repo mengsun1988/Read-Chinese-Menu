@@ -81,7 +81,7 @@ export default {
       const originalBody = JSON.parse(bodyText);
       const { image: base64Image, userId, type = "menu", mode = "standard", name_cn, name_en } = originalBody;
 
-      let userData = { credits: 150, scanCount: 0, lastUsed: new Date().toISOString(), passExpiryDate: null };
+let userData = { credits: 200, scanCount: 0, lastUsed: new Date().toISOString(), passExpiryDate: null };
       if (env.USER_USAGE && userId) {
         const usageDataStr = await env.USER_USAGE.get(userId);
         if (usageDataStr) userData = JSON.parse(usageDataStr);
@@ -171,8 +171,8 @@ export default {
         userData.scanCount += 1;
         if (!isUnlimited()) {
           userData.credits -= 50;
-          if (userData.scanCount === 4) { userData.credits += 50; achievementTriggered = "milestone_4"; }
-          else if (userData.scanCount === 10) { userData.credits += 100; achievementTriggered = "milestone_10"; }
+if (userData.scanCount === 4) { userData.credits += 50; achievementTriggered = "milestone_4"; }
+else if (userData.scanCount === 10) { userData.credits += 50; achievementTriggered = "milestone_10"; }
         }
         userData.lastUsed = new Date().toISOString();
         // 成功扣费才写入 KV
@@ -203,6 +203,61 @@ export default {
     } catch (err) {
       // 报错不扣费，返回错误信息
       return new Response(JSON.stringify({ error: err.message }), { status: 200, headers: corsHeaders });
+    }
+
+    // --- 5. 支付验证端点 ---
+    if (request.method === 'POST' && url.pathname === '/api/verify-payment') {
+      try {
+        const { orderId, planId, userId } = await request.json();
+        
+        // 验证PayPal订单
+        const paypalResponse = await fetch(`https://api.paypal.com/v2/checkout/orders/${orderId}/capture`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${btoa(env.PAYPAL_CLIENT_ID + ':' + env.PAYPAL_CLIENT_SECRET)}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!paypalResponse.ok) {
+          const errorData = await paypalResponse.json();
+          throw new Error(`PayPal verification failed: ${errorData.message || 'Unknown error'}`);
+        }
+        
+        // 获取用户当前数据
+        let userData = { credits: 200, scanCount: 0, lastUsed: new Date().toISOString(), passExpiryDate: null };
+        if (env.USER_USAGE && userId) {
+          const usageDataStr = await env.USER_USAGE.get(userId);
+          if (usageDataStr) userData = JSON.parse(usageDataStr);
+        }
+
+        // 计算新的过期日期
+        const currentExpiry = userData.passExpiryDate ? new Date(userData.passExpiryDate) : new Date();
+        const baseTime = currentExpiry > Date.now() ? currentExpiry : Date.now();
+        let msToAdd = 0;
+        
+        if (planId.endsWith('-day')) {
+          const days = parseInt(planId.split('-')[0]);
+          msToAdd = days * 86400000;
+        }
+        
+        // 更新用户数据
+        userData.passExpiryDate = new Date(baseTime + msToAdd).toISOString();
+        await env.USER_USAGE.put(userId, JSON.stringify(userData));
+        
+        return new Response(JSON.stringify({ 
+          success: true,
+          passExpiryDate: userData.passExpiryDate,
+          isUnlimited: true
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message }), { 
+          status: 400, 
+          headers: corsHeaders 
+        });
+      }
     }
   }
 };

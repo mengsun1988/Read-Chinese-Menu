@@ -101,36 +101,40 @@ export const HomeIdleView: React.FC<Props> = ({
           <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 px-4 max-w-2xl mx-auto">
             <div className="px-4 py-1.5 bg-white border border-slate-200/50 rounded-full flex items-center gap-2 shadow-sm">
               <span className="w-1 h-1 bg-emerald-400 rounded-full" />
-              <span className="text-[9px] md:text-[10px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">No sign-up</span>
+              <span className="text-[9px] md:text-[10px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">No Ads</span>
             </div>
             <div className="px-4 py-1.5 bg-white border border-slate-200/50 rounded-full flex items-center gap-2 shadow-sm">
               <span className="w-1 h-1 bg-emerald-400 rounded-full" />
-              <span className="text-[9px] md:text-[10px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Images not stored</span>
+              <span className="text-[9px] md:text-[10px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">No Sign-up</span>
             </div>
             <div className="px-4 py-1.5 bg-white border border-slate-200/50 rounded-full flex items-center gap-2 shadow-sm">
               <span className="w-1 h-1 bg-emerald-400 rounded-full" />
-              <span className="text-[9px] md:text-[10px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">PayPal payments</span>
-            </div>
-          </div>
+    <span className="text-[9px] md:text-[10px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">PayPal payments</span>
+  </div>
+  <div className="px-4 py-1.5 bg-white border border-slate-200/50 rounded-full flex items-center gap-2 shadow-sm">
+    <span className="w-1 h-1 bg-emerald-400 rounded-full" />
+    <span className="text-[9px] md:text-[10px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Images not stored</span>
+  </div>
+</div>
         </div>
       </header>
 
       {/* 3. Interaction Area */}
       <div className="max-w-lg mx-auto px-6 mb-16 space-y-5">
-        {scanCount >= 5 && credits < 100 && (
-          <div className="animate-in slide-in-from-top-4 duration-500">
-            <button onClick={onHandleDailyShare} className="w-full bg-emerald-50/40 border border-emerald-100 p-5 rounded-[2rem] flex items-center justify-between group hover:bg-emerald-50 transition-all active:scale-95 shadow-sm">
-              <div className="flex items-center gap-4 text-left">
-                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-xl shadow-sm group-hover:rotate-12 transition-transform">🎁</div>
-                <div>
-                  <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-1">Daily Reward</p>
-                  <p className="text-xs font-bold text-slate-900">Share for extra scans</p>
-                </div>
-              </div>
-              <span className="bg-emerald-600 text-white px-3 py-1.5 rounded-full text-[8px] font-black shadow-md uppercase tracking-wider">Share</span>
-            </button>
-          </div>
-        )}
+{(!usage.dailyShareDate || new Date(usage.dailyShareDate).toDateString() !== new Date().toDateString()) && (
+  <div className="animate-in slide-in-from-top-4 duration-500">
+    <button onClick={onHandleDailyShare} className="w-full bg-emerald-50/40 border border-emerald-100 p-5 rounded-[2rem] flex items-center justify-between group hover:bg-emerald-50 transition-all active:scale-95 shadow-sm">
+      <div className="flex items-center gap-4 text-left">
+        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-xl shadow-sm group-hover:rotate-12 transition-transform">🎁</div>
+        <div>
+          <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-1">Daily Reward</p>
+          <p className="text-xs font-bold text-slate-900">Share for extra scans</p>
+        </div>
+      </div>
+      <span className="bg-emerald-600 text-white px-3 py-1.5 rounded-full text-[8px] font-black shadow-md uppercase tracking-wider">Share</span>
+    </button>
+  </div>
+)}
 
         <div className="bg-slate-200/50 p-1.5 rounded-2xl flex gap-1 border border-slate-200/50 w-full relative">
           <button 
@@ -222,24 +226,24 @@ export const HomeIdleView: React.FC<Props> = ({
           </div>
         </div>
 
-        <div className="space-y-8 pt-12 border-t border-slate-200/60 w-full py-20">
+        <div className="space-y-8 pt-8 border-t border-slate-200/60 w-full py-12">
           <h3 className="text-center text-3xl font-black text-slate-900 uppercase tracking-tighter">Common Questions</h3>
-          <div className="flex overflow-x-auto gap-4 pb-8 snap-x snap-mandatory no-scrollbar px-[5vw]">
+          <div className="flex overflow-x-auto gap-4 pb-6 snap-x snap-mandatory no-scrollbar px-[5vw]">
             {faqItems.map((item, idx) => (
               <div 
                 key={idx} 
-                className="min-w-[300px] md:min-w-[400px] bg-white p-10 rounded-[3rem] snap-center flex flex-col border border-slate-100 shadow-sm"
+                className="min-w-[300px] md:min-w-[400px] bg-white p-8 rounded-[3rem] snap-center flex flex-col border border-slate-100 shadow-sm"
               >
-                <p className="text-slate-900 font-black text-xl leading-tight mb-4">{item.q}</p>
-                <div className="h-px w-10 bg-rose-200 mb-6" />
+                <p className="text-slate-900 font-black text-xl leading-tight mb-3">{item.q}</p>
+                <div className="h-px w-8 bg-rose-200 mb-4" />
                 <p className="text-slate-500 text-sm leading-relaxed">{item.a}</p>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="text-center pt-6">
-          <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em]">© 2026 Read Chinese Menu • Safe Travels</p>
+        <div className="text-center pt-4">
+          <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em] md:whitespace-normal">© 2026<br/>Read Chinese Menu • Safe Travels</p>
         </div>
       </div>
 

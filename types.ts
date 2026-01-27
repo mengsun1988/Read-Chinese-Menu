@@ -40,11 +40,16 @@ export enum AppStatus {
 }
 
 export interface UserUsage {
-  freeCredits: number;
-  paidCredits: number;
-  lastResetDate: string; // YYYY-MM-DD
-  lastShareDate?: string; // YYYY-MM-DD
-  passExpiryDate?: string; // ISO string
+  credits: number;        // 总点数
+  scanCount: number;      // 已扫描次数
+  freeCredits: number;    // 免费点数
+  paidCredits: number;    // 付费点数
+  lastResetDate?: string; // 最后重置日期
+  dailyShareDate?: string; // 每日分享日期
+  passExpiryDate?: string; // 通行证过期日期
+  gamePlayCount?: number;   // 今日游戏次数
+  lastGameDate?: string;    // 最后一次玩游戏日期
+  achievementTriggered?: string; // 成就触发
 }
 
 export type FeedbackType = 'EXPERIENCE' | 'IMPROVEMENT' | 'STORY';
