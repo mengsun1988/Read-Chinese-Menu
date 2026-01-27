@@ -60,6 +60,15 @@ const App: React.FC = () => {
     if (element) element.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
+  // --- 游戏奖励逻辑 ---
+  const handleGameWin = () => {
+    setUsage(prev => ({
+      ...prev,
+      credits: (prev.credits || 0) + 10,
+      achievementTriggered: 'game_win_reward'
+    }));
+  };
+
   const getCompressedBase64 = (file: File): Promise<string> => {
     return new Promise((resolve) => {
       const reader = new FileReader();
@@ -84,14 +93,14 @@ const App: React.FC = () => {
     });
   };
 
-  // --- 核心逻辑 1: 使用权限与扣费闭环 ---
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // 检查权限：非无限模式 且 点数不足 50
+    // --- 逻辑修正：仅在 MENU 模式下检查 Credit ---
     if (mode === RecognitionMode.MENU && !isUnlimited() && totalCredits < 50) {
       setShowPricing(true);
+      if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
 
@@ -103,23 +112,20 @@ const App: React.FC = () => {
       const base64 = await getCompressedBase64(file);
       
       if (mode === RecognitionMode.MENU) {
+        // --- 菜单模式逻辑 ---
         const list = await processMenuImage(base64);
-        
         if (list && Array.isArray(list) && list.length > 0) {
           setDishes(list);
           setStatus(AppStatus.SUCCESS);
           
-          // 仅在非无限模式下扣除点数
+          // 菜单模式扣费
           if (!isUnlimited()) {
             setUsage(prev => {
               const nextScanCount = (prev.scanCount || 0) + 1;
               const nextCredits = Math.max(0, (prev.credits || 0) - 50);
-              
-              // 里程碑奖励逻辑
               let achievement = null;
               if (nextScanCount === 4) achievement = 'milestone_4_reward';
               else if (nextScanCount === 5) achievement = 'milestone_5_explorer';
-
               return {
                 ...prev,
                 credits: nextScanCount === 4 ? nextCredits + 50 : nextCredits,
@@ -132,11 +138,12 @@ const App: React.FC = () => {
           throw new Error("No dishes detected. Please try a clearer photo.");
         }
       } else {
-        // 商店识别模式逻辑 (通常免费)
+        // --- 街景模式逻辑 (完全免费) ---
         const rawResult = await processStorefrontImage(base64);
         if (rawResult) {
           setStoreResult(rawResult);
           setStatus(AppStatus.SUCCESS);
+          // 这里不调用 setUsage 进行扣费逻辑
         } else {
           throw new Error("Could not identify the storefront.");
         }
@@ -147,35 +154,22 @@ const App: React.FC = () => {
     }
   };
 
-  // --- 核心逻辑 2: 购买更新闭环 ---
   const onPurchase = (plan: any) => {
     setUsage(prev => {
       const updated = { ...prev };
-      
-      // A. 处理 Day Pass (天数顺延逻辑)
       if (plan.id.endsWith('-day')) {
         const days = parseInt(plan.id.split('-')[0]);
         const msToAdd = days * 86400000;
-        
-        // 如果当前还在有效期内，从到期日开始顺延；否则从现在开始算
         const currentExpiry = updated.passExpiryDate ? new Date(updated.passExpiryDate).getTime() : Date.now();
         const baseTime = currentExpiry > Date.now() ? currentExpiry : Date.now();
-        
         updated.passExpiryDate = new Date(baseTime + msToAdd).toISOString();
         updated.achievementTriggered = 'purchase_bonus';
-      } 
-      // B. 处理 Donation (点数累加逻辑)
-      else if (plan.id === 'donation') {
-        const creditsMap: Record<number, number> = {
-          3.99: 500,
-          7.99: 1000,
-          15.99: 2500
-        };
+      } else if (plan.id === 'donation') {
+        const creditsMap: Record<number, number> = { 3.99: 500, 7.99: 1000, 15.99: 2500 };
         const creditsToAdd = creditsMap[plan.amount] || 500;
         updated.credits = (updated.credits || 0) + creditsToAdd;
         updated.achievementTriggered = 'donation_bonus';
       }
-      
       return updated;
     });
     setShowPricing(false);
@@ -206,7 +200,7 @@ const App: React.FC = () => {
       currency: "USD",
       intent: "capture"
     }}>
-      <div className="min-h-screen pb-0 bg-[#fafafa] font-sans">
+      <div className="min-h-screen pb-0 bg-[#fafafa] font-sans w-full">
         <EffectLayer 
           trigger={usage.achievementTriggered} 
           onComplete={() => setUsage(prev => ({ ...prev, achievementTriggered: null }))} 
@@ -214,23 +208,24 @@ const App: React.FC = () => {
 
         <A2HSManager />
         
-        <div className="max-w-5xl mx-auto px-6 relative">
-          <main>
-            <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
+        <main className="w-full relative">
+          <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
 
-            {status === AppStatus.IDLE && (
-              <HomeIdleView 
-                mode={mode}
-                onModeChange={handleModeChange}
-                onTriggerUpload={triggerUpload}
-                onOpenSurvival={() => setShowSurvival(true)}
-                onPurchase={onPurchase}
-                onHandleDailyShare={handleDailyShare}
-                usage={usage}
-                onShowDishDetail={handleDishClick}
-              />
-            )}
+          {status === AppStatus.IDLE && (
+            <HomeIdleView 
+              mode={mode}
+              onModeChange={handleModeChange}
+              onTriggerUpload={triggerUpload}
+              onOpenSurvival={() => setShowSurvival(true)}
+              onPurchase={onPurchase}
+              onHandleDailyShare={handleDailyShare}
+              usage={usage}
+              onShowDishDetail={handleDishClick}
+              onGameWin={handleGameWin} 
+            />
+          )}
 
+          <div className="max-w-5xl mx-auto px-6">
             {status === AppStatus.LOADING && (
               <div className="py-20 animate-in fade-in duration-500">
                 <LoadingScreen />
@@ -258,7 +253,7 @@ const App: React.FC = () => {
                         {mode === RecognitionMode.MENU ? `${dishes.length} Items Found` : "Shop Identified"}
                       </h3>
                       <p className="text-[9px] font-black text-rose-400 uppercase tracking-widest leading-none">
-                        {isUnlimited() ? "Premium Active" : `${usage.credits} Credits Left`}
+                        {mode === RecognitionMode.STREET ? "Free Recognition" : (isUnlimited() ? "Premium Active" : `${usage.credits} Credits Left`)}
                       </p>
                     </div>
                   </div>
@@ -276,8 +271,8 @@ const App: React.FC = () => {
                 )}
               </div>
             )}
-          </main>
-        </div>
+          </div>
+        </main>
 
         <Footer 
           onMenuScan={() => { handleModeChange(RecognitionMode.MENU); setTimeout(scrollToCamera, 100); }} 
@@ -291,11 +286,20 @@ const App: React.FC = () => {
         <SurvivalCardView isOpen={showSurvival} onClose={() => setShowSurvival(false)} />
         
         {showPricing && (
-          <div className="fixed inset-0 z-[2000] bg-slate-900/60 backdrop-blur-md p-4 flex items-center justify-center animate-in fade-in duration-300">
-            <PricingModule 
-              onPurchase={onPurchase} 
-              onLater={() => setShowPricing(false)} 
-            />
+          <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setShowPricing(false)} />
+            <div className="relative w-full max-w-5xl animate-in fade-in zoom-in duration-300">
+              <div className="bg-white rounded-[3rem] overflow-hidden shadow-2xl relative">
+                  <PricingModule 
+                    onPurchase={onPurchase} 
+                    onLater={() => setShowPricing(false)} 
+                  />
+                  <button 
+                    onClick={() => setShowPricing(false)}
+                    className="absolute top-6 right-8 text-slate-400 hover:text-slate-900 font-black text-2xl z-50"
+                  >✕</button>
+              </div>
+            </div>
           </div>
         )}
 

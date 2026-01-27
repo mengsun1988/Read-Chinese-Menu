@@ -53,10 +53,35 @@ export const EffectLayer: React.FC<EffectLayerProps> = ({ trigger, onComplete })
       {/* 场景 2: 每日分享奖励 (daily_share_bonus) */}
       {active === 'daily_share_bonus' && (
         <div className="absolute inset-0 flex items-center justify-center animate-message-pop">
-           <div className="bg-emerald-600 text-white px-8 py-4 rounded-[2rem] shadow-2xl flex items-center gap-3">
+            <div className="bg-emerald-600 text-white px-8 py-4 rounded-[2rem] shadow-2xl flex items-center gap-3">
               <span className="text-2xl">⚡</span>
               <p className="font-black uppercase tracking-widest text-sm">Boosted! +50 Credits</p>
-           </div>
+            </div>
+        </div>
+      )}
+
+      {/* 场景 3: 游戏获胜奖励 (game_win_reward) */}
+      {active === 'game_win_reward' && (
+        <div className="absolute inset-0">
+          {/* 向上喷发的星星 */}
+          {[...Array(12)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute left-1/2 bottom-1/4 text-2xl animate-coin-fly"
+              style={{
+                left: `${48 + Math.random() * 4}%`,
+                animationDelay: `${i * 0.05}s`,
+              }}
+            >
+              {['✨', '⭐', '🎊'][i % 3]}
+            </div>
+          ))}
+          <div className="absolute inset-0 flex items-center justify-center animate-message-pop">
+            <div className="bg-slate-900 border border-emerald-400/50 text-white px-8 py-4 rounded-[2rem] shadow-2xl flex flex-col items-center">
+              <span className="text-emerald-400 font-black text-2xl italic tracking-tighter">+10 CREDITS</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/50 mt-1">Master Mind Bonus</span>
+            </div>
+          </div>
         </div>
       )}
 
