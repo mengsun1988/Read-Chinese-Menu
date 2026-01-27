@@ -1,0 +1,34 @@
+:root {
+  /* Radius tokens - 保持与当前UI完全一致的圆角值 */
+  --radius-primary: 2.2rem;
+  --radius-secondary: 3rem;
+  --radius-card: 1.5rem;
+  --radius-button: 1.2rem;
+  
+  /* Color tokens - 精确匹配当前Tailwind色值 */
+  --color-primary: #e11d48; /* rose-600 */
+  --color-secondary: #047857; /* emerald-500 */
+  --color-background: #fcfbf9;
+  --color-text: #1e293b;
+  --color-error: #e11d48;
+  --color-success: #047857;
+  
+  /* Spacing tokens - 对应Tailwind间距系统 */
+  --spacing-sm: 0.5rem;   /* p-2 */
+  --spacing-md: 1rem;     /* p-4 */
+  --spacing-lg: 1.5rem;   /* p-6 */
+  --spacing-xl: 2rem;     /* p-8 */
+  
+  /* Typography tokens */
+  --font-heading: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-body: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --text-sm: 0.875rem;    /* text-sm */
+  --text-base: 1rem;      /* text-base */
+  --text-lg: 1.125rem;    /* text-lg */
+  --text-xl: 1.25rem;     /* text-xl */
+  
+  /* Shadow tokens - 匹配当前阴影效果 */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}

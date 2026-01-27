@@ -1,7 +1,7 @@
 import { Dish, StoreResult } from "../types";
 
-// 1. 核心：使用自定义子域名
-const WORKER_URL = "https://api.readchinesemenu.com";
+// 1. 核心：修改为你的 Cloudflare Worker 域名
+const WORKER_URL = "https://read-chinese-menu.samuelmore1903.workers.dev";
 
 /**
  * 获取或生成设备唯一 ID
@@ -64,8 +64,9 @@ export async function getDishDeepDetail(name_cn: string, name_en: string): Promi
     return {
       ingredients: Array.isArray(result.ingredients) ? result.ingredients : [],
       allergens: Array.isArray(result.allergens) ? result.allergens : [],
-      // 包含辣度和过敏原等深度信息
       spiciness: result.spiciness_level || result.spiciness || 0, 
+      pinyin: result.pinyin || "",
+      pronunciation: result.pronunciation || "",
       health_note: result.health_note || "",
       description: result.description || "",
       isFullyAnalyzed: true
@@ -78,8 +79,9 @@ export async function getDishDeepDetail(name_cn: string, name_en: string): Promi
 
 /**
  * 处理菜单图片 (第一步：识别所有可见菜品列表)
+ * 修改点：返回包含 dishes 和 usage 的完整对象，而不仅仅是数组
  */
-export async function processMenuImage(base64Image: string): Promise<any[]> {
+export async function processMenuImage(base64Image: string): Promise<any> {
   const cleanedBase64 = cleanBase64(base64Image);
   const userId = getOrCreateUserId();
   
@@ -91,12 +93,15 @@ export async function processMenuImage(base64Image: string): Promise<any[]> {
         image: cleanedBase64, 
         type: "menu",
         userId: userId,
-        // 恢复 standard 模式确保完整识别所有菜品
         mode: "standard" 
       }),
     });
 
-    if (response.status === 403) throw new Error("You have run out of free scans for today.");
+    // 处理额度耗尽的特殊状态码
+    if (response.status === 403) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "OUT_OF_CREDITS");
+    }
     
     const contentType = response.headers.get("content-type");
     if (!contentType || !contentType.includes("application/json")) {
@@ -106,33 +111,40 @@ export async function processMenuImage(base64Image: string): Promise<any[]> {
     const result = await response.json();
     let rawArray: any[] = [];
 
-    // 兼容多种返回格式：数组、带 dishes 键的对象、或者单道菜的对象
+    // 解析菜品数组
     if (Array.isArray(result)) {
       rawArray = result;
     } else if (result.dishes && Array.isArray(result.dishes)) {
       rawArray = result.dishes;
     } else if (result.name_cn || result.name_en) {
-      // 如果后端只返回了单道菜的对象，将其包装进数组
       rawArray = [result];
     }
 
-    if (!Array.isArray(rawArray) || rawArray.length === 0) {
+    if (rawArray.length === 0) {
       throw new Error("No dishes could be identified. Try a clearer photo.");
     }
 
-    return rawArray.map((item: any, index: number) => ({
+    // 格式化菜品数据
+    const formattedDishes = rawArray.map((item: any, index: number) => ({
       id: item.id || `dish-${Date.now()}-${index}`,
       name_cn: item.name_cn || item.name || "Unknown",
       name_en: item.name_en || item.english_name || "Scanning...",
       pinyin: item.pinyin || "",
+      pronunciation: item.pronunciation || "",
       price: item.price || "",
-      // 确保食材结构兼容
       ingredients: Array.isArray(item.ingredients) ? item.ingredients : (item.core_ingredients || []),
       description: item.description || "",
       isFullyAnalyzed: item.isFullyAnalyzed || false, 
       spiciness_level: item.spiciness_level || 0,
       allergens: item.allergens || []
     }));
+
+    // 返回包含 dishes 列表和 usage 状态的对象
+    return {
+      dishes: formattedDishes,
+      usage: result.usage || null
+    };
+
   } catch (err: any) {
     console.error("Menu Image Error:", err);
     throw err;

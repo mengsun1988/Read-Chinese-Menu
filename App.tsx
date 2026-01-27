@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { AppStatus, RecognitionMode, Ingredient, StoreResult } from './types';
 import { processMenuImage, processStorefrontImage, getDishDeepDetail } from './services/geminiService';
 import { PayPalScriptProvider } from "@paypal/react-paypal-js";
@@ -41,6 +41,8 @@ const App: React.FC = () => {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [waiterContext, setWaiterContext] = useState<{ type: 'ingredient' | 'spiciness'; content_en: string; content_cn: string } | null>(null);
   
+  const [countdown, setCountdown] = useState(5);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const triggerUpload = () => fileInputRef.current?.click();
@@ -52,8 +54,21 @@ const App: React.FC = () => {
     setStoreResult(null);
     setError(null);
     setPreviewUrl(null);
+    setCountdown(5);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
+
+  useEffect(() => {
+    let timer: any;
+    if (status === AppStatus.ERROR && error === "OUT_OF_CREDITS" && countdown > 0) {
+      timer = setInterval(() => {
+        setCountdown(prev => prev - 1);
+      }, 1000);
+    } else if (status === AppStatus.ERROR && error === "OUT_OF_CREDITS" && countdown === 0) {
+      reset();
+    }
+    return () => clearInterval(timer);
+  }, [status, error, countdown]);
 
   const scrollToCamera = () => {
     const element = document.getElementById('camera-section');
@@ -96,8 +111,14 @@ const App: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (mode === RecognitionMode.MENU && !isUnlimited() && totalCredits < 50) {
-      setShowPricing(true);
+    // --- 1. 预检查余额 (防止浪费网络请求) ---
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const needsCredits = mode === RecognitionMode.MENU && !isUnlimited() && !isLocalhost;
+
+    // 根据后端逻辑，菜单识别需要 50 点
+    if (needsCredits && (usage.credits || 0) < 50) {
+      setStatus(AppStatus.ERROR);
+      setError("OUT_OF_CREDITS");
       if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
@@ -110,41 +131,43 @@ const App: React.FC = () => {
       const base64 = await getCompressedBase64(file);
       
       if (mode === RecognitionMode.MENU) {
-        const list = await processMenuImage(base64);
-        if (list && Array.isArray(list) && list.length > 0) {
-          setDishes(list);
+        const result = await processMenuImage(base64);
+        
+        // --- 2. 识别成功判定 ---
+        if (result && result.dishes && result.dishes.length > 0) {
+          setDishes(result.dishes);
           setStatus(AppStatus.SUCCESS);
           
-          // 只有在这里（识别成功）才扣除 50 点
-          if (!isUnlimited()) {
-            setUsage(prev => {
-              const nextScanCount = (prev.scanCount || 0) + 1;
-              const nextCredits = Math.max(0, (prev.credits || 0) - 50);
-              let achievement = null;
-              if (nextScanCount === 4) achievement = 'milestone_4_reward';
-              else if (nextScanCount === 5) achievement = 'milestone_5_explorer';
-              return {
-                ...prev,
-                credits: nextScanCount === 4 ? nextCredits + 50 : nextCredits,
-                scanCount: nextScanCount,
-                achievementTriggered: achievement
-              };
-            });
+          // 只有成功识别（后端已扣点）才更新本地 Credit 状态
+          if (result.usage) {
+            setUsage(prev => ({
+              ...prev,
+              credits: result.usage.credits,
+              scanCount: result.usage.scanCount,
+              achievementTriggered: result.usage.achievementTriggered || prev.achievementTriggered
+            }));
           }
         } else {
-          throw new Error("No dishes detected. Please try a clearer photo.");
+          // AI 返回了 200 但 dishes 为空：不扣点，直接报错
+          throw new Error("No dishes detected. Please ensure the menu is clear. No credits were charged.");
         }
       } else {
+        // 店面模式识别 (免费)
         const rawResult = await processStorefrontImage(base64);
-        if (rawResult) {
+        if (rawResult && rawResult.name_cn) {
           setStoreResult(rawResult);
           setStatus(AppStatus.SUCCESS);
         } else {
-          throw new Error("Could not identify the storefront.");
+          throw new Error("Could not identify the storefront. Try a different angle.");
         }
       }
     } catch (err: any) {
-      setError(err.message || "An unexpected error occurred.");
+      // 捕获后端返回的 403 OUT_OF_CREDITS 错误
+      if (err.message?.includes("OUT_OF_CREDITS")) {
+        setError("OUT_OF_CREDITS");
+      } else {
+        setError(err.message || "An unexpected error occurred.");
+      }
       setStatus(AppStatus.ERROR);
     }
   };
@@ -195,7 +218,7 @@ const App: React.FC = () => {
       currency: "USD",
       intent: "capture"
     }}>
-      <div className="min-h-screen pb-0 bg-[#fafafa] font-sans w-full">
+      <div className="min-h-screen pb-0 bg-slate-50 font-sans w-full">
         <EffectLayer 
           trigger={usage.achievementTriggered} 
           onComplete={() => setUsage(prev => ({ ...prev, achievementTriggered: null }))} 
@@ -222,27 +245,44 @@ const App: React.FC = () => {
 
           <div className="max-w-5xl mx-auto px-6">
             {status === AppStatus.LOADING && (
-              <div className="py-20 animate-in fade-in duration-500">
+              <div className="py-20 animate-in fade-in duration-500 bg-transparent">
                 <LoadingScreen />
               </div>
             )}
 
             {status === AppStatus.ERROR && (
-              <div className="bg-white border border-rose-100 rounded-[3rem] p-16 text-center space-y-6 shadow-sm mt-20">
-                <div className="w-20 h-20 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto">
-                  <WarningIcon className="w-10 h-10" />
-                </div>
-                <h2 className="text-3xl font-bold text-slate-900 uppercase italic tracking-tighter">Scan Failed</h2>
-                <p className="text-slate-400 text-xs font-bold leading-relaxed">{error}</p>
-                <button onClick={reset} className="bg-slate-900 text-white font-black py-4 px-12 rounded-full shadow-lg active:scale-95 transition-all uppercase tracking-widest text-[10px]">Retry Scan</button>
+              <div className="mt-20 animate-in fade-in zoom-in duration-500 max-w-2xl mx-auto px-4">
+                {error === "OUT_OF_CREDITS" ? (
+                  <div className="bg-slate-900 rounded-[2.5rem] p-8 md:p-12 text-center relative overflow-hidden shadow-2xl border border-white/5 max-h-[75vh] flex flex-col justify-center my-4">
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-1/2 bg-rose-600/10 blur-[100px] pointer-events-none"></div>
+                    <div className="relative z-10">
+                      <div className="relative w-16 h-16 mx-auto mb-6 flex items-center justify-center bg-rose-600/20 rounded-full text-rose-500">
+                         <WarningIcon className="w-8 h-8" />
+                      </div>
+                      <h2 className="text-2xl md:text-3xl font-black text-white uppercase italic tracking-tighter mb-2">Credits <span className="text-rose-600">Exhausted</span></h2>
+                      <p className="text-slate-400 text-[11px] font-medium mb-8 leading-relaxed">Your free scans have been used up.<br/>Returning home to refuel in {countdown}s...</p>
+                      <div className="flex flex-col gap-3 max-w-xs mx-auto">
+                        <button onClick={() => { reset(); setShowPricing(true); }} className="bg-rose-600 hover:bg-rose-500 text-white font-black py-4 px-8 rounded-full shadow-lg active:scale-95 transition-all uppercase tracking-widest text-[10px]">Get More Credits Now</button>
+                        <button onClick={reset} className="text-slate-500 hover:text-white font-bold py-2 text-[9px] uppercase tracking-[0.2em] transition-colors">Skip and return</button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-white border border-rose-100 rounded-[3rem] p-16 text-center space-y-6 shadow-sm">
+                    <div className="w-20 h-20 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto">
+                      <WarningIcon className="w-10 h-10" />
+                    </div>
+                    <h2 className="text-3xl font-bold text-slate-900 uppercase italic tracking-tighter">Scan Failed</h2>
+                    <p className="text-slate-400 text-xs font-bold leading-relaxed">{error}</p>
+                    <button onClick={reset} className="bg-slate-900 text-white font-black py-4 px-12 rounded-full shadow-lg active:scale-95 transition-all uppercase tracking-widest text-[10px]">Retry Scan</button>
+                  </div>
+                )}
               </div>
             )}
 
             {status === AppStatus.SUCCESS && (
               <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 mt-10 pb-32">
-                
-                {/* 顶部工具栏：集成返回与余额显示 */}
-                <div className="flex justify-between items-center bg-slate-900/95 backdrop-blur-md p-5 rounded-[2.2rem] shadow-2xl sticky top-4 z-[110] mx-2 border border-white/10">
+                <div className="flex justify-between items-center bg-slate-900 p-5 rounded-[2.2rem] shadow-2xl sticky top-4 z-[110] mx-2 border border-white/10">
                   <div className="flex items-center gap-4">
                     <button 
                       onClick={reset}

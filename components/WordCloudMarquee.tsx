@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 
-// 更新为纯正地道的中国本土菜肴
 const DOMESTIC_DISHES = [
   "Fish Flavored Shredded Pork (鱼香肉丝)", "Mapo Tofu (麻婆豆腐)", "Peking Duck (北京烤鸭)", 
   "Soup Dumplings (小笼包)", "Spicy Hot Pot (麻辣香锅)", "Twice-Cooked Pork (回锅肉)", 
@@ -31,35 +30,35 @@ const Row = ({ items, onItemClick, reverse = false, duration = "40s" }: RowProps
         className={`flex gap-4 items-center shrink-0 ${reverse ? 'animate-marquee-reverse' : 'animate-marquee'}`}
         style={{ animationDuration: duration }}
       >
-        {/* 渲染两组以实现无缝循环 */}
         {Array.from({ length: 2 }).map((_, idx) => (
           <div key={idx} className="flex gap-4 items-center pr-4">
             {items.map((item, i) => (
               <button 
                 key={`${idx}-${i}`} 
                 onClick={() => onItemClick(item)}
-                className={`px-5 py-2.5 border rounded-full shadow-sm flex items-center gap-3 transition-all active:scale-95 whitespace-nowrap ${
+                // 核心改动：bg-white/40 + backdrop-blur 完美融入灰底
+                className={`px-6 py-3 border rounded-full shadow-[0_2px_15px_-3px_rgba(0,0,0,0.04)] flex items-center gap-4 transition-all active:scale-95 whitespace-nowrap backdrop-blur-md ${
                   item.isHistory 
-                    ? 'bg-rose-50 border-rose-200 ring-1 ring-rose-100' 
-                    : 'bg-white border-slate-100'
+                    ? 'bg-rose-50/60 border-rose-200/50 ring-1 ring-rose-100/50' 
+                    : 'bg-white/40 border-slate-200/40 hover:bg-white/80 hover:border-slate-300/50'
                 }`}
               >
                 <div className="flex flex-col items-start leading-none">
-                  <span className={`text-[9px] font-black uppercase tracking-tighter mb-1 ${
-                    item.isHistory ? 'text-rose-500' : 'text-slate-400'
+                  {/* 英文主标题：加重加大 */}
+                  <span className={`text-[13px] font-black uppercase tracking-tight mb-1 ${
+                    item.isHistory ? 'text-rose-600' : 'text-slate-900'
                   }`}>
                     {item.en}
                   </span>
-                  <span className={`text-sm font-bold ${
-                    item.isHistory ? 'text-rose-700' : 'text-slate-800'
+                  {/* 中文副标题：缩小淡化 */}
+                  <span className={`text-[9px] font-bold tracking-wider ${
+                    item.isHistory ? 'text-rose-400' : 'text-slate-400'
                   }`}>
                     {item.cn}
                   </span>
                 </div>
                 {item.isHistory && (
-                  <div className="flex items-center gap-1 bg-rose-600 text-white text-[8px] font-black px-2 py-1 rounded-full animate-pulse">
-                    <span>LIVE</span>
-                  </div>
+                  <div className="w-2 h-2 bg-rose-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.4)]" />
                 )}
               </button>
             ))}
@@ -111,50 +110,32 @@ export const WordCloudMarquee: React.FC<{ onShowDetail: (d: any) => void }> = ({
   if (displayItems.length === 0) return null;
 
   const rowCount = 4;
-  const rows = Array.from({ length: rowCount }, (_, i) => {
-    return displayItems.filter((_, idx) => idx % rowCount === i);
-  });
+  const rows = Array.from({ length: rowCount }, (_, i) => displayItems.filter((_, idx) => idx % rowCount === i));
 
   return (
-    // 使用 relative z-0 确保层次正确
-    <div className="w-full relative py-16 bg-transparent">
-      {/* 标题部分：依然保持在 max-w-xl 居中内 */}
-      <div className="max-w-xl mx-auto px-6 mb-10 text-center md:text-left">
-        <div className="flex items-center justify-center md:justify-start gap-3">
-          <span className="flex h-3 w-3 relative">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
-          </span>
-          <div>
-            <h3 className="text-sm font-black uppercase tracking-[0.15em] text-slate-900 leading-tight">Traveler Feed</h3>
-            <p className="text-[10px] font-bold text-rose-500 uppercase tracking-widest mt-1">Recently identified items</p>
-          </div>
+    <div className="w-full relative bg-transparent overflow-hidden">
+      {/* 标题部分按要求保持不动 */}
+      <header className="mb-12 space-y-4 text-center px-4 max-w-4xl mx-auto">
+        <div className="inline-flex items-center gap-2 px-3 py-1 bg-rose-50 border border-rose-100 rounded-full">
+          <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-ping" />
+          <span className="text-[9px] font-bold text-rose-600 uppercase tracking-widest">Traveler Feed</span>
         </div>
-      </div>
+        <h3 className="text-3xl font-black text-slate-900 tracking-tighter uppercase">Recently Identified</h3>
+      </header>
 
-      {/* 词云轨道部分：使用负 Margin 技巧突破父级容器宽度限制，实现真正的 100vw 全屏 */}
-      <div className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-[100vw] overflow-hidden">
-        <Row items={rows[0]} onItemClick={handleItemClick} duration="80s" />
-        <Row items={rows[1]} onItemClick={handleItemClick} reverse duration="65s" />
-        <Row items={rows[2]} onItemClick={handleItemClick} duration="90s" />
-        <Row items={rows[3]} onItemClick={handleItemClick} reverse duration="75s" />
+      {/* 词云轨道 */}
+      <div className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-[100vw] space-y-2">
+        <Row items={rows[0]} onItemClick={handleItemClick} duration="100s" />
+        <Row items={rows[1]} onItemClick={handleItemClick} reverse duration="80s" />
+        <Row items={rows[2]} onItemClick={handleItemClick} duration="110s" />
+        <Row items={rows[3]} onItemClick={handleItemClick} reverse duration="90s" />
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes marquee {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        @keyframes marquee-reverse {
-          0% { transform: translateX(-50%); }
-          100% { transform: translateX(0); }
-        }
-        .animate-marquee {
-          animation: marquee linear infinite;
-        }
-        .animate-marquee-reverse {
-          animation: marquee-reverse linear infinite;
-        }
+        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        @keyframes marquee-reverse { 0% { transform: translateX(-50%); } 100% { transform: translateX(0); } }
+        .animate-marquee { animation: marquee linear infinite; }
+        .animate-marquee-reverse { animation: marquee-reverse linear infinite; }
       `}} />
     </div>
   );

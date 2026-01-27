@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { ChiliIcon, AnimalFatIcon, SpeakerIcon } from './Icons';
 
 interface Ingredient {
@@ -22,6 +22,16 @@ const getSpicyComparison = (level: number) => {
   return { label: 'Extra Spicy', comparison: 'Habanero', color: 'text-red-400' };
 };
 
+// 核心修复：数字转拼音/发音助手
+const formatChinesePhonetic = (text: string) => {
+  if (!text) return "";
+  const numMap: Record<string, string> = {
+    '0': 'líng', '1': 'yī', '2': 'èr', '3': 'sān', '4': 'sì',
+    '5': 'wǔ', '6': 'liù', '7': 'qī', '8': 'bā', '9': 'jiǔ'
+  };
+  return text.toLowerCase().replace(/[0-9]/g, (m) => numMap[m] + " ");
+};
+
 export const DishDetailModal: React.FC<DishDetailModalProps> = ({ 
   dish, 
   onClose, 
@@ -32,36 +42,28 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
   const nameCN = dish.name_cn || dish.dish_name_cn || dish.name || "未知菜品";
   const nameEN = dish.name_en || dish.dish_name_en || dish.english_name || "Unknown Dish";
   
-  // 拼音数据容错处理
-  const pinyin = dish.pinyin || dish.pinyin_name || "";
-  const pronunciation = dish.pronunciation || dish.sounds_like || "";
+  // 处理拼音和发音中的数字，并确保小写
+  const pinyin = formatChinesePhonetic(dish.pinyin || dish.pinyin_name || "");
+  const pronunciation = formatChinesePhonetic(dish.pronunciation || dish.sounds_like || "");
+
+  // 价格显示逻辑修复：自动补全符号
+  const displayPrice = dish.price 
+    ? (dish.price.toString().includes('￥') || dish.price.toString().toLowerCase().includes('yuan') 
+        ? dish.price 
+        : `${dish.price} yuan`)
+    : null;
 
   let displayDescription = dish.description || "";
   const ingredients = Array.isArray(dish.ingredients) ? dish.ingredients : [];
   
-  // 语音播放函数优化
   const speakDishName = (e: React.MouseEvent) => {
     e.stopPropagation();
     const synth = window.speechSynthesis;
-    if (!synth) {
-      console.warn("Speech synthesis not supported");
-      return;
-    }
-    
-    // 取消当前正在排队的播放
+    if (!synth) return;
     synth.cancel(); 
-
     const utterance = new SpeechSynthesisUtterance(nameCN);
     utterance.lang = 'zh-CN';
     utterance.rate = 0.85; 
-    utterance.pitch = 1.0;
-    utterance.volume = 1.0;
-
-    // 针对某些移动端浏览器的语音加载处理
-    const voices = synth.getVoices();
-    const chineseVoice = voices.find(v => v.lang.includes('zh-CN') || v.lang.includes('zh_CN'));
-    if (chineseVoice) utterance.voice = chineseVoice;
-
     synth.speak(utterance);
   };
 
@@ -101,17 +103,17 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
                 </div>
             </div>
 
-            {/* 拼音与发音区域 - 关键显示逻辑修复 */}
+            {/* 拼音与发音区域 */}
             {(pinyin || pronunciation) && (
-              <div className="flex flex-col gap-1 pt-2 border-t border-white/20 w-fit">
+              <div className="flex flex-col gap-1.5 pt-2 mt-1 border-t border-white/10 w-fit">
                 {pinyin && (
-                  <p className="text-sm font-black tracking-widest text-yellow-300 uppercase drop-shadow-md">
+                  <p className="text-sm font-medium text-yellow-300 lowercase tracking-normal italic leading-none">
                     {pinyin}
                   </p>
                 )}
                 {pronunciation && (
-                  <p className="text-xs font-bold text-white/90 italic flex items-center gap-2">
-                    <span className="opacity-60 font-medium not-italic">Sounds like:</span> "{pronunciation}"
+                  <p className="text-[11px] font-medium text-white/80 italic flex items-center gap-2">
+                    <span className="opacity-50 not-italic font-normal">Approx:</span> "{pronunciation}"
                   </p>
                 )}
               </div>
@@ -119,8 +121,10 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
           </div>
 
           <div className="absolute -bottom-6 left-8 right-8 flex justify-between items-center">
-             {dish.price ? (
-               <span className="bg-yellow-400 text-red-900 px-5 py-2 rounded-2xl font-black text-xl shadow-xl border-2 border-white">{dish.price}</span>
+             {displayPrice ? (
+               <span className="bg-yellow-400 text-red-900 px-5 py-2 rounded-2xl font-black text-xl shadow-xl border-2 border-white">
+                 {displayPrice}
+               </span>
              ) : <div />}
              <button 
                onClick={handleImageSearch} 
@@ -227,7 +231,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
                     <span key={i} className="text-[9px] font-black uppercase bg-emerald-600 px-2.5 py-1 rounded-lg text-white">{a}</span>
                   ))
                 ) : (
-                  <span className="text-[10px] font-bold text-emerald-700 italic">No Common Allergens</span>
+                  <span className="text-[10px] font-bold text-emerald-700 italic">No Common Allergens detected. Confirm with server for safety.</span>
                 )}
               </div>
             </div>

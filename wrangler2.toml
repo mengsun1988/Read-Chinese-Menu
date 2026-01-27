@@ -1,0 +1,19 @@
+name = "read-chinese-menu" # Cloudflare 上的 Worker 名称
+main = "worker.js"         # 你的主代码文件
+compatibility_date = "2026-01-27"
+compatibility_flags = ["nodejs_compat"]
+
+[ai]
+binding = "AI"
+
+[[kv_namespaces]]
+binding = "CARDS_KV"
+id = "17c3f17f0ede460e9dce6186ed6eaf3f"
+
+[[kv_namespaces]]
+binding = "USER_USAGE"
+id = "5bf7f707e17747719b812d3d7d0b038e"
+
+[vars]
+ENVIRONMENT = "production"
+# DASHSCOPE_API_KEY 建议在 Cloudflare 控制台的 Settings -> Variables 中添加为 Secret

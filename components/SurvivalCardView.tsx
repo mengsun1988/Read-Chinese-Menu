@@ -35,29 +35,24 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
   }, []);
 
   useEffect(() => {
-    if (isOpen) {
+    // 性能优化：只有在打开且没有缓存数据时才 fetch
+    if (isOpen && communityCards.length === 0) {
       fetchCommunityCards();
     }
-  }, [isOpen, fetchCommunityCards]);
+  }, [isOpen, fetchCommunityCards, communityCards.length]);
 
   const speak = useCallback((text: string) => {
-    if (!window.speechSynthesis) {
-      alert("Your browser does not support voice synthesis.");
-      return;
-    }
+    if (!window.speechSynthesis) return;
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'zh-CN';
     utterance.rate = 0.8;
-    utterance.volume = 1.0;
     
     const voices = window.speechSynthesis.getVoices();
     if (voices.length > 0) {
       window.speechSynthesis.speak(utterance);
     } else {
-      window.speechSynthesis.onvoiceschanged = () => {
-        window.speechSynthesis.speak(utterance);
-      };
+      window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.speak(utterance);
     }
   }, []);
 
@@ -71,9 +66,7 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
         body: JSON.stringify({ text: newEn })
       });
       const data = await response.json();
-      if (data.translation) {
-        setNewCn(data.translation);
-      }
+      if (data.translation) setNewCn(data.translation);
     } catch (err) {
       console.error("Translation Error:", err);
     } finally {
@@ -96,8 +89,7 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
       });
       if (response.ok) {
         setShowAddForm(false);
-        setNewEn(""); 
-        setNewCn("");
+        setNewEn(""); setNewCn("");
         await fetchCommunityCards();
       }
     } catch (err) { 
@@ -107,14 +99,14 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
     }
   };
 
+  // 计算逻辑优化：减少过滤开销
   const filteredCards = useMemo(() => {
     if (activeTab === "Community") {
       return [...communityCards].sort((a, b) => (b.votes || 0) - (a.votes || 0));
     }
-    const promotedCards = communityCards.filter(c => 
-      c.category === activeTab && (c.votes || 0) >= 20
-    );
-    return [...OFFICIAL_CARDS.filter(c => c.category === activeTab), ...promotedCards];
+    const official = OFFICIAL_CARDS.filter(c => c.category === activeTab);
+    const promoted = communityCards.filter(c => c.category === activeTab && (c.votes || 0) >= 20);
+    return [...official, ...promoted];
   }, [activeTab, communityCards]);
 
   if (!isOpen) return null;
@@ -169,18 +161,18 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
 
       {/* Grid View */}
       <div className="flex-1 overflow-y-auto no-scrollbar bg-slate-50">
-        <div className="max-w-3xl mx-auto p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 content-start pb-32">
+        <div className="max-w-3xl mx-auto p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 content-start pb-32 grid-container">
           {isLoading && communityCards.length === 0 ? (
             <div className="col-span-full py-20 text-center text-slate-400 font-black animate-pulse uppercase tracking-widest text-[10px]">Loading...</div>
           ) : filteredCards.map((card) => (
             <div
               key={card.id || card.en}
               onClick={() => { setSelectedCard(card); speak(card.cn); }}
-              className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4 active:scale-95 transition-all relative cursor-pointer min-h-[80px]"
+              className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm grid grid-cols-[50px_1fr] items-center gap-4 active:scale-95 transition-all relative cursor-pointer min-h-[80px]"
             >
-              <div className="text-3xl shrink-0">{card.icon}</div>
-              <div className="pr-8">
-                <p className="text-[15px] font-black text-slate-900 leading-tight italic tracking-tight line-clamp-2">{card.en}</p>
+              <div className="text-3xl text-center">{card.icon}</div>
+              <div className="flex flex-col justify-center border-l border-slate-50 pl-2">
+                <p className="text-[14px] font-black text-slate-900 leading-tight italic tracking-tight line-clamp-2 mb-0.5">{card.en}</p>
                 <p className="text-[12px] font-bold text-slate-400 truncate">{card.cn}</p>
               </div>
             </div>
@@ -202,27 +194,20 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
 
             <div className="flex flex-col items-center text-center space-y-6">
               <div className="text-[6rem] drop-shadow-xl animate-bounce-slow shrink-0">{selectedCard.icon}</div>
-              
               <div className="space-y-4">
                 <div className="space-y-1">
                   <p className="text-rose-100/40 text-[9px] font-black uppercase tracking-widest">English Request</p>
                   <h3 className="text-white text-xl font-black italic tracking-tighter line-clamp-2 leading-tight">{selectedCard.en}</h3>
                 </div>
-                
                 <div className="py-4">
-                  {/* 重点修改：增加了 animate-breathe 类名 */}
                   <h2 className="text-white text-5xl font-black leading-tight drop-shadow-lg break-words animate-breathe">
                     {selectedCard.cn}
                   </h2>
                 </div>
               </div>
-
               <button 
                 className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-xl active:scale-90 transition-transform" 
-                onClick={(e) => { 
-                  e.stopPropagation(); 
-                  speak(selectedCard.cn); 
-                }}
+                onClick={(e) => { e.stopPropagation(); speak(selectedCard.cn); }}
               >
                 <span className="text-3xl">🔊</span>
               </button>
@@ -242,9 +227,7 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
             </div>
             <div className="space-y-4">
               <input 
-                required 
-                autoFocus
-                value={newEn} 
+                required autoFocus value={newEn} 
                 onChange={e => setNewEn(e.target.value)}
                 onBlur={handleTranslate}
                 placeholder="English Phrase" 
@@ -262,6 +245,7 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
       <style dangerouslySetInnerHTML={{ __html: `
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .grid-container { content-visibility: auto; contain-intrinsic-size: 0 80px; }
         
         @keyframes bounce-slow { 
           0%, 100% { transform: translateY(0); } 
@@ -269,18 +253,9 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
         }
         .animate-bounce-slow { animation: bounce-slow 3s ease-in-out infinite; }
 
-        /* 新增呼吸效果动画 */
         @keyframes breathe {
-          0% {
-            transform: scale(0.98);
-            opacity: 0.85;
-            text-shadow: 0 0 10px rgba(255,255,255,0);
-          }
-          100% {
-            transform: scale(1.05);
-            opacity: 1;
-            text-shadow: 0 0 25px rgba(255,255,255,0.6), 0 0 50px rgba(255,255,255,0.2);
-          }
+          0% { transform: scale(0.98); opacity: 0.85; text-shadow: 0 0 10px rgba(255,255,255,0); }
+          100% { transform: scale(1.05); opacity: 1; text-shadow: 0 0 25px rgba(255,255,255,0.6), 0 0 50px rgba(255,255,255,0.2); }
         }
         .animate-breathe {
           display: inline-block;

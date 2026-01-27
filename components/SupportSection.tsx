@@ -14,7 +14,7 @@ interface SupportTier {
 
 export const SupportSection: React.FC<{ onPurchase: (plan: any) => void }> = ({ onPurchase }) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [activeId, setActiveId] = useState<string | null>('coffee'); // 默认选中 Coffee 档位
+  const [activeId, setActiveId] = useState<string | null>('coffee'); 
   const scrollRef = useRef<HTMLDivElement>(null);
   const middleCardRef = useRef<HTMLDivElement>(null);
 
@@ -24,7 +24,6 @@ export const SupportSection: React.FC<{ onPurchase: (plan: any) => void }> = ({ 
     { id: 'cheesecake', name: 'Buy me a Cheesecake', price: '$9', amount: 9.0, credits: '1000 Credits', meals: '(20 meals)', description: 'The ultimate treat for hard work.', icon: '🍰' }
   ];
 
-  // 1. 初始居中逻辑：让用户一眼看到中间档位
   useEffect(() => {
     const timer = setTimeout(() => {
       if (middleCardRef.current && !selectedId) {
@@ -32,9 +31,8 @@ export const SupportSection: React.FC<{ onPurchase: (plan: any) => void }> = ({ 
       }
     }, 400);
     return () => clearTimeout(timer);
-  }, []);
+  }, [selectedId]);
 
-  // 2. 动态监测滚动，实现缩放
   useEffect(() => {
     const container = scrollRef.current;
     if (!container || selectedId) return;
@@ -81,7 +79,7 @@ export const SupportSection: React.FC<{ onPurchase: (plan: any) => void }> = ({ 
       <div className="relative w-full">
         <div 
           ref={scrollRef}
-          className={`flex flex-row md:grid md:grid-cols-3 gap-3 no-scrollbar overflow-x-auto px-20 md:px-0 -mx-8 md:mx-0 py-12 -my-12 ${
+          className={`flex flex-row md:grid md:grid-cols-3 gap-6 no-scrollbar overflow-x-auto px-20 md:px-0 -mx-8 md:mx-0 py-12 -my-12 ${
             selectedId ? '' : 'snap-x snap-mandatory'
           }`}
         >
@@ -95,7 +93,7 @@ export const SupportSection: React.FC<{ onPurchase: (plan: any) => void }> = ({ 
                 key={tier.id} 
                 data-tier-id={tier.id}
                 ref={tier.id === 'coffee' ? middleCardRef : null}
-                className={`shrink-0 w-[210px] md:w-full bg-white/95 backdrop-blur-md p-8 rounded-[2.5rem] border transition-all duration-500 ease-out flex flex-col items-center group relative ${
+                className={`shrink-0 w-[210px] md:w-full bg-white/95 backdrop-blur-md p-6 rounded-[2.5rem] border transition-all duration-500 ease-out flex flex-col items-center group relative ${
                   selectedId === null ? 'snap-center' : ''
                 } ${
                   isActive 
@@ -105,35 +103,52 @@ export const SupportSection: React.FC<{ onPurchase: (plan: any) => void }> = ({ 
                   selectedId && selectedId !== tier.id ? 'hidden md:flex opacity-0' : ''
                 }`}
               >
-                {/* Recommended Badge for Coffee */}
-                {tier.id === 'coffee' && (
-                  <div className={`absolute -top-3 bg-orange-600 text-white text-[8px] font-black px-3 py-1 rounded-full shadow-lg transition-all duration-500 ${isActive ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
-                    RECOMMENDED
-                  </div>
-                )}
-
-                <div className="absolute top-4 right-4 flex flex-col items-end">
-                  <span className="bg-emerald-500 text-white text-[9px] font-black px-2 py-1 rounded-md shadow-sm uppercase tracking-tighter">+{tier.credits}</span>
-                  <span className="text-[8px] font-black text-emerald-600 mt-0.5 uppercase opacity-80">{tier.meals}</span>
+                {/* Status Badge Area */}
+                <div className="h-6 mb-2">
+                  {tier.id === 'coffee' && (
+                    <div className={`bg-orange-600 text-white text-[8px] font-black px-3 py-1 rounded-full shadow-lg transition-all duration-500 ${isActive ? 'opacity-100' : 'opacity-0'}`}>
+                      RECOMMENDED
+                    </div>
+                  )}
                 </div>
 
-                <div className={`text-4xl mb-4 transition-transform duration-500 ${isActive ? 'scale-110' : 'scale-90'}`}>
+                {/* Credit Info Label - Centered for better balance */}
+                <div className="flex flex-col items-center mb-4">
+                  <span className="bg-emerald-500 text-white text-[10px] font-black px-3 py-1 rounded-lg shadow-sm uppercase tracking-tight">
+                    +{tier.credits}
+                  </span>
+                  <span className="text-[9px] font-bold text-emerald-600 mt-1 uppercase tracking-widest">{tier.meals}</span>
+                </div>
+
+                {/* Main Content */}
+                <div className={`text-5xl mb-4 transition-transform duration-500 ${isActive ? 'scale-110 drop-shadow-md' : 'scale-90'}`}>
                   {tier.icon}
                 </div>
                 
-                <h4 className="text-base font-black text-slate-900 mb-0.5 uppercase tracking-tight">{tier.name}</h4>
-                <p className="text-xl font-black text-orange-600 uppercase tracking-tight mb-3">{tier.price}</p>
-                <p className="text-[10px] text-slate-400 font-bold mb-6 h-10 flex items-center leading-tight">{tier.description}</p>
+                <h4 className="text-sm font-black text-slate-900 mb-1 uppercase tracking-tight leading-none">{tier.name}</h4>
+                <p className="text-2xl font-black text-orange-600 uppercase tracking-tighter mb-4">{tier.price}</p>
+                
+                <p className="text-[10px] text-slate-400 font-bold mb-6 h-12 flex items-center justify-center leading-relaxed px-2 text-center">
+                  {tier.description}
+                </p>
 
-                <div className="w-full mt-auto flex flex-col items-center">
+                {/* Action Area */}
+                <div className="w-full mt-auto">
                   {selectedId === tier.id ? (
-                    <div className="w-full animate-in zoom-in duration-500 min-h-[160px] relative z-20">
-                      <PayPalButton 
-                        amount={tier.amount.toString()} 
-                        planName={tier.name} 
-                        onSuccess={(details) => handleSuccess(tier, details)} 
-                      />
-                      <button onClick={() => setSelectedId(null)} className="mt-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] hover:text-orange-600 transition-colors">← Back</button>
+                    <div className="w-full animate-in zoom-in duration-500 min-h-[140px] flex flex-col items-center justify-center">
+                      <div className="w-full transform scale-90 origin-top">
+                        <PayPalButton 
+                          amount={tier.amount.toString()} 
+                          planName={tier.name} 
+                          onSuccess={(details) => handleSuccess(tier, details)} 
+                        />
+                      </div>
+                      <button 
+                        onClick={() => setSelectedId(null)} 
+                        className="mt-2 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] hover:text-orange-600 transition-colors py-2"
+                      >
+                        ← Back
+                      </button>
                     </div>
                   ) : (
                     <button 
@@ -151,7 +166,11 @@ export const SupportSection: React.FC<{ onPurchase: (plan: any) => void }> = ({ 
         </div>
       </div>
 
-      <div className="pt-2"><p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] animate-pulse">Secure payment via PayPal</p></div>
+      <div className="pt-4">
+        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] animate-pulse">
+          Secure payment via PayPal
+        </p>
+      </div>
       <style dangerouslySetInnerHTML={{ __html: `.no-scrollbar::-webkit-scrollbar { display: none; } .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }`}} />
     </section>
   );
