@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ChiliIcon, AnimalFatIcon, SpeakerIcon } from './Icons';
 
 interface Ingredient {
@@ -32,17 +32,37 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
   const nameCN = dish.name_cn || dish.dish_name_cn || dish.name || "未知菜品";
   const nameEN = dish.name_en || dish.dish_name_en || dish.english_name || "Unknown Dish";
   
+  // 拼音数据容错处理
+  const pinyin = dish.pinyin || dish.pinyin_name || "";
+  const pronunciation = dish.pronunciation || dish.sounds_like || "";
+
   let displayDescription = dish.description || "";
   const ingredients = Array.isArray(dish.ingredients) ? dish.ingredients : [];
   
+  // 语音播放函数优化
   const speakDishName = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
+    const synth = window.speechSynthesis;
+    if (!synth) {
+      console.warn("Speech synthesis not supported");
+      return;
+    }
+    
+    // 取消当前正在排队的播放
+    synth.cancel(); 
+
     const utterance = new SpeechSynthesisUtterance(nameCN);
     utterance.lang = 'zh-CN';
-    utterance.rate = 0.8; 
-    window.speechSynthesis.speak(utterance);
+    utterance.rate = 0.85; 
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+
+    // 针对某些移动端浏览器的语音加载处理
+    const voices = synth.getVoices();
+    const chineseVoice = voices.find(v => v.lang.includes('zh-CN') || v.lang.includes('zh_CN'));
+    if (chineseVoice) utterance.voice = chineseVoice;
+
+    synth.speak(utterance);
   };
 
   const handleImageSearch = () => {
@@ -59,7 +79,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
         className="bg-[#fcfbf9] w-full max-w-lg rounded-t-[2.5rem] sm:rounded-[3rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-10 duration-300 max-h-[92vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header Section - 移除固定高度限制，确保内容能撑开 */}
+        {/* Header Section */}
         <div className="relative bg-red-600 pt-10 pb-14 px-8 text-white border-b-4 border-yellow-400 shrink-0">
           <button onClick={onClose} className="absolute top-5 right-5 w-10 h-10 flex items-center justify-center bg-black/10 text-white rounded-full hover:bg-black/20 active:scale-90 transition-all z-10">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -69,29 +89,29 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
             <h2 className="text-[9px] font-black uppercase tracking-[0.2em] opacity-70 mb-1">Authentic Selection</h2>
             
             <div className="space-y-1">
-                <p className="text-4xl font-black tracking-tighter drop-shadow-sm leading-none">{nameEN}</p>
+                <p className="text-4xl font-black tracking-tighter drop-shadow-sm leading-tight">{nameEN}</p>
                 <div className="flex items-center gap-3 py-1">
                   <p className="text-3xl font-black tracking-tighter drop-shadow-sm">{nameCN}</p>
                   <button 
                     onClick={speakDishName} 
-                    className="bg-white text-red-600 w-8 h-8 rounded-lg flex items-center justify-center active:scale-90 transition-all shadow-lg shrink-0"
+                    className="bg-white text-red-600 w-10 h-10 rounded-xl flex items-center justify-center active:scale-90 transition-all shadow-lg shrink-0 border-2 border-red-50"
                   >
-                    <SpeakerIcon className="w-4 h-4" />
+                    <SpeakerIcon className="w-5 h-5" />
                   </button>
                 </div>
             </div>
 
-            {/* 拼音与发音区域 - 统一左对齐并增强对比度 */}
-            {(dish.pinyin || dish.pronunciation) && (
-              <div className="flex flex-col gap-0.5 pt-1 border-t border-white/10 w-fit">
-                {dish.pinyin && (
-                  <p className="text-sm font-black tracking-widest text-yellow-200 uppercase">
-                    {dish.pinyin}
+            {/* 拼音与发音区域 - 关键显示逻辑修复 */}
+            {(pinyin || pronunciation) && (
+              <div className="flex flex-col gap-1 pt-2 border-t border-white/20 w-fit">
+                {pinyin && (
+                  <p className="text-sm font-black tracking-widest text-yellow-300 uppercase drop-shadow-md">
+                    {pinyin}
                   </p>
                 )}
-                {dish.pronunciation && (
-                  <p className="text-xs font-bold opacity-80 italic flex items-center gap-2">
-                    <span className="opacity-50">Sounds like:</span> "{dish.pronunciation}"
+                {pronunciation && (
+                  <p className="text-xs font-bold text-white/90 italic flex items-center gap-2">
+                    <span className="opacity-60 font-medium not-italic">Sounds like:</span> "{pronunciation}"
                   </p>
                 )}
               </div>
@@ -117,7 +137,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
           {!isLoadingDetail && dish.has_animal_fats && (
             <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex gap-3 animate-in zoom-in duration-300">
               <AnimalFatIcon className="w-5 h-5 text-red-600 shrink-0" />
-              <p className="text-red-800 text-xs font-bold leading-tight">Contains <span className="underline">Animal Fats / Lard (猪油)</span>.</p>
+              <p className="text-red-800 text-xs font-bold leading-tight">Contains <span className="underline font-black">Animal Fats / Lard (猪油)</span>.</p>
             </div>
           )}
 
@@ -147,8 +167,8 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
                 [1, 2, 3, 4].map(i => <div key={i} className="h-20 bg-slate-50 animate-pulse rounded-2xl border border-slate-100" />)
               ) : (
                 ingredients.map((ing: any, i: number) => {
-                  const en = typeof ing === 'string' ? ing : ing.name_en;
-                  const cn = typeof ing === 'string' ? '' : ing.name_cn;
+                  const en = typeof ing === 'string' ? ing : (ing.name_en || ing.en);
+                  const cn = typeof ing === 'string' ? '' : (ing.name_cn || ing.cn);
                   return (
                     <button 
                       key={i} 
@@ -201,7 +221,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
               <h4 className="text-[8px] font-black text-emerald-800/40 uppercase mb-3 tracking-widest">Dietary Flags</h4>
               <div className="flex flex-wrap gap-1.5">
                 {isLoadingDetail ? (
-                   <div className="h-4 w-24 bg-emerald-100/50 animate-pulse rounded-full" />
+                    <div className="h-4 w-24 bg-emerald-100/50 animate-pulse rounded-full" />
                 ) : dish.allergens?.length > 0 ? (
                   dish.allergens.map((a: string, i: number) => (
                     <span key={i} className="text-[9px] font-black uppercase bg-emerald-600 px-2.5 py-1 rounded-lg text-white">{a}</span>

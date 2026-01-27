@@ -60,7 +60,6 @@ const App: React.FC = () => {
     if (element) element.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
-  // --- 游戏奖励逻辑 ---
   const handleGameWin = () => {
     setUsage(prev => ({
       ...prev,
@@ -97,7 +96,6 @@ const App: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // --- 逻辑修正：仅在 MENU 模式下检查 Credit ---
     if (mode === RecognitionMode.MENU && !isUnlimited() && totalCredits < 50) {
       setShowPricing(true);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -112,13 +110,12 @@ const App: React.FC = () => {
       const base64 = await getCompressedBase64(file);
       
       if (mode === RecognitionMode.MENU) {
-        // --- 菜单模式逻辑 ---
         const list = await processMenuImage(base64);
         if (list && Array.isArray(list) && list.length > 0) {
           setDishes(list);
           setStatus(AppStatus.SUCCESS);
           
-          // 菜单模式扣费
+          // 只有在这里（识别成功）才扣除 50 点
           if (!isUnlimited()) {
             setUsage(prev => {
               const nextScanCount = (prev.scanCount || 0) + 1;
@@ -138,12 +135,10 @@ const App: React.FC = () => {
           throw new Error("No dishes detected. Please try a clearer photo.");
         }
       } else {
-        // --- 街景模式逻辑 (完全免费) ---
         const rawResult = await processStorefrontImage(base64);
         if (rawResult) {
           setStoreResult(rawResult);
           setStatus(AppStatus.SUCCESS);
-          // 这里不调用 setUsage 进行扣费逻辑
         } else {
           throw new Error("Could not identify the storefront.");
         }
@@ -245,9 +240,16 @@ const App: React.FC = () => {
 
             {status === AppStatus.SUCCESS && (
               <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 mt-10 pb-32">
-                <div className="flex justify-between items-center bg-slate-900 p-6 rounded-[2rem] shadow-2xl sticky top-4 z-[110] mx-2 border border-white/5">
+                
+                {/* 顶部工具栏：集成返回与余额显示 */}
+                <div className="flex justify-between items-center bg-slate-900/95 backdrop-blur-md p-5 rounded-[2.2rem] shadow-2xl sticky top-4 z-[110] mx-2 border border-white/10">
                   <div className="flex items-center gap-4">
-                    {previewUrl && <img src={previewUrl} className="w-12 h-12 object-cover rounded-xl ring-2 ring-white/10" alt="Preview" />}
+                    <button 
+                      onClick={reset}
+                      className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white hover:bg-rose-600 transition-colors group"
+                    >
+                      <span className="group-hover:-translate-x-0.5 transition-transform text-lg">←</span>
+                    </button>
                     <div className="text-left">
                       <h3 className="font-bold text-white tracking-tight text-sm leading-none mb-1">
                         {mode === RecognitionMode.MENU ? `${dishes.length} Items Found` : "Shop Identified"}
@@ -257,7 +259,7 @@ const App: React.FC = () => {
                       </p>
                     </div>
                   </div>
-                  <button onClick={reset} className="bg-white/10 hover:bg-white/20 text-white font-black py-2.5 px-6 rounded-full text-[10px] uppercase tracking-wider backdrop-blur-sm transition-colors border border-white/10">Done</button>
+                  <button onClick={reset} className="bg-white text-slate-900 font-black py-2.5 px-6 rounded-full text-[10px] uppercase tracking-wider transition-transform active:scale-90 shadow-lg">Done</button>
                 </div>
                 
                 {mode === RecognitionMode.MENU ? (

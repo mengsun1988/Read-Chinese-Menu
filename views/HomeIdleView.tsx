@@ -17,7 +17,7 @@ interface Props {
   onHandleDailyShare: () => void;
   usage: UserUsage;
   onShowDishDetail: (dish: any) => void;
-  onGameWin: () => void; // 新增：奖励回调
+  onGameWin: () => void; 
 }
 
 export const HomeIdleView: React.FC<Props> = ({
@@ -29,7 +29,7 @@ export const HomeIdleView: React.FC<Props> = ({
   onHandleDailyShare,
   usage,
   onShowDishDetail,
-  onGameWin // 新增：接收奖励回调
+  onGameWin 
 }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showPricingModal, setShowPricingModal] = useState(false);
@@ -82,18 +82,38 @@ export const HomeIdleView: React.FC<Props> = ({
       </div>
 
       {/* 2. Hero Section */}
-      <header className="mb-12 space-y-4 text-center pt-16 px-4 max-w-4xl mx-auto">
-        <div className="inline-flex items-center gap-2 px-3 py-1 bg-rose-50 border border-rose-100 rounded-full">
-          <span className="w-1.5 h-1.5 bg-rose-500 rounded-full" />
-          <span className="text-[9px] font-bold text-rose-600 uppercase tracking-widest">Your China Travel Mate</span>
+      <header className="mb-12 space-y-8 text-center pt-16 px-4 max-w-4xl mx-auto">
+        <div className="space-y-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-rose-50 border border-rose-100 rounded-full">
+            <span className="w-1.5 h-1.5 bg-rose-500 rounded-full" />
+            <span className="text-[9px] font-bold text-rose-600 uppercase tracking-widest">Your China Travel Mate</span>
+          </div>
+          <h1 className="text-5xl md:text-7xl font-bold text-slate-900 tracking-tighter leading-none">
+            Read <span className="text-rose-600">Chinese Menu</span>
+          </h1>
         </div>
-        <h1 className="text-5xl md:text-7xl font-bold text-slate-900 tracking-tighter leading-none">
-          Read <span className="text-rose-600">Chinese Menu</span>
-        </h1>
-        <div className="text-slate-500 font-medium text-sm md:text-base leading-relaxed">
-          Understand Chinese menus at a glance.<br />
-          Ingredients, allergens, and dish details.<br />
-          Designed for travelers in China.
+
+        <div className="space-y-6">
+          <div className="text-slate-500 font-medium text-sm md:text-base leading-relaxed">
+            Understand Chinese menus at a glance.<br />
+            Ingredients, allergens, and dish details.
+          </div>
+          
+          {/* 优化后的 Badge 感信任标签 */}
+          <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 px-4 max-w-2xl mx-auto">
+            <div className="px-4 py-1.5 bg-emerald-50/30 border border-emerald-100/60 rounded-full flex items-center gap-2">
+              <span className="w-1 h-1 bg-emerald-400 rounded-full" />
+              <span className="text-[9px] md:text-[10px] font-black text-emerald-700/70 uppercase tracking-widest whitespace-nowrap">No sign-up</span>
+            </div>
+            <div className="px-4 py-1.5 bg-emerald-50/30 border border-emerald-100/60 rounded-full flex items-center gap-2">
+              <span className="w-1 h-1 bg-emerald-400 rounded-full" />
+              <span className="text-[9px] md:text-[10px] font-black text-emerald-700/70 uppercase tracking-widest whitespace-nowrap">Images not stored</span>
+            </div>
+            <div className="px-4 py-1.5 bg-emerald-50/30 border border-emerald-100/60 rounded-full flex items-center gap-2">
+              <span className="w-1 h-1 bg-emerald-400 rounded-full" />
+              <span className="text-[9px] md:text-[10px] font-black text-emerald-700/70 uppercase tracking-widest whitespace-nowrap">PayPal payments</span>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -121,7 +141,7 @@ export const HomeIdleView: React.FC<Props> = ({
           >
             Order Food
             <span onClick={(e) => { e.stopPropagation(); setShowPricingModal(true); }} className={`absolute -top-2 -right-1 px-2 py-0.5 rounded-md font-black shadow-sm border border-white transition-all text-[8px] h-[18px] flex items-center ${credits > 0 || isUnlimited ? 'bg-emerald-500 text-white' : 'bg-rose-600 text-white animate-bounce'}`}>
-              {isUnlimited ? '∞' : '150 FREE CREDITS'}
+              {isUnlimited ? '∞' : `${credits} FREE CREDITS`}
             </span>
           </button>
           <button onClick={() => onModeChange(RecognitionMode.STREET)} className={`relative flex-1 h-[50px] flex items-center justify-center rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === RecognitionMode.STREET ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-400'}`}>
@@ -137,19 +157,17 @@ export const HomeIdleView: React.FC<Props> = ({
             <CameraIcon className="w-10 h-10 text-white" />
           </button>
           
-          <h2 className="text-3xl font-black text-slate-900 mb-8 tracking-tighter">{mode === RecognitionMode.MENU ? "Scan Menu" : "Explore Signs"}</h2>
+          <h2 className="text-3xl font-black text-slate-900 mb-6 tracking-tighter">{mode === RecognitionMode.MENU ? "Scan Menu" : "Explore Signs"}</h2>
           
           <button onClick={(e) => handleMainAction(e)} className="w-full bg-slate-900 text-white font-black py-5 rounded-full shadow-xl hover:bg-slate-800 hover:-translate-y-0.5 active:translate-y-0 transition-all uppercase tracking-[0.2em] text-xs">
             Upload Image
           </button>
           
-          <p className="mt-4 text-[10px] font-bold text-slate-400">Free to use · No account required</p>
-          
           <div className="mt-8 flex flex-col items-center gap-2">
             <span className="text-[11px] font-medium text-slate-500 text-center leading-tight px-2">
               Upload a photo of a menu to see ingredients and common allergens.
             </span>
-            <div className={`w-1.5 h-1.5 rounded-full mt-2 ${credits > 0 || isUnlimited ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+            <div className={`w-1.5 h-1.5 rounded-full mt-3 ${credits > 0 || isUnlimited ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
             <span className="text-[9px] font-black uppercase tracking-widest text-slate-900 opacity-60">{renderSubtext()}</span>
           </div>
         </div>
@@ -162,7 +180,7 @@ export const HomeIdleView: React.FC<Props> = ({
             <span className="text-3xl">🥟</span>
           </div>
           <div className="text-left flex-1">
-            <h3 className="text-white text-xl font-black tracking-tight uppercase leading-none italic">Menu Master Mind</h3>
+            <h3 className="text-white text-xl font-black tracking-tight uppercase leading-none">Menu Master Mind</h3>
             <p className="text-emerald-50 text-[11px] font-bold mt-1">Guess the dish by crazy translations</p>
           </div>
           <span className="text-white/50 font-black text-xl group-hover:translate-x-1 transition-transform">→</span>
@@ -244,7 +262,7 @@ export const HomeIdleView: React.FC<Props> = ({
           <div className="relative w-full max-w-lg animate-in fade-in zoom-in duration-300">
             <MenuMasterMind 
               onFinish={() => setShowGame(false)} 
-              onAwardPoints={onGameWin} // 对接奖励逻辑
+              onAwardPoints={onGameWin} 
             />
           </div>
         </div>
