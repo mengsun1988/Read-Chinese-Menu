@@ -108,10 +108,18 @@ const App: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // 移动信用检查到文件选择后，但处理前
-    if (mode === RecognitionMode.MENU) {
-      try {
-        const response = await fetch(WORKER_URL, {
+    // --- 1. 立即响应：先进入 Loading 并显示预览，消除用户选择文件后的等待感 ---
+    setStatus(AppStatus.LOADING);
+    setPreviewUrl(URL.createObjectURL(file));
+    setError(null);
+
+    try {
+      // --- 2. 异步处理：在后台进行压缩和信用检查，不阻塞 UI 渲染 ---
+      const base64 = await getCompressedBase64(file);
+
+      if (mode === RecognitionMode.MENU) {
+        // 后台检查点数
+        const checkResponse = await fetch(WORKER_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ 
@@ -120,45 +128,31 @@ const App: React.FC = () => {
           }),
         });
 
-        if (response.status === 403) {
-          const errorData = await response.json();
+        if (checkResponse.status === 403 || checkResponse.status === 429) {
+          const errorData = await checkResponse.json();
           if (errorData.error === "OUT_OF_CREDITS" || errorData.error === "DAILY_CREDIT_EXCEEDED") {
+            reset(); 
             setShowPricing(true);
             setTimeout(scrollToPricing, 300);
-            if (fileInputRef.current) fileInputRef.current.value = "";
             return;
           }
         }
-      } catch (err: any) {
-        console.error("Credit check failed:", err);
-        // 可以选择显示错误或继续
-      }
-    }
 
-    setStatus(AppStatus.LOADING);
-    setPreviewUrl(URL.createObjectURL(file));
-    setError(null);
-
-    try {
-      const base64 = await getCompressedBase64(file);
-      
-      if (mode === RecognitionMode.MENU) {
-        // 修改点：result 现在包含 dishes 和 usage
+        // 识别逻辑
         const result = await processMenuImage(base64);
         
         if (result && result.dishes && Array.isArray(result.dishes) && result.dishes.length > 0) {
           setDishes(result.dishes);
-          
-          // 修改点：直接同步后端返回的最新 usage，不再在前端手动计算扣费
+          // 同步后端返回的最新状态
           if (result.usage) {
             setUsage(result.usage);
           }
-          
           setStatus(AppStatus.SUCCESS);
         } else {
           throw new Error("No dishes detected. Please try a clearer photo.");
         }
       } else {
+        // 门头模式
         const rawResult = await processStorefrontImage(base64);
         if (rawResult) {
           setStoreResult(rawResult);
