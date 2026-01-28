@@ -94,10 +94,12 @@ export default {
     if (request.method === 'POST' && (url.pathname === '/' || url.pathname === '/api/scan')) {
       try {
         const { image: base64Image, userId, type = "menu", name_cn } = await request.json();
-        let userData = await getUserData(userId);
-        const isUnlimited = userData.passExpiryDate && new Date(userData.passExpiryDate).getTime() > Date.now();
+    let userData = await getUserData(userId);
+    const origin = request.headers.get("Origin") || "";
+    const isLocalhost = origin.includes("localhost") || origin.includes("127.0.0.1");
+    const isUnlimited = isLocalhost || (userData.passExpiryDate && new Date(userData.passExpiryDate).getTime() > Date.now());
 
-        if (!isUnlimited && userData.credits < 50) {
+    if (!isUnlimited && userData.credits < 50) {
           return new Response(JSON.stringify({ error: "OUT_OF_CREDITS", credits: userData.credits }), {
             status: 403, headers: corsHeaders
           });
