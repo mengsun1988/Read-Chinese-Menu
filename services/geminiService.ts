@@ -112,6 +112,16 @@ export async function processMenuImage(base64Image: string): Promise<any> {
     const result = await response.json();
     let rawArray: any[] = [];
 
+    // 防御性检查：确保服务器返回了有效结构
+    if (!result || (typeof result !== 'object')) {
+      throw new Error("Invalid server response format");
+    }
+
+    // 防御性检查：处理可能的错误响应
+    if (result.error) {
+      throw new Error(result.error);
+    }
+
     // 解析菜品数组
     if (result.dishes && Array.isArray(result.dishes)) {
       rawArray = result.dishes;
@@ -119,10 +129,20 @@ export async function processMenuImage(base64Image: string): Promise<any> {
       rawArray = result;
     } else if (result.name_cn || result.name_en) {
       rawArray = [result];
+    } else {
+      // 防御性检查：确保至少有一种数据格式
+      throw new Error("Unexpected server response structure");
     }
 
     if (rawArray.length === 0) {
       throw new Error("No dishes could be identified. Try a clearer photo.");
+    }
+
+    // 防御性检查：验证菜品数据结构
+    for (const item of rawArray) {
+      if (!item.name_cn && !item.name_en) {
+        throw new Error("Incomplete dish data received from server");
+      }
     }
 
     // 格式化菜品数据

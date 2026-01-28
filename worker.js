@@ -125,23 +125,63 @@ export default {
         });
       }
 
-      let userData = { credits: 200, scanCount: 0, lastUsed: new Date().toISOString(), passExpiryDate: null };
-      if (env.USER_USAGE && userId) {
-        const usageDataStr = await env.USER_USAGE.get(userId);
-        if (usageDataStr) userData = JSON.parse(usageDataStr);
-      }
+// 新增：每日信用限制
+const DAILY_CREDIT_LIMIT = 50;
+const CREDIT_RESET_INTERVAL = 24 * 60 * 60 * 1000; // 24小时
 
-      const isUnlimited = () => {
-        if (!userData.passExpiryDate) return false;
-        return new Date(userData.passExpiryDate).getTime() > Date.now();
-      };
+let userData = { 
+  credits: 200, 
+  scanCount: 0, 
+  lastUsed: new Date().toISOString(), 
+  passExpiryDate: null,
+  dailyCredits: DAILY_CREDIT_LIMIT,
+  lastCreditReset: Date.now()
+};
+if (env.USER_USAGE && userId) {
+  const usageDataStr = await env.USER_USAGE.get(userId);
+  if (usageDataStr) {
+    userData = JSON.parse(usageDataStr);
+    
+    // 检查是否需要重置每日信用
+    const now = Date.now();
+    const lastReset = new Date(userData.lastCreditReset || 0).getTime();
+    
+    if (now - lastReset > CREDIT_RESET_INTERVAL) {
+      userData.dailyCredits = DAILY_CREDIT_LIMIT;
+      userData.lastCreditReset = now;
+      // 保存更新后的用户数据
+      ctx.waitUntil(env.USER_USAGE.put(userId, JSON.stringify(userData)));
+    }
+  }
+}
 
-      if (type === "menu" && !isUnlimited() && userData.credits < 50) {
-        return new Response(JSON.stringify({ error: "OUT_OF_CREDITS", credits: userData.credits }), { 
-          status: 403, 
-          headers: corsHeaders 
-        });
-      }
+const isUnlimited = () => {
+  if (!userData.passExpiryDate) return false;
+  return new Date(userData.passExpiryDate).getTime() > Date.now();
+};
+
+// 修改：检查每日信用限制
+if (type === "menu" && !isUnlimited()) {
+  // 优先检查每日信用
+  if (userData.dailyCredits <= 0) {
+    return new Response(JSON.stringify({ 
+      error: "DAILY_CREDIT_EXCEEDED", 
+      credits: userData.credits,
+      dailyCredits: 0,
+      resetIn: CREDIT_RESET_INTERVAL - (Date.now() - userData.lastCreditReset)
+    }), { 
+      status: 429, 
+      headers: corsHeaders 
+    });
+  }
+  // 然后检查总信用
+  if (userData.credits < 50) {
+    return new Response(JSON.stringify({ error: "OUT_OF_CREDITS", credits: userData.credits }), { 
+      status: 403, 
+      headers: corsHeaders 
+    });
+  }
+}
 
       const cache = caches.default;
       const cacheKeyUrl = new URL(`https://api.cache/${type}/${encodeURIComponent(name_cn || 'list')}`);
