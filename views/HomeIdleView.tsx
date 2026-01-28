@@ -40,11 +40,18 @@ export const HomeIdleView: React.FC<Props> = ({
   const totalCredits = usage.credits ?? 0;
   const isUnlimited = usage.passExpiryDate ? new Date(usage.passExpiryDate).getTime() > Date.now() : false;
 
-  // 1. 自动滚动逻辑：当点数耗尽且不是无限卡时，自动引导至支付区
+  // 1. 自动滚动逻辑：当点数耗尽且不是无限卡时，自动引导至support section
   useEffect(() => {
     if (!isUnlimited && totalCredits <= 0 && usage.scanCount > 0) {
       const timer = setTimeout(() => {
-        document.getElementById('pricing-section')?.scrollIntoView({ behavior: 'smooth' });
+        // 优先跳转到support section，如果没有则跳转到pricing section
+        const supportSection = document.getElementById('support-section');
+        const pricingSection = document.getElementById('pricing-section');
+        if (supportSection) {
+          supportSection.scrollIntoView({ behavior: 'smooth' });
+        } else if (pricingSection) {
+          pricingSection.scrollIntoView({ behavior: 'smooth' });
+        }
       }, 800);
       return () => clearTimeout(timer);
     }

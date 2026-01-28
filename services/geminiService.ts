@@ -62,7 +62,13 @@ export async function getDishDeepDetail(name_cn: string, name_en: string): Promi
     const result = await response.json();
     
     return {
-      ingredients: Array.isArray(result.ingredients) ? result.ingredients : [],
+      // 优先使用 classic_ingredients 和 potential_ingredients，如果没有则使用 ingredients
+      classic_ingredients: Array.isArray(result.classic_ingredients) ? result.classic_ingredients : 
+                          (Array.isArray(result.ingredients) ? result.ingredients : []),
+      potential_ingredients: Array.isArray(result.potential_ingredients) ? result.potential_ingredients : [],
+      // 保留 ingredients 字段以兼容旧代码
+      ingredients: Array.isArray(result.ingredients) ? result.ingredients : 
+                   (Array.isArray(result.classic_ingredients) ? result.classic_ingredients : []),
       allergens: Array.isArray(result.allergens) ? result.allergens : [],
       spiciness: result.spiciness_level || result.spiciness || 0, 
       pinyin: result.pinyin || "",

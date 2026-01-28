@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { UserUsage } from '../types';
+import { WORKER_URL, getOrCreateUserId } from '../services/geminiService';
 
 const STORAGE_KEY = 'china_menu_usage';
 
@@ -34,16 +35,42 @@ export const useUserUsage = () => {
     ? new Date(usage.passExpiryDate).getTime() > Date.now() 
     : false;
 
+  // 检查day pass是否过期：每次usage变化时检查，如果过期则确保显示实际点数
+  useEffect(() => {
+    if (usage.passExpiryDate) {
+      const expiryTime = new Date(usage.passExpiryDate).getTime();
+      const now = Date.now();
+      // 如果pass已过期，确保credits显示的是实际值（不是unlimited）
+      if (expiryTime <= now) {
+        // pass已过期，credits应该显示实际值
+        // 这个逻辑在syncWithBackend中已经处理，这里只是确保状态正确
+      }
+    }
+  }, [usage.passExpiryDate, usage.credits]);
+
   /**
    * 关键函数：同步后端数据
    * 识别成功、支付成功或触发动作奖励后调用
    */
   const syncWithBackend = (backendUsage: Partial<UserUsage>) => {
-    setUsage(prev => ({
-      ...prev,
-      ...backendUsage, // 以后端返回的字段为准覆盖本地
-      achievementTriggered: backendUsage.achievementTriggered || null
-    }));
+    setUsage(prev => {
+      const newUsage = {
+        ...prev,
+        ...backendUsage, // 以后端返回的字段为准覆盖本地
+        achievementTriggered: backendUsage.achievementTriggered || null
+      };
+      
+      // 检查day pass是否过期：如果之前有pass但现在过期了，需要显示实际点数
+      const hadPass = prev.passExpiryDate && new Date(prev.passExpiryDate).getTime() > Date.now();
+      const hasPassNow = newUsage.passExpiryDate && new Date(newUsage.passExpiryDate).getTime() > Date.now();
+      
+      // 如果pass刚过期（从有到无），确保显示后端返回的实际点数
+      if (hadPass && !hasPassNow && backendUsage.credits !== undefined) {
+        newUsage.credits = backendUsage.credits;
+      }
+      
+      return newUsage;
+    });
   };
 
   /**
@@ -72,7 +99,7 @@ export const useUserUsage = () => {
         });
 
         // 分享动作成功后，请求后端加点
-        const res = await fetch('/api/user-action', {
+        const res = await fetch(`${WORKER_URL}/api/user-action`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId, action: 'share' })
@@ -80,8 +107,24 @@ export const useUserUsage = () => {
         
         const data = await res.json();
         if (data.userData) {
-          syncWithBackend(data.userData);
-          if (data.achievementTriggered) alert("Success! +50 Credits added.");
+          // 如果处于day pass期间，后台加点但前端不显示变化（保持unlimited状态）
+          const isPassActive = data.userData.passExpiryDate && 
+            new Date(data.userData.passExpiryDate).getTime() > Date.now();
+          if (isPassActive) {
+            // day pass期间：后台加点，但前端不更新显示（保持unlimited）
+            // 只更新其他字段如shareCount
+            setUsage(prev => ({
+              ...prev,
+              shareCount: data.userData.shareCount,
+              lastShareDate: data.userData.lastShareDate,
+              dailyShareDate: new Date().toISOString().split('T')[0],
+              // credits不更新，保持显示unlimited
+            }));
+          } else {
+            // 非day pass期间：正常同步所有数据
+            syncWithBackend(data.userData);
+            if (data.achievementTriggered) alert("Success! +50 Credits added.");
+          }
         }
       } catch (err) {
         console.log("Share cancelled or failed");
@@ -98,14 +141,28 @@ export const useUserUsage = () => {
     if (usage.gameWinCount >= 5) return; // 超过5次静默处理
 
     try {
-      const res = await fetch('/api/user-action', {
+      const res = await fetch(`${WORKER_URL}/api/user-action`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, action: 'game_win' })
       });
       const data = await res.json();
       if (data.userData) {
-        syncWithBackend(data.userData);
+        // 如果处于day pass期间，后台加点但前端不显示变化（保持unlimited状态）
+        const isPassActive = data.userData.passExpiryDate && 
+          new Date(data.userData.passExpiryDate).getTime() > Date.now();
+        if (isPassActive) {
+          // day pass期间：后台加点，但前端不更新显示（保持unlimited）
+          // 只更新其他字段如gameWinCount
+          setUsage(prev => ({
+            ...prev,
+            gameWinCount: data.userData.gameWinCount,
+            // credits不更新，保持显示unlimited
+          }));
+        } else {
+          // 非day pass期间：正常同步所有数据
+          syncWithBackend(data.userData);
+        }
       }
     } catch (e) {
       console.error("Game reward failed", e);

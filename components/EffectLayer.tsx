@@ -24,8 +24,8 @@ export const EffectLayer: React.FC<EffectLayerProps> = ({ trigger, onComplete })
 
   return (
     <div className="fixed inset-0 pointer-events-none z-[3000] overflow-hidden">
-      {/* 场景 1: 第 4 顿饭后的奖励喷发 (milestone_4_reward) */}
-      {active === 'milestone_4_reward' && (
+      {/* 场景 1: 里程碑奖励 (milestone_4, milestone_10, milestone_20) */}
+      {(active === 'milestone_4' || active === 'milestone_4_reward' || active === 'milestone_10' || active === 'milestone_20') && (
         <div className="absolute inset-0">
           {[...Array(20)].map((_, i) => (
             <div
@@ -43,15 +43,18 @@ export const EffectLayer: React.FC<EffectLayerProps> = ({ trigger, onComplete })
           <div className="absolute inset-0 flex items-center justify-center animate-message-pop">
             <div className="bg-white/90 backdrop-blur-xl border-2 border-rose-500 px-8 py-4 rounded-[2rem] shadow-2xl">
               <p className="text-rose-600 font-black text-xl italic uppercase tracking-tighter">
-                Reward Unlocked! +50 Credits
+                {active === 'milestone_4' ? 'Reward Unlocked! +50 Credits' : 
+                 active === 'milestone_10' ? 'Milestone 10! +50 Credits' :
+                 active === 'milestone_20' ? 'Milestone 20! +50 Credits' :
+                 'Reward Unlocked! +50 Credits'}
               </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* 场景 2: 每日分享奖励 (daily_share_bonus) */}
-      {active === 'daily_share_bonus' && (
+      {/* 场景 2: 每日分享奖励 (share_bonus 或 daily_share_bonus) */}
+      {(active === 'share_bonus' || active === 'daily_share_bonus') && (
         <div className="absolute inset-0 flex items-center justify-center animate-message-pop">
             <div className="bg-emerald-600 text-white px-8 py-4 rounded-[2rem] shadow-2xl flex items-center gap-3">
               <span className="text-2xl">⚡</span>
@@ -60,8 +63,8 @@ export const EffectLayer: React.FC<EffectLayerProps> = ({ trigger, onComplete })
         </div>
       )}
 
-      {/* 场景 3: 游戏获胜奖励 (game_win_reward) */}
-      {active === 'game_win_reward' && (
+      {/* 场景 3: 游戏获胜奖励 (game_bonus 或 game_win_reward) */}
+      {(active === 'game_bonus' || active === 'game_win_reward') && (
         <div className="absolute inset-0">
           {/* 向上喷发的星星 */}
           {[...Array(12)].map((_, i) => (

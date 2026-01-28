@@ -80,11 +80,10 @@ export const PricingModule: React.FC<{ onPurchase: (updatedUsage: any) => void; 
     setIsVerifying(true);
     try {
       // 请求 Worker 验证订单并更新用户权益
-      const response = await fetch(`${WORKER_URL}`, {
+      const response = await fetch(`${WORKER_URL}/api/verify_order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          type: 'verify_order',
           userId: getOrCreateUserId(),
           orderId: orderDetails.id,
           planId: plan.id

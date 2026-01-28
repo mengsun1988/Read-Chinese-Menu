@@ -73,11 +73,10 @@ export const SupportSection: React.FC<{
   const handleSuccess = async (tier: SupportTier, orderDetails: any) => {
     setIsVerifying(true);
     try {
-      const response = await fetch(`${WORKER_URL}`, {
+      const response = await fetch(`${WORKER_URL}/api/verify_order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          type: 'verify_order',
           userId: getOrCreateUserId(),
           orderId: orderDetails.id,
           planId: tier.id, // 后端通过 ID 判断增加点数还是天数
@@ -103,7 +102,7 @@ export const SupportSection: React.FC<{
   };
 
   return (
-    <section className="bg-orange-50/50 rounded-[3rem] p-8 md:p-16 border border-orange-100/50 text-center space-y-10 relative mx-auto max-w-full lg:max-w-6xl overflow-hidden">
+    <section id="support-section" className="bg-orange-50/50 rounded-[3rem] p-8 md:p-16 border border-orange-100/50 text-center space-y-10 relative mx-auto max-w-full lg:max-w-6xl overflow-hidden">
       <div className="space-y-4 px-6">
         <h3 className="text-2xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase leading-none">Support Our Journey</h3>
         <p className="text-slate-500 max-w-xl mx-auto font-bold text-[10px] md:text-sm leading-relaxed uppercase tracking-wider">

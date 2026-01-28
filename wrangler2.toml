@@ -17,3 +17,4 @@ id = "5bf7f707e17747719b812d3d7d0b038e"
 [vars]
 ENVIRONMENT = "production"
 # DASHSCOPE_API_KEY 建议在 Cloudflare 控制台的 Settings -> Variables 中添加为 Secret
+# ENABLE_DEV_MODE = "true"  # 开发环境启用此选项可免检点数（仅用于本地开发）

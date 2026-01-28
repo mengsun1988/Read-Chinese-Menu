@@ -62,6 +62,34 @@ export default {
     if (request.method === 'POST' && url.pathname === '/api/user-action') {
       try {
         const { userId, action } = await request.json();
+        
+        // 安全验证：检查必要参数
+        if (!userId || !action) {
+          return new Response(JSON.stringify({ error: "Missing required parameters" }), { 
+            status: 400, headers: corsHeaders 
+          });
+        }
+        
+        // 频率限制：防止滥用（基于 userId）
+        const rateLimitKey = `rate_limit:action:${userId}`;
+        const rateLimitData = await env.USER_USAGE.get(rateLimitKey);
+        const now = Date.now();
+        if (rateLimitData) {
+          const { count, resetTime } = JSON.parse(rateLimitData);
+          if (now < resetTime) {
+            if (count >= 10) { // 每分钟最多10次动作请求
+              return new Response(JSON.stringify({ error: "Rate limit exceeded. Please wait a moment." }), { 
+                status: 429, headers: corsHeaders 
+              });
+            }
+            await env.USER_USAGE.put(rateLimitKey, JSON.stringify({ count: count + 1, resetTime }), { expirationTtl: 60 });
+          } else {
+            await env.USER_USAGE.put(rateLimitKey, JSON.stringify({ count: 1, resetTime: now + 60000 }), { expirationTtl: 60 });
+          }
+        } else {
+          await env.USER_USAGE.put(rateLimitKey, JSON.stringify({ count: 1, resetTime: now + 60000 }), { expirationTtl: 60 });
+        }
+        
         let userData = await getUserData(userId);
         let achievementTriggered = null;
 
@@ -94,10 +122,40 @@ export default {
     if (request.method === 'POST' && (url.pathname === '/' || url.pathname === '/api/scan')) {
       try {
         const { image: base64Image, userId, type = "menu", name_cn } = await request.json();
-    let userData = await getUserData(userId);
-    const origin = request.headers.get("Origin") || "";
-    const isLocalhost = origin.includes("localhost") || origin.includes("127.0.0.1");
-    const isUnlimited = isLocalhost || (userData.passExpiryDate && new Date(userData.passExpiryDate).getTime() > Date.now());
+        
+        // 安全验证：检查必要参数
+        if (!userId || !image) {
+          return new Response(JSON.stringify({ error: "Missing required parameters" }), { 
+            status: 400, headers: corsHeaders 
+          });
+        }
+        
+        // 频率限制：防止滥用（基于 userId）
+        const rateLimitKey = `rate_limit:${userId}`;
+        const rateLimitData = await env.USER_USAGE.get(rateLimitKey);
+        const now = Date.now();
+        if (rateLimitData) {
+          const { count, resetTime } = JSON.parse(rateLimitData);
+          if (now < resetTime) {
+            if (count >= 30) { // 每分钟最多30次请求
+              return new Response(JSON.stringify({ error: "Rate limit exceeded. Please wait a moment." }), { 
+                status: 429, headers: corsHeaders 
+              });
+            }
+            await env.USER_USAGE.put(rateLimitKey, JSON.stringify({ count: count + 1, resetTime }), { expirationTtl: 60 });
+          } else {
+            await env.USER_USAGE.put(rateLimitKey, JSON.stringify({ count: 1, resetTime: now + 60000 }), { expirationTtl: 60 });
+          }
+        } else {
+          await env.USER_USAGE.put(rateLimitKey, JSON.stringify({ count: 1, resetTime: now + 60000 }), { expirationTtl: 60 });
+        }
+        
+        let userData = await getUserData(userId);
+    // 安全修复：使用环境变量而不是 Origin 头来支持 localhost 免检
+    // 生产环境：不设置 ENABLE_DEV_MODE，正常检查点数
+    // 开发环境：在 wrangler.toml 或 Cloudflare 控制台设置 ENABLE_DEV_MODE = "true"
+    const isDevMode = env.ENABLE_DEV_MODE === "true";
+    const isUnlimited = isDevMode || (userData.passExpiryDate && new Date(userData.passExpiryDate).getTime() > Date.now());
 
     if (!isUnlimited && userData.credits < 50) {
           return new Response(JSON.stringify({ error: "OUT_OF_CREDITS", credits: userData.credits }), {
@@ -112,7 +170,7 @@ export default {
             messages: [{
               role: "user",
               content: type === "dish_detail" 
-                ? `Analyze "${name_cn}". Return JSON: { "ingredients": [{"name_cn": "...", "name_en": "..."}], "spiciness_level": 0-5, "pinyin": "", "pronunciation": "", "allergens": [], "description": "", "has_animal_fats": true/false }.`
+                ? `Analyze "${name_cn}". Return JSON: { "classic_ingredients": [{"name_cn": "...", "name_en": "..."}], "potential_ingredients": [{"name_cn": "...", "name_en": "..."}], "spiciness_level": 0-5, "pinyin": "", "pronunciation": "", "allergens": [], "description": "", "has_animal_fats": true/false }.`
                 : [{ type: "text", text: "Analyze menu. Return JSON {dishes:[{name_cn, name_en, price, description, pinyin, pronunciation, spiciness_level}]}. JSON ONLY." }, { type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Image}` } }]
             }],
             response_format: { type: "json_object" }
@@ -145,20 +203,48 @@ export default {
         const parsedData = JSON.parse(winner.content.replace(/```json|```/g, ""));
         let achievementTriggered = null;
 
+        // 安全修复：只有成功识别（有菜品结果）才扣点
+        // 重新获取最新数据，防止并发问题
+        userData = await getUserData(userId);
+        const isDevModeNow = env.ENABLE_DEV_MODE === "true";
+        const isUnlimitedNow = isDevModeNow || (userData.passExpiryDate && new Date(userData.passExpiryDate).getTime() > Date.now());
+        
         if (type === "menu" && parsedData.dishes?.length > 0) {
+          // 再次验证点数（防止并发请求绕过）
+          if (!isUnlimitedNow && userData.credits < 50) {
+            return new Response(JSON.stringify({ 
+              error: "OUT_OF_CREDITS", 
+              credits: userData.credits,
+              dishes: [] 
+            }), {
+              status: 403, headers: corsHeaders
+            });
+          }
+          
           userData.scanCount += 1;
-          if (!isUnlimited) {
+          if (!isUnlimitedNow) {
+            // 先扣50点
             userData.credits -= 50;
-            if (userData.scanCount === 4) { userData.credits += 50; achievementTriggered = "milestone_4"; }
-            else if (userData.scanCount === 10) { userData.credits += 50; achievementTriggered = "milestone_10"; }
-            else if (userData.scanCount === 20) { userData.credits += 50; achievementTriggered = "milestone_20"; }
+            // 第4次识别后立即奖励50点（此时显示0点，然后立即变成50点）
+            if (userData.scanCount === 4) { 
+              userData.credits += 50; 
+              achievementTriggered = "milestone_4"; 
+            }
+            else if (userData.scanCount === 10) { 
+              userData.credits += 50; 
+              achievementTriggered = "milestone_10"; 
+            }
+            else if (userData.scanCount === 20) { 
+              userData.credits += 50; 
+              achievementTriggered = "milestone_20"; 
+            }
           }
           await env.USER_USAGE.put(userId, JSON.stringify(userData));
         }
 
         return new Response(JSON.stringify({
           ...parsedData,
-          usage: { ...userData, isUnlimited, achievementTriggered, _debug_source: winner.source }
+          usage: { ...userData, isUnlimited: isUnlimitedNow, achievementTriggered, _debug_source: winner.source }
         }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
       } catch (err) {
@@ -170,6 +256,21 @@ export default {
     if (request.method === 'POST' && (url.pathname === '/api/verify-payment' || url.pathname === '/api/verify_order')) {
       try {
         const { orderId, planId, userId, isDonation } = await request.json();
+        
+        // 安全验证：检查必要参数
+        if (!orderId || !planId || !userId) {
+          return new Response(JSON.stringify({ error: "Missing required parameters" }), { 
+            status: 400, headers: corsHeaders 
+          });
+        }
+        
+        // 验证 planId 格式，防止注入攻击
+        const validPlanIds = ['soda', 'coffee', 'cheesecake', '3-day', '7-day', '15-day', 'pack-150', 'pack-400', 'pack-1000'];
+        if (!validPlanIds.includes(planId) && !planId.startsWith('pack-')) {
+          return new Response(JSON.stringify({ error: "Invalid plan ID" }), { 
+            status: 400, headers: corsHeaders 
+          });
+        }
         
         // 防重处理
         const processedKey = `order_processed:${orderId}`;

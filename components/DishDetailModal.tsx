@@ -54,6 +54,11 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
     : null;
 
   let displayDescription = dish.description || "";
+  // 优先使用 classic_ingredients 和 potential_ingredients
+  const classicIngredients = Array.isArray(dish.classic_ingredients) ? dish.classic_ingredients : 
+                            (Array.isArray(dish.ingredients) ? dish.ingredients : []);
+  const potentialIngredients = Array.isArray(dish.potential_ingredients) ? dish.potential_ingredients : [];
+  // 保留 ingredients 以兼容旧数据
   const ingredients = Array.isArray(dish.ingredients) ? dish.ingredients : [];
   
   const speakDishName = (e: React.MouseEvent) => {
@@ -166,30 +171,102 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
               Core Components
               {isLoadingDetail && <span className="text-rose-500 animate-pulse lowercase font-normal">Analyzing...</span>}
             </h4>
-            <div className="grid grid-cols-2 gap-3">
-              {isLoadingDetail ? (
-                [1, 2, 3, 4].map(i => <div key={i} className="h-20 bg-slate-50 animate-pulse rounded-2xl border border-slate-100" />)
-              ) : (
-                ingredients.map((ing: any, i: number) => {
-                  const en = typeof ing === 'string' ? ing : (ing.name_en || ing.en);
-                  const cn = typeof ing === 'string' ? '' : (ing.name_cn || ing.cn);
-                  return (
-                    <button 
-                      key={i} 
-                      onClick={() => onIngredientClick(ing)} 
-                      className="group p-4 bg-white hover:bg-slate-50 rounded-2xl text-left border border-slate-100 transition-all active:scale-95 flex flex-col justify-center h-24 shadow-sm"
-                    >
-                      <span className="text-sm font-black text-rose-600 leading-tight mb-1 line-clamp-2 uppercase tracking-tight">
-                        {en}
-                      </span>
-                      <span className="text-[11px] font-bold text-slate-400 tracking-wide">
-                        {cn}
-                      </span>
-                    </button>
-                  );
-                })
-              )}
-            </div>
+            
+            {/* 主要食材 - 使用经典红色主题 */}
+            {classicIngredients.length > 0 && (
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-1 h-4 bg-rose-600 rounded-full"></div>
+                  <span className="text-[8px] font-black text-rose-600 uppercase tracking-widest">Main Ingredients</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {isLoadingDetail ? (
+                    [1, 2, 3, 4].map(i => <div key={i} className="h-20 bg-rose-50 animate-pulse rounded-2xl border border-rose-100" />)
+                  ) : (
+                    classicIngredients.map((ing: any, i: number) => {
+                      const en = typeof ing === 'string' ? ing : (ing.name_en || ing.en);
+                      const cn = typeof ing === 'string' ? '' : (ing.name_cn || ing.cn);
+                      return (
+                        <button 
+                          key={i} 
+                          onClick={() => onIngredientClick(ing)} 
+                          className="group p-4 bg-gradient-to-br from-rose-50 to-rose-100/50 hover:from-rose-100 hover:to-rose-200/50 rounded-2xl text-left border-2 border-rose-200 transition-all active:scale-95 flex flex-col justify-center h-24 shadow-sm hover:shadow-md"
+                        >
+                          <span className="text-sm font-black text-rose-700 leading-tight mb-1 line-clamp-2 uppercase tracking-tight">
+                            {en}
+                          </span>
+                          <span className="text-[11px] font-bold text-rose-500 tracking-wide">
+                            {cn}
+                          </span>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* 可能食材 - 使用琥珀色/黄色主题区分 */}
+            {potentialIngredients.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-1 h-4 bg-amber-500 rounded-full"></div>
+                  <span className="text-[8px] font-black text-amber-600 uppercase tracking-widest">Possible Additions</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {isLoadingDetail ? (
+                    [1, 2].map(i => <div key={i} className="h-20 bg-amber-50 animate-pulse rounded-2xl border border-amber-100" />)
+                  ) : (
+                    potentialIngredients.map((ing: any, i: number) => {
+                      const en = typeof ing === 'string' ? ing : (ing.name_en || ing.en);
+                      const cn = typeof ing === 'string' ? '' : (ing.name_cn || ing.cn);
+                      return (
+                        <button 
+                          key={i} 
+                          onClick={() => onIngredientClick(ing)} 
+                          className="group p-4 bg-gradient-to-br from-amber-50 to-amber-100/50 hover:from-amber-100 hover:to-amber-200/50 rounded-2xl text-left border-2 border-amber-200 transition-all active:scale-95 flex flex-col justify-center h-24 shadow-sm hover:shadow-md"
+                        >
+                          <span className="text-sm font-black text-amber-700 leading-tight mb-1 line-clamp-2 uppercase tracking-tight">
+                            {en}
+                          </span>
+                          <span className="text-[11px] font-bold text-amber-600 tracking-wide">
+                            {cn}
+                          </span>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* 兼容旧数据：如果没有 classic_ingredients 和 potential_ingredients，使用 ingredients */}
+            {classicIngredients.length === 0 && potentialIngredients.length === 0 && ingredients.length > 0 && (
+              <div className="grid grid-cols-2 gap-3">
+                {isLoadingDetail ? (
+                  [1, 2, 3, 4].map(i => <div key={i} className="h-20 bg-slate-50 animate-pulse rounded-2xl border border-slate-100" />)
+                ) : (
+                  ingredients.map((ing: any, i: number) => {
+                    const en = typeof ing === 'string' ? ing : (ing.name_en || ing.en);
+                    const cn = typeof ing === 'string' ? '' : (ing.name_cn || ing.cn);
+                    return (
+                      <button 
+                        key={i} 
+                        onClick={() => onIngredientClick(ing)} 
+                        className="group p-4 bg-white hover:bg-slate-50 rounded-2xl text-left border border-slate-100 transition-all active:scale-95 flex flex-col justify-center h-24 shadow-sm"
+                      >
+                        <span className="text-sm font-black text-rose-600 leading-tight mb-1 line-clamp-2 uppercase tracking-tight">
+                          {en}
+                        </span>
+                        <span className="text-[11px] font-bold text-slate-400 tracking-wide">
+                          {cn}
+                        </span>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            )}
           </section>
 
           {/* Spice & Dietary Info */}
