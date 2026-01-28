@@ -304,14 +304,15 @@ if (type === "menu" && !isUnlimited()) {
         if (userData.geminiWinStreak >= 3) userData.preferredModel = 'gemini';
 
         userData.scanCount += 1;
-        if (!isUnlimited()) {
-          userData.credits -= 50;
-          if (userData.scanCount === 4) { userData.credits += 50; achievementTriggered = "milestone_4"; }
-          else if (userData.scanCount === 10) { userData.credits += 50; achievementTriggered = "milestone_10"; }
-        }
-        userData.lastUsed = new Date().toISOString();
-        ctx.waitUntil(env.USER_USAGE.put(userId, JSON.stringify(userData)));
-      }
+  if (!isUnlimited()) {
+    userData.credits -= 50;
+    userData.dailyCredits -= 50; // ✅ 修复：添加每日信用扣减
+    if (userData.scanCount === 4) { userData.credits += 50; achievementTriggered = "milestone_4"; }
+    else if (userData.scanCount === 10) { userData.credits += 50; achievementTriggered = "milestone_10"; }
+  }
+  userData.lastUsed = new Date().toISOString();
+  ctx.waitUntil(env.USER_USAGE.put(userId, JSON.stringify(userData)));
+}
 
       let responseBody = type === "dish_detail" 
         ? { ...parsedData, isFullyAnalyzed: true, _debug_source: winner.source }
