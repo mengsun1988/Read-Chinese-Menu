@@ -58,11 +58,10 @@ const App: React.FC = () => {
   };
 
   const scrollToPricing = () => {
-    const pricingSection = document.querySelector('.pricing-module-anchor'); // 假设 PricingModule 或其容器有此 class
+    const pricingSection = document.querySelector('.pricing-module-anchor'); 
     if (pricingSection) {
       pricingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else {
-      // 如果没有锚点，则滚动到底部
       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }
   };
@@ -109,15 +108,13 @@ const App: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // --- 逻辑修正：仅在没有 Credit 时跳转付费模块 ---
     if (mode === RecognitionMode.MENU && !isUnlimited() && totalCredits < 50) {
-      setShowPricing(true); // 打开弹窗
-      setTimeout(scrollToPricing, 300); // 视觉平滑跳转到付费区
+      setShowPricing(true); 
+      setTimeout(scrollToPricing, 300); 
       if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
 
-    // 正常有 Credit 的情况，不跳转，直接开始加载
     setStatus(AppStatus.LOADING);
     setPreviewUrl(URL.createObjectURL(file));
     setError(null);
@@ -126,26 +123,18 @@ const App: React.FC = () => {
       const base64 = await getCompressedBase64(file);
       
       if (mode === RecognitionMode.MENU) {
-        const list = await processMenuImage(base64);
-        if (list && Array.isArray(list) && list.length > 0) {
-          setDishes(list);
-          setStatus(AppStatus.SUCCESS);
+        // 修改点：result 现在包含 dishes 和 usage
+        const result = await processMenuImage(base64);
+        
+        if (result && result.dishes && Array.isArray(result.dishes) && result.dishes.length > 0) {
+          setDishes(result.dishes);
           
-          if (!isUnlimited()) {
-            setUsage(prev => {
-              const nextScanCount = (prev.scanCount || 0) + 1;
-              const nextCredits = Math.max(0, (prev.credits || 0) - 50);
-              let achievement = null;
-              if (nextScanCount === 4) achievement = 'milestone_4_reward';
-              else if (nextScanCount === 5) achievement = 'milestone_5_explorer';
-              return {
-                ...prev,
-                credits: nextScanCount === 4 ? nextCredits + 50 : nextCredits,
-                scanCount: nextScanCount,
-                achievementTriggered: achievement
-              };
-            });
+          // 修改点：直接同步后端返回的最新 usage，不再在前端手动计算扣费
+          if (result.usage) {
+            setUsage(result.usage);
           }
+          
+          setStatus(AppStatus.SUCCESS);
         } else {
           throw new Error("No dishes detected. Please try a clearer photo.");
         }

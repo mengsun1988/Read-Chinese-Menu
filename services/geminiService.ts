@@ -113,10 +113,10 @@ export async function processMenuImage(base64Image: string): Promise<any> {
     let rawArray: any[] = [];
 
     // 解析菜品数组
-    if (Array.isArray(result)) {
-      rawArray = result;
-    } else if (result.dishes && Array.isArray(result.dishes)) {
+    if (result.dishes && Array.isArray(result.dishes)) {
       rawArray = result.dishes;
+    } else if (Array.isArray(result)) {
+      rawArray = result;
     } else if (result.name_cn || result.name_en) {
       rawArray = [result];
     }
