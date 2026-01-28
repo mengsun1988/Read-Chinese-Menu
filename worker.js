@@ -359,14 +359,15 @@ export default {
       try {
         const { orderId, planId, userId } = await request.json();
         
-        // 验证PayPal订单
-        const paypalResponse = await fetch(`https://api.paypal.com/v2/checkout/orders/${orderId}/capture`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Basic ${btoa(env.PAYPAL_CLIENT_ID + ':' + env.PAYPAL_CLIENT_SECRET)}`,
-            'Content-Type': 'application/json'
-          }
-        });
+    // 验证PayPal订单 - 确保使用生产环境API
+    const paypalResponse = await fetch(`https://api.paypal.com/v2/checkout/orders/${orderId}/capture`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${btoa(env.PAYPAL_CLIENT_ID + ':' + env.PAYPAL_CLIENT_SECRET)}`,
+        'Content-Type': 'application/json',
+        'PayPal-Request-Id': `req_${Date.now()}`
+      }
+    });
         
         if (!paypalResponse.ok) {
           const errorData = await paypalResponse.json();

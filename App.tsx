@@ -57,6 +57,16 @@ const App: React.FC = () => {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const scrollToPricing = () => {
+    const pricingSection = document.querySelector('.pricing-module-anchor'); // 假设 PricingModule 或其容器有此 class
+    if (pricingSection) {
+      pricingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      // 如果没有锚点，则滚动到底部
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+  };
+
   const scrollToCamera = () => {
     const element = document.getElementById('camera-section');
     if (element) element.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -99,13 +109,15 @@ const App: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // --- 逻辑修正：仅在 MENU 模式下检查 Credit ---
+    // --- 逻辑修正：仅在没有 Credit 时跳转付费模块 ---
     if (mode === RecognitionMode.MENU && !isUnlimited() && totalCredits < 50) {
-      setShowPricing(true);
+      setShowPricing(true); // 打开弹窗
+      setTimeout(scrollToPricing, 300); // 视觉平滑跳转到付费区
       if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
 
+    // 正常有 Credit 的情况，不跳转，直接开始加载
     setStatus(AppStatus.LOADING);
     setPreviewUrl(URL.createObjectURL(file));
     setError(null);
@@ -114,13 +126,11 @@ const App: React.FC = () => {
       const base64 = await getCompressedBase64(file);
       
       if (mode === RecognitionMode.MENU) {
-        // --- 菜单模式逻辑 ---
         const list = await processMenuImage(base64);
         if (list && Array.isArray(list) && list.length > 0) {
           setDishes(list);
           setStatus(AppStatus.SUCCESS);
           
-          // 菜单模式扣费
           if (!isUnlimited()) {
             setUsage(prev => {
               const nextScanCount = (prev.scanCount || 0) + 1;
@@ -140,12 +150,10 @@ const App: React.FC = () => {
           throw new Error("No dishes detected. Please try a clearer photo.");
         }
       } else {
-        // --- 街景模式逻辑 (完全免费) ---
         const rawResult = await processStorefrontImage(base64);
         if (rawResult) {
           setStoreResult(rawResult);
           setStatus(AppStatus.SUCCESS);
-          // 这里不调用 setUsage 进行扣费逻辑
         } else {
           throw new Error("Could not identify the storefront.");
         }
@@ -159,23 +167,22 @@ const App: React.FC = () => {
   const onPurchase = (plan: any) => {
     setUsage(prev => {
       const updated = { ...prev };
-    if (plan.id.endsWith('-day')) {
-      const days = parseInt(plan.id.split('-')[0]);
-      const msToAdd = days * 86400000;
-      const currentExpiry = updated.passExpiryDate ? new Date(updated.passExpiryDate).getTime() : Date.now();
-      const baseTime = currentExpiry > Date.now() ? currentExpiry : Date.now();
-      updated.passExpiryDate = new Date(baseTime + msToAdd).toISOString();
-      updated.achievementTriggered = 'purchase_bonus';
-    } else if (plan.isDonation) {
-      const creditsToAdd = plan.credits || 500;
-      updated.credits = (updated.credits || 0) + creditsToAdd;
-      updated.achievementTriggered = 'donation_bonus';
-    }
+      if (plan.id.endsWith('-day')) {
+        const days = parseInt(plan.id.split('-')[0]);
+        const msToAdd = days * 86400000;
+        const currentExpiry = updated.passExpiryDate ? new Date(updated.passExpiryDate).getTime() : Date.now();
+        const baseTime = currentExpiry > Date.now() ? currentExpiry : Date.now();
+        updated.passExpiryDate = new Date(baseTime + msToAdd).toISOString();
+        updated.achievementTriggered = 'purchase_bonus';
+      } else if (plan.isDonation) {
+        const creditsToAdd = plan.credits || 500;
+        updated.credits = (updated.credits || 0) + creditsToAdd;
+        updated.achievementTriggered = 'donation_bonus';
+      }
       return updated;
     });
     setShowPricing(false);
     
-    // 设置信用更新消息
     if (plan.id.endsWith('-day')) {
       const days = parseInt(plan.id.split('-')[0]);
       setCreditUpdateMessage(`Successfully added ${days}-day unlimited access`);
@@ -224,17 +231,19 @@ const App: React.FC = () => {
           <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
 
           {status === AppStatus.IDLE && (
-            <HomeIdleView 
-              mode={mode}
-              onModeChange={handleModeChange}
-              onTriggerUpload={triggerUpload}
-              onOpenSurvival={() => setShowSurvival(true)}
-              onPurchase={onPurchase}
-              onHandleDailyShare={handleDailyShare}
-              usage={usage}
-              onShowDishDetail={handleDishClick}
-              onGameWin={handleGameWin} 
-            />
+            <div id="home-view">
+              <HomeIdleView 
+                mode={mode}
+                onModeChange={handleModeChange}
+                onTriggerUpload={triggerUpload}
+                onOpenSurvival={() => setShowSurvival(true)}
+                onPurchase={onPurchase}
+                onHandleDailyShare={handleDailyShare}
+                usage={usage}
+                onShowDishDetail={handleDishClick}
+                onGameWin={handleGameWin} 
+              />
+            </div>
           )}
 
           <div className="max-w-5xl mx-auto px-6">
@@ -301,7 +310,7 @@ const App: React.FC = () => {
           <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setShowPricing(false)} />
             <div className="relative w-full max-w-5xl animate-in fade-in zoom-in duration-300">
-              <div className="bg-white rounded-[3rem] overflow-hidden shadow-2xl relative">
+              <div className="bg-white rounded-[3rem] overflow-hidden shadow-2xl relative pricing-module-anchor">
                   <PricingModule 
                     onPurchase={onPurchase} 
                     onLater={() => setShowPricing(false)} 
