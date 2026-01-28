@@ -12,7 +12,10 @@ interface SupportTier {
   icon: string;
 }
 
-export const SupportSection: React.FC<{ onPurchase: (plan: any) => void }> = ({ onPurchase }) => {
+export const SupportSection: React.FC<{ 
+  onPurchase: (plan: any) => void;
+  credits: number;
+}> = ({ onPurchase, credits }) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>('coffee'); // 追踪当前滚到中间的卡片
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -47,19 +50,19 @@ export const SupportSection: React.FC<{ onPurchase: (plan: any) => void }> = ({ 
     return () => observer.disconnect();
   }, []);
 
-  // 2. 初始化默认居中到 Coffee
+  // 2. 初始化默认居中到 Coffee - 仅当信用不足时
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (middleCardRef.current) {
+      if (middleCardRef.current && credits < 50) {
         middleCardRef.current.scrollIntoView({ 
-          behavior: 'auto', 
+          behavior: 'smooth', 
           block: 'nearest', 
           inline: 'center' 
         });
       }
     }, 100);
     return () => clearTimeout(timer);
-  }, []);
+  }, [credits]);
 
   const handleSuccess = (tier: SupportTier, details: any) => {
     onPurchase({ 

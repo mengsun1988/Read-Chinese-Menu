@@ -12,20 +12,25 @@ export default {
 
     const url = new URL(request.url);
 
-    // --- Favicon 处理 ---
+    // --- Favicon 处理 (修复了 Base64 并确保逻辑完整) ---
     if (url.pathname === '/favicon.ico') {
-      const faviconBase64 = "iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAAAP7E6fAAAACXBIWXMAAAsTAAALEwEAmpwYAAACv0lEQVR4nO2cS04bQRCG/9YMaSREAnGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAnGQCHGRSBySByB7SBzhAn......";
-      const binary = atob(faviconBase64);
-      const array = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) array[i] = binary.charCodeAt(i);
-      
-      return new Response(array, {
-        headers: { 
-          'Content-Type': 'image/png',
-          'Cache-Control': 'public, max-age=604800',
-          ...corsHeaders
-        }
-      });
+      try {
+        // 这是一个合法的 1x1 透明 PNG 图片 Base64
+        const faviconBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+        const binary = atob(faviconBase64);
+        const array = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) array[i] = binary.charCodeAt(i);
+        
+        return new Response(array, {
+          headers: { 
+            'Content-Type': 'image/png',
+            'Cache-Control': 'public, max-age=604800',
+            ...corsHeaders
+          }
+        });
+      } catch (e) {
+        return new Response(null, { status: 404 });
+      }
     }
 
     // --- 1. 求生卡翻译接口 (保留) ---
@@ -131,7 +136,6 @@ export default {
         return new Date(userData.passExpiryDate).getTime() > Date.now();
       };
 
-      // 【核心修改点 1】: 先验票 - 如果是菜单模式且没钱，立即拦截
       if (type === "menu" && !isUnlimited() && userData.credits < 50) {
         return new Response(JSON.stringify({ error: "OUT_OF_CREDITS", credits: userData.credits }), { 
           status: 403, 
@@ -139,7 +143,6 @@ export default {
         });
       }
 
-      // 缓存逻辑保留
       const cache = caches.default;
       const cacheKeyUrl = new URL(`https://api.cache/${type}/${encodeURIComponent(name_cn || 'list')}`);
       const cacheKey = new Request(cacheKeyUrl.toString());
@@ -149,10 +152,6 @@ export default {
         if (cachedResponse) return cachedResponse;
       }
 
-      // --- 赛马机制实现 ---
-      console.log(`[User Check] ID: ${userId}, Current Credits: ${userData.credits}, Type: ${type}`);
-
-      // 扩展用户数据结构
       userData = {
         ...userData,
         qwenWinStreak: userData.qwenWinStreak || 0,
@@ -160,18 +159,9 @@ export default {
         preferredModel: userData.preferredModel || null
       };
 
-      // 拦截逻辑：增加 Number 强制转换防止类型错误
-      if (type === "menu" && !isUnlimited() && Number(userData.credits) < 50) {
-        return new Response(JSON.stringify({ error: "OUT_OF_CREDITS", credits: userData.credits }), { 
-          status: 403, headers: corsHeaders 
-        });
-      }
-
-      // 定义 AI 任务包装器
       const controller = new AbortController();
       const { signal } = controller;
 
-      // Qwen 任务
       const taskQwen = async () => {
         const qwenPayload = {
           model: (type === "dish_detail") ? "qwen-plus" : "qwen3-vl-plus",
@@ -209,7 +199,6 @@ export default {
         };
       };
 
-      // Gemini 任务
       const taskGemini = async () => {
         const prompt = (type === "dish_detail") 
           ? `CRITICAL: Analyze the dish "${name_cn}". Capture ALL text including faint descriptions or small ingredient lists. Return JSON: { "ingredients": [{"name_cn": "...", "name_en": "..."}], "spiciness_level": 0-5, "pinyin": "mandarin pinyin with tones", "pronunciation": "English phonetic guide", "allergens": ["..."], "description": "Full translation of the dish's secondary/small text or a brief authentic description", "has_animal_fats": true/false }. JSON ONLY.`
@@ -246,7 +235,6 @@ export default {
         };
       };
 
-      // --- 执行赛马逻辑 ---
       let winner;
       if (userData.preferredModel === 'qwen') {
         winner = await runWithPreference(taskQwen, taskGemini, controller);
@@ -257,23 +245,13 @@ export default {
         controller.abort();
       }
 
-      // 解析结果
       let content = winner.content.replace(/```json|```/g, "");
-      let parsedData;
-      try {
-        parsedData = JSON.parse(content);
-      } catch (e) {
-        console.error(`[JSON Parse Error] Source: ${winner.source}, Content: ${content.substring(0, 200)}...`);
-        throw new Error(`AI response format error: ${e.message}`);
-      }
+      let parsedData = JSON.parse(content);
 
-      // --- 计费与权重更新 ---
       let achievementTriggered = null;
-      // 只有在菜单识别，并且确实认出了菜品的情况下才扣费
       const shouldCharge = type === "menu" && parsedData.dishes && parsedData.dishes.length > 0;
 
       if (shouldCharge) {
-        // 更新胜率
         if (winner.source === 'qwen') { 
           userData.qwenWinStreak = (userData.qwenWinStreak || 0) + 1; 
           userData.geminiWinStreak = 0; 
@@ -292,7 +270,6 @@ export default {
           else if (userData.scanCount === 10) { userData.credits += 50; achievementTriggered = "milestone_10"; }
         }
         userData.lastUsed = new Date().toISOString();
-        // 成功扣费才写入 KV
         ctx.waitUntil(env.USER_USAGE.put(userId, JSON.stringify(userData)));
       }
 
@@ -324,11 +301,9 @@ export default {
       return finalResponse;
 
     } catch (err) {
-      // 报错不扣费，返回错误信息
       return new Response(JSON.stringify({ error: err.message }), { status: 200, headers: corsHeaders });
     }
 
-    // --- 辅助函数：处理优先权与延迟启动 ---
     async function runWithPreference(primary, secondary, controller) {
       return new Promise((resolve, reject) => {
         let completed = false;
@@ -350,7 +325,7 @@ export default {
               }
             }).catch(reject);
           }
-      }, 500); // 500ms 优先权延迟
+      }, 500);
       });
     }
 
@@ -359,29 +334,26 @@ export default {
       try {
         const { orderId, planId, userId } = await request.json();
         
-    // 验证PayPal订单 - 确保使用生产环境API
-    const paypalResponse = await fetch(`https://api.paypal.com/v2/checkout/orders/${orderId}/capture`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Basic ${btoa(env.PAYPAL_CLIENT_ID + ':' + env.PAYPAL_CLIENT_SECRET)}`,
-        'Content-Type': 'application/json',
-        'PayPal-Request-Id': `req_${Date.now()}`
-      }
-    });
+        const paypalResponse = await fetch(`https://api.paypal.com/v2/checkout/orders/${orderId}/capture`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${btoa(env.PAYPAL_CLIENT_ID + ':' + env.PAYPAL_CLIENT_SECRET)}`,
+            'Content-Type': 'application/json',
+            'PayPal-Request-Id': `req_${Date.now()}`
+          }
+        });
         
         if (!paypalResponse.ok) {
           const errorData = await paypalResponse.json();
           throw new Error(`PayPal verification failed: ${errorData.message || 'Unknown error'}`);
         }
         
-        // 获取用户当前数据
         let userData = { credits: 200, scanCount: 0, lastUsed: new Date().toISOString(), passExpiryDate: null };
         if (env.USER_USAGE && userId) {
           const usageDataStr = await env.USER_USAGE.get(userId);
           if (usageDataStr) userData = JSON.parse(usageDataStr);
         }
 
-        // 计算新的过期日期
         const currentExpiry = userData.passExpiryDate ? new Date(userData.passExpiryDate) : new Date();
         const baseTime = currentExpiry > Date.now() ? currentExpiry : Date.now();
         let msToAdd = 0;
@@ -391,7 +363,6 @@ export default {
           msToAdd = days * 86400000;
         }
         
-        // 更新用户数据
         userData.passExpiryDate = new Date(baseTime + msToAdd).toISOString();
         await env.USER_USAGE.put(userId, JSON.stringify(userData));
         
@@ -410,4 +381,4 @@ export default {
       }
     }
   }
-};
+}

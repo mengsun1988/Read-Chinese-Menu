@@ -215,7 +215,7 @@ const App: React.FC = () => {
 
   return (
     <PayPalScriptProvider options={{ 
-      clientId: "AdY7cjJGhxSVjZOPZr-LoHhX8JHtyQfNjmr6I8HjO4cv3cqW_U2zr1hpxa67nU8o4i6GoH0sFIh0P1aS",
+      clientId: "Ac071qoDgiNf6B4M9f6s589LM97KMsJglC_3P6EaM7rw-6WLCf7lLNQeG1ixLX_Mib9nbBMODmxApG7e",
       currency: "USD",
       intent: "capture"
     }}>
