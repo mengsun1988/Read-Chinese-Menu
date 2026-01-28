@@ -14,7 +14,7 @@ interface SupportTier {
 
 export const SupportSection: React.FC<{ onPurchase: (plan: any) => void }> = ({ onPurchase }) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [activeId, setActiveId] = useState<string | null>('coffee'); 
+  const [activeId, setActiveId] = useState<string | null>('coffee'); // 追踪当前滚到中间的卡片
   const scrollRef = useRef<HTMLDivElement>(null);
   const middleCardRef = useRef<HTMLDivElement>(null);
 
@@ -24,18 +24,42 @@ export const SupportSection: React.FC<{ onPurchase: (plan: any) => void }> = ({ 
     { id: 'cheesecake', name: 'Buy me a Cheesecake', price: '$9', amount: 9.0, credits: '1000 Credits', meals: '(20 meals)', description: 'The ultimate treat for hard work.', icon: '🍰' }
   ];
 
+  // 1. 实现滚动检测：哪张卡片在中间就放大哪张
+  useEffect(() => {
+    const observerOptions = {
+      root: scrollRef.current,
+      threshold: 0.6, // 当卡片露出 60% 时触发
+      rootMargin: '0px -25% 0px -25%' // 聚焦在容器中心区域
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const id = entry.target.getAttribute('data-id');
+          setActiveId(id);
+        }
+      });
+    }, observerOptions);
+
+    const cards = document.querySelectorAll('.support-card');
+    cards.forEach((card) => observer.observe(card));
+
+    return () => observer.disconnect();
+  }, []);
+
+  // 2. 初始化默认居中到 Coffee
   useEffect(() => {
     const timer = setTimeout(() => {
       if (middleCardRef.current) {
         middleCardRef.current.scrollIntoView({ 
-          behavior: 'smooth', 
+          behavior: 'auto', 
           block: 'nearest', 
           inline: 'center' 
         });
       }
-    }, 400);
+    }, 100);
     return () => clearTimeout(timer);
-  }, [selectedId]);
+  }, []);
 
   const handleSuccess = (tier: SupportTier, details: any) => {
     onPurchase({ 
@@ -49,7 +73,7 @@ export const SupportSection: React.FC<{ onPurchase: (plan: any) => void }> = ({ 
   };
 
   return (
-    <section className="bg-orange-50/50 rounded-[3rem] p-8 md:p-16 border border-orange-100/50 text-center space-y-10 relative mx-auto max-w-full lg:max-w-6xl">
+    <section className="bg-orange-50/50 rounded-[3rem] p-8 md:p-16 border border-orange-100/50 text-center space-y-10 relative mx-auto max-w-full lg:max-w-6xl overflow-hidden">
       <div className="space-y-4 px-6">
         <h3 className="text-2xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase leading-none">Support Our Journey</h3>
         <p className="text-slate-500 max-w-xl mx-auto font-bold text-[10px] md:text-sm leading-relaxed uppercase tracking-wider">
@@ -58,36 +82,35 @@ export const SupportSection: React.FC<{ onPurchase: (plan: any) => void }> = ({ 
       </div>
 
       <div className="relative w-full">
+        {/* 滚动容器 */}
         <div 
           ref={scrollRef}
-          className="flex flex-row md:grid md:grid-cols-3 gap-6 no-scrollbar overflow-x-auto px-20 md:px-0 -mx-8 md:mx-0 py-12 -my-12"
+          className="flex flex-row md:grid md:grid-cols-3 gap-4 md:gap-6 no-scrollbar overflow-x-auto px-[20vw] md:px-0 py-12 -my-12 snap-x snap-mandatory"
         >
-          <div className="shrink-0 w-4 md:hidden" />
-          
           {TIERS.map((tier) => {
-            const isActive = selectedId === tier.id;
+            const isCenter = activeId === tier.id;
+            const isSelected = selectedId === tier.id;
             
             return (
               <div 
                 key={tier.id} 
-                data-tier-id={tier.id}
+                data-id={tier.id}
                 ref={tier.id === 'coffee' ? middleCardRef : null}
-                className={`shrink-0 w-[210px] md:w-full bg-white/95 backdrop-blur-md p-6 rounded-[2.5rem] border transition-all duration-500 ease-out flex flex-col items-center group relative ${
-                  isActive 
-                    ? 'border-orange-400 ring-[6px] ring-orange-100 scale-100 opacity-100 z-10 shadow-xl' 
-                    : 'border-orange-100 scale-95 opacity-75 shadow-sm'
-                }`}
+                className={`support-card snap-center shrink-0 w-[240px] md:w-full bg-white/95 backdrop-blur-md p-6 rounded-[2.5rem] border transition-all duration-500 ease-out flex flex-col items-center group relative ${
+                  isCenter 
+                    ? 'border-orange-400 z-10 shadow-xl scale-110 opacity-100' 
+                    : 'border-orange-100 shadow-sm opacity-50 scale-90'
+                } ${isSelected ? 'ring-[6px] ring-orange-100' : ''}`}
               >
-                {/* Status Badge Area */}
+                {/* Status Badge */}
                 <div className="h-6 mb-2">
                   {tier.id === 'coffee' && (
-                    <div className={`bg-orange-600 text-white text-[8px] font-black px-3 py-1 rounded-full shadow-lg transition-all duration-500 ${isActive ? 'opacity-100' : 'opacity-0'}`}>
+                    <div className={`bg-orange-600 text-white text-[8px] font-black px-3 py-1 rounded-full shadow-lg transition-opacity duration-300 ${isCenter ? 'opacity-100' : 'opacity-0'}`}>
                       RECOMMENDED
                     </div>
                   )}
                 </div>
 
-                {/* Credit Info Label - Centered for better balance */}
                 <div className="flex flex-col items-center mb-4">
                   <span className="bg-emerald-500 text-white text-[10px] font-black px-3 py-1 rounded-lg shadow-sm uppercase tracking-tight">
                     +{tier.credits}
@@ -95,8 +118,7 @@ export const SupportSection: React.FC<{ onPurchase: (plan: any) => void }> = ({ 
                   <span className="text-[9px] font-bold text-emerald-600 mt-1 uppercase tracking-widest">{tier.meals}</span>
                 </div>
 
-                {/* Main Content */}
-                <div className={`text-5xl mb-4 transition-transform duration-500 ${isActive ? 'scale-110 drop-shadow-md' : 'scale-90'}`}>
+                <div className={`text-5xl mb-4 transition-transform duration-700 ${isCenter ? 'scale-110 rotate-3' : 'scale-90 opacity-50'}`}>
                   {tier.icon}
                 </div>
                 
@@ -107,10 +129,9 @@ export const SupportSection: React.FC<{ onPurchase: (plan: any) => void }> = ({ 
                   {tier.description}
                 </p>
 
-                {/* Action Area */}
                 <div className="w-full mt-auto">
                   {selectedId === tier.id ? (
-                    <div className="w-full animate-in zoom-in duration-500 min-h-[140px] flex flex-col items-center justify-center">
+                    <div className="w-full animate-in zoom-in duration-300 min-h-[140px] flex flex-col items-center justify-center">
                       <div className="w-full max-w-[300px] mx-auto">
                         <PayPalButton 
                           amount={tier.amount.toString()} 
@@ -128,7 +149,8 @@ export const SupportSection: React.FC<{ onPurchase: (plan: any) => void }> = ({ 
                   ) : (
                     <button 
                       onClick={() => setSelectedId(tier.id)}
-                      className="w-full py-4 bg-slate-900 text-white rounded-full font-black text-[9px] uppercase tracking-[0.2em] shadow-lg hover:bg-orange-600 transition-all active:scale-95"
+                      className="w-full py-4 bg-slate-900 text-white rounded-full font-black text-[9px] uppercase tracking-[0.2em] shadow-lg hover:bg-orange-600 transition-all active:scale-95 disabled:opacity-30"
+                      disabled={!isCenter && window.innerWidth < 768} // 手机端只有中间的能点
                     >
                       Send Support
                     </button>
@@ -137,7 +159,6 @@ export const SupportSection: React.FC<{ onPurchase: (plan: any) => void }> = ({ 
               </div>
             );
           })}
-          <div className="shrink-0 w-4 md:hidden" />
         </div>
       </div>
 
@@ -146,7 +167,10 @@ export const SupportSection: React.FC<{ onPurchase: (plan: any) => void }> = ({ 
           Secure payment via PayPal
         </p>
       </div>
-      <style dangerouslySetInnerHTML={{ __html: `.no-scrollbar::-webkit-scrollbar { display: none; } .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }`}} />
+      <style dangerouslySetInnerHTML={{ __html: `
+        .no-scrollbar::-webkit-scrollbar { display: none; } 
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      `}} />
     </section>
   );
 };

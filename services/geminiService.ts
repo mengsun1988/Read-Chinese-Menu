@@ -1,12 +1,12 @@
 import { Dish, StoreResult } from "../types";
 
 // 1. 核心：修改为你的 Cloudflare Worker 域名
-const WORKER_URL = "https://read-chinese-menu.samuelmore1903.workers.dev";
+export const WORKER_URL = "https://api.readchinesemenu.com";
 
 /**
  * 获取或生成设备唯一 ID
  */
-function getOrCreateUserId(): string {
+export function getOrCreateUserId(): string {
   const STORAGE_KEY = 'rmc_anonymous_user_id';
   let userId = localStorage.getItem(STORAGE_KEY);
   if (!userId) {
@@ -69,7 +69,8 @@ export async function getDishDeepDetail(name_cn: string, name_en: string): Promi
       pronunciation: result.pronunciation || "",
       health_note: result.health_note || "",
       description: result.description || "",
-      isFullyAnalyzed: true
+      isFullyAnalyzed: true,
+      _debug_source: result._debug_source || null
     };
   } catch (err) {
     console.error("Deep Detail Error:", err);
@@ -139,10 +140,11 @@ export async function processMenuImage(base64Image: string): Promise<any> {
       allergens: item.allergens || []
     }));
 
-    // 返回包含 dishes 列表和 usage 状态的对象
+    // 返回包含 dishes 列表、usage 状态和调试信息的对象
     return {
       dishes: formattedDishes,
-      usage: result.usage || null
+      usage: result.usage || null,
+      _debug_source: result._debug_source || null
     };
 
   } catch (err: any) {
@@ -176,10 +178,10 @@ export async function processStorefrontImage(base64Image: string): Promise<Store
 
     const result = await response.json();
     if (result && (result.name || result.name_cn)) {
-      return { ...fallback, ...result } as StoreResult;
+      return { ...fallback, ...result, _debug_source: result._debug_source || null } as StoreResult;
     }
     
-    return fallback as StoreResult;
+    return { ...fallback, _debug_source: null } as StoreResult;
   } catch (err: any) {
     console.error("Storefront Analysis Error:", err);
     throw err;

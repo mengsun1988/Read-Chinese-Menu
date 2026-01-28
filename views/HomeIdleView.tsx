@@ -7,6 +7,7 @@ import { AboutUs } from '../components/AboutUs';
 import { Reviews } from '../components/Reviews';
 import { SupportSection } from '../components/SupportSection';
 import MenuMasterMind from '../components/MenuMasterMind'; 
+import { WORKER_URL, getOrCreateUserId } from '../services/geminiService';
 
 interface Props {
   mode: RecognitionMode;
@@ -45,8 +46,30 @@ export const HomeIdleView: React.FC<Props> = ({
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleMainAction = (e?: React.MouseEvent) => {
+  const handleMainAction = async (e?: React.MouseEvent) => {
     if (e) e.preventDefault();
+    
+    try {
+      const response = await fetch(WORKER_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          type: "check_credits",
+          userId: getOrCreateUserId()
+        }),
+      });
+
+      if (response.status === 403) {
+        const errorData = await response.json();
+        if (errorData.error === "OUT_OF_CREDITS") {
+          setShowPricingModal(true);
+          return;
+        }
+      }
+    } catch (error) {
+      console.error("Credit check failed:", error);
+    }
+    
     if (mode === RecognitionMode.MENU && scanCount >= 5 && credits < 50 && !isUnlimited) {
       setShowPricingModal(true);
     } else {
@@ -109,32 +132,32 @@ export const HomeIdleView: React.FC<Props> = ({
             </div>
             <div className="px-4 py-1.5 bg-white border border-slate-200/50 rounded-full flex items-center gap-2 shadow-sm">
               <span className="w-1 h-1 bg-emerald-400 rounded-full" />
-    <span className="text-[9px] md:text-[10px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">PayPal payments</span>
-  </div>
-  <div className="px-4 py-1.5 bg-white border border-slate-200/50 rounded-full flex items-center gap-2 shadow-sm">
-    <span className="w-1 h-1 bg-emerald-400 rounded-full" />
-    <span className="text-[9px] md:text-[10px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Images not stored</span>
-  </div>
-</div>
+              <span className="text-[9px] md:text-[10px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">PayPal payments</span>
+            </div>
+            <div className="px-4 py-1.5 bg-white border border-slate-200/50 rounded-full flex items-center gap-2 shadow-sm">
+              <span className="w-1 h-1 bg-emerald-400 rounded-full" />
+              <span className="text-[9px] md:text-[10px] font-black text-slate-600 uppercase tracking-widest whitespace-nowrap">Images not stored</span>
+            </div>
+          </div>
         </div>
       </header>
 
       {/* 3. Interaction Area */}
       <div className="max-w-lg mx-auto px-6 mb-16 space-y-5">
-{(!usage.dailyShareDate || new Date(usage.dailyShareDate).toDateString() !== new Date().toDateString()) && (
-  <div className="animate-in slide-in-from-top-4 duration-500">
-    <button onClick={onHandleDailyShare} className="w-full bg-emerald-50/40 border border-emerald-100 p-5 rounded-[2rem] flex items-center justify-between group hover:bg-emerald-50 transition-all active:scale-95 shadow-sm">
-      <div className="flex items-center gap-4 text-left">
-        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-xl shadow-sm group-hover:rotate-12 transition-transform">🎁</div>
-        <div>
-          <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-1">Daily Reward</p>
-          <p className="text-xs font-bold text-slate-900">Share for extra scans</p>
-        </div>
-      </div>
-      <span className="bg-emerald-600 text-white px-3 py-1.5 rounded-full text-[8px] font-black shadow-md uppercase tracking-wider">Share</span>
-    </button>
-  </div>
-)}
+        {(!usage.dailyShareDate || new Date(usage.dailyShareDate).toDateString() !== new Date().toDateString()) && (
+          <div className="animate-in slide-in-from-top-4 duration-500">
+            <button onClick={onHandleDailyShare} className="w-full bg-emerald-50/40 border border-emerald-100 p-5 rounded-[2rem] flex items-center justify-between group hover:bg-emerald-50 transition-all active:scale-95 shadow-sm">
+              <div className="flex items-center gap-4 text-left">
+                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-xl shadow-sm group-hover:rotate-12 transition-transform">🎁</div>
+                <div>
+                  <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-1">Daily Reward</p>
+                  <p className="text-xs font-bold text-slate-900">Share for extra scans</p>
+                </div>
+              </div>
+              <span className="bg-emerald-600 text-white px-3 py-1.5 rounded-full text-[8px] font-black shadow-md uppercase tracking-wider">Share</span>
+            </button>
+          </div>
+        )}
 
         <div className="bg-slate-200/50 p-1.5 rounded-2xl flex gap-1 border border-slate-200/50 w-full relative">
           <button 
@@ -152,7 +175,6 @@ export const HomeIdleView: React.FC<Props> = ({
           </button>
         </div>
 
-        {/* Scan 卡片：减弱阴影至 shadow-md，减淡边框 */}
         <div className="bg-white border border-slate-200/60 p-10 text-center flex flex-col items-center shadow-md rounded-[3rem] relative overflow-hidden group hover:shadow-lg hover:shadow-rose-100/30 hover:border-rose-100 hover:-translate-y-1.5 transition-all duration-500">
           <div className={`absolute -top-24 -right-24 w-48 h-48 blur-3xl opacity-[0.08] rounded-full transition-colors ${mode === RecognitionMode.MENU ? 'bg-rose-500' : 'bg-slate-900'}`} />
           
@@ -170,12 +192,13 @@ export const HomeIdleView: React.FC<Props> = ({
             <span className="text-[11px] font-medium text-slate-500 text-center leading-tight px-2">
               Upload a photo of a menu to see ingredients and common allergens.
             </span>
-            <div className={`w-1.5 h-1.5 rounded-full mt-3 ${credits > 0 || isUnlimited ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
-            <span className="text-[9px] font-black uppercase tracking-widest text-slate-900 opacity-60">{renderSubtext()}</span>
+            <div className="flex items-center gap-2">
+              <div className={`w-1.5 h-1.5 rounded-full ${credits > 0 || isUnlimited ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+              <span className="text-[9px] font-black uppercase tracking-widest text-slate-900 opacity-60">{renderSubtext()}</span>
+            </div>
           </div>
         </div>
 
-        {/* 游戏卡：减弱阴影 */}
         <button 
           onClick={() => setShowGame(true)}
           className="w-full bg-emerald-500 border border-emerald-400/50 p-8 rounded-[3rem] flex items-center gap-6 shadow-md shadow-emerald-100/50 active:scale-[0.98] hover:shadow-lg hover:shadow-emerald-200/40 hover:-translate-y-1 transition-all group"
@@ -190,7 +213,6 @@ export const HomeIdleView: React.FC<Props> = ({
           <span className="text-white/50 font-black text-xl group-hover:translate-x-1 transition-transform">→</span>
         </button>
 
-        {/* 生存卡：减弱阴影与边框 */}
         <button onClick={onOpenSurvival} className="group relative w-full bg-white border border-slate-200/40 p-8 rounded-[3rem] flex items-center gap-6 shadow-md active:scale-[0.98] hover:shadow-lg hover:border-rose-100/50 hover:-translate-y-1 transition-all">
           <div className="w-14 h-14 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600 shrink-0 group-hover:bg-rose-600 group-hover:text-white transition-all duration-300"><MessageSquareIcon className="w-8 h-8" /></div>
           <div className="text-left flex-1">
@@ -201,7 +223,7 @@ export const HomeIdleView: React.FC<Props> = ({
         </button>
       </div>
 
-      {/* 4. Footer 内容保持不变 */}
+      {/* 4. Footer */}
       <div className="w-full space-y-24 pb-20 bg-slate-50 border-t border-slate-100">
         <div className="max-w-4xl mx-auto px-4 pt-20 animate-in slide-in-from-bottom-6 duration-700">
           <SupportSection onPurchase={onPurchase} />
@@ -244,10 +266,11 @@ export const HomeIdleView: React.FC<Props> = ({
 
         <div className="text-center pt-4">
           <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em] md:whitespace-normal">© 2026<br/>Read Chinese Menu • Safe Travels</p>
+          <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.4em] mt-1">v1.0</p>
         </div>
       </div>
 
-      {/* Overlays 与之前一致 */}
+      {/* Overlays */}
       {showPricingModal && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-500" onClick={() => setShowPricingModal(false)} />

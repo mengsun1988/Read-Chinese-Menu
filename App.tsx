@@ -174,6 +174,17 @@ const App: React.FC = () => {
       return updated;
     });
     setShowPricing(false);
+    
+    // 设置信用更新消息
+    if (plan.id.endsWith('-day')) {
+      const days = parseInt(plan.id.split('-')[0]);
+      setCreditUpdateMessage(`Successfully added ${days}-day unlimited access`);
+    } else if (plan.isDonation) {
+      const creditsToAdd = plan.credits || 500;
+      setCreditUpdateMessage(`Successfully added ${creditsToAdd} credits`);
+    } else {
+      setCreditUpdateMessage(`Purchase successful!`);
+    }
   };
 
   const handleDishClick = async (dish: any) => {

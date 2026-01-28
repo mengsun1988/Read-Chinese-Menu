@@ -17,6 +17,7 @@ export interface Dish {
   has_animal_fats: boolean;
   price?: string;
   image_url?: string;
+  _debug_source?: string; // 新增：标识AI模型来源
 }
 
 export interface StoreResult {
@@ -25,6 +26,18 @@ export interface StoreResult {
   specialty_dishes: string[];
   average_price_range: string;
   description: string;
+  _debug_source?: string; // 新增：标识AI模型来源
+}
+
+export interface MenuRecognitionResult {
+  dishes: Dish[];
+  usage?: {
+    credits: number;
+    scanCount: number;
+    achievementTriggered?: string;
+    isUnlimited: boolean;
+    _debug_source?: string; // 新增：标识AI模型来源
+  };
 }
 
 export enum RecognitionMode {

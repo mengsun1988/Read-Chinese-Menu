@@ -1,4 +1,4 @@
-name = "read-chinese-menu" # Cloudflare 上的 Worker 名称
+name = "read-chinese-menu-api" # Cloudflare 上的 Worker 名称
 main = "worker.js"         # 你的主代码文件
 compatibility_date = "2026-01-27"
 compatibility_flags = ["nodejs_compat"]
