@@ -12,25 +12,10 @@ export default {
 
     const url = new URL(request.url);
 
-    // --- Favicon 处理 (修复了 Base64 并确保逻辑完整) ---
-    if (url.pathname === '/favicon.ico') {
-      try {
-        // 这是一个合法的 1x1 透明 PNG 图片 Base64
-        const faviconBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
-        const binary = atob(faviconBase64);
-        const array = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) array[i] = binary.charCodeAt(i);
-        
-        return new Response(array, {
-          headers: { 
-            'Content-Type': 'image/png',
-            'Cache-Control': 'public, max-age=604800',
-            ...corsHeaders
-          }
-        });
-      } catch (e) {
-        return new Response(null, { status: 404 });
-      }
+    // --- Favicon 处理 (修改：指向你根目录的真实文件) ---
+    if (url.pathname === '/favicon.ico' || url.pathname === '/favicon.png') {
+      const faviconUrl = `${url.origin}/favicon.png`; 
+      return fetch(faviconUrl, request);
     }
 
     // --- 1. 求生卡翻译接口 (保留) ---
@@ -125,63 +110,58 @@ export default {
         });
       }
 
-// 新增：每日信用限制
-const DAILY_CREDIT_LIMIT = 50;
-const CREDIT_RESET_INTERVAL = 24 * 60 * 60 * 1000; // 24小时
+      // 每日信用限制逻辑
+      const DAILY_CREDIT_LIMIT = 50;
+      const CREDIT_RESET_INTERVAL = 24 * 60 * 60 * 1000;
 
-let userData = { 
-  credits: 200, 
-  scanCount: 0, 
-  lastUsed: new Date().toISOString(), 
-  passExpiryDate: null,
-  dailyCredits: DAILY_CREDIT_LIMIT,
-  lastCreditReset: Date.now()
-};
-if (env.USER_USAGE && userId) {
-  const usageDataStr = await env.USER_USAGE.get(userId);
-  if (usageDataStr) {
-    userData = JSON.parse(usageDataStr);
-    
-    // 检查是否需要重置每日信用
-    const now = Date.now();
-    const lastReset = new Date(userData.lastCreditReset || 0).getTime();
-    
-    if (now - lastReset > CREDIT_RESET_INTERVAL) {
-      userData.dailyCredits = DAILY_CREDIT_LIMIT;
-      userData.lastCreditReset = now;
-      // 保存更新后的用户数据
-      ctx.waitUntil(env.USER_USAGE.put(userId, JSON.stringify(userData)));
-    }
-  }
-}
+      let userData = { 
+        credits: 200, 
+        scanCount: 0, 
+        lastUsed: new Date().toISOString(), 
+        passExpiryDate: null,
+        dailyCredits: DAILY_CREDIT_LIMIT,
+        lastCreditReset: Date.now()
+      };
+      
+      if (env.USER_USAGE && userId) {
+        const usageDataStr = await env.USER_USAGE.get(userId);
+        if (usageDataStr) {
+          userData = JSON.parse(usageDataStr);
+          const now = Date.now();
+          const lastReset = new Date(userData.lastCreditReset || 0).getTime();
+          
+          if (now - lastReset > CREDIT_RESET_INTERVAL) {
+            userData.dailyCredits = DAILY_CREDIT_LIMIT;
+            userData.lastCreditReset = now;
+            ctx.waitUntil(env.USER_USAGE.put(userId, JSON.stringify(userData)));
+          }
+        }
+      }
 
-const isUnlimited = () => {
-  if (!userData.passExpiryDate) return false;
-  return new Date(userData.passExpiryDate).getTime() > Date.now();
-};
+      const isUnlimited = () => {
+        if (!userData.passExpiryDate) return false;
+        return new Date(userData.passExpiryDate).getTime() > Date.now();
+      };
 
-// 修改：检查每日信用限制
-if (type === "menu" && !isUnlimited()) {
-  // 优先检查每日信用
-  if (userData.dailyCredits <= 0) {
-    return new Response(JSON.stringify({ 
-      error: "DAILY_CREDIT_EXCEEDED", 
-      credits: userData.credits,
-      dailyCredits: 0,
-      resetIn: CREDIT_RESET_INTERVAL - (Date.now() - userData.lastCreditReset)
-    }), { 
-      status: 429, 
-      headers: corsHeaders 
-    });
-  }
-  // 然后检查总信用
-  if (userData.credits < 50) {
-    return new Response(JSON.stringify({ error: "OUT_OF_CREDITS", credits: userData.credits }), { 
-      status: 403, 
-      headers: corsHeaders 
-    });
-  }
-}
+      if (type === "menu" && !isUnlimited()) {
+        if (userData.dailyCredits <= 0) {
+          return new Response(JSON.stringify({ 
+            error: "DAILY_CREDIT_EXCEEDED", 
+            credits: userData.credits,
+            dailyCredits: 0,
+            resetIn: CREDIT_RESET_INTERVAL - (Date.now() - userData.lastCreditReset)
+          }), { 
+            status: 429, 
+            headers: corsHeaders 
+          });
+        }
+        if (userData.credits < 50) {
+          return new Response(JSON.stringify({ error: "OUT_OF_CREDITS", credits: userData.credits }), { 
+            status: 403, 
+            headers: corsHeaders 
+          });
+        }
+      }
 
       const cache = caches.default;
       const cacheKeyUrl = new URL(`https://api.cache/${type}/${encodeURIComponent(name_cn || 'list')}`);
@@ -304,15 +284,15 @@ if (type === "menu" && !isUnlimited()) {
         if (userData.geminiWinStreak >= 3) userData.preferredModel = 'gemini';
 
         userData.scanCount += 1;
-  if (!isUnlimited()) {
-    userData.credits -= 50;
-    userData.dailyCredits -= 50; // ✅ 修复：添加每日信用扣减
-    if (userData.scanCount === 4) { userData.credits += 50; achievementTriggered = "milestone_4"; }
-    else if (userData.scanCount === 10) { userData.credits += 50; achievementTriggered = "milestone_10"; }
-  }
-  userData.lastUsed = new Date().toISOString();
-  ctx.waitUntil(env.USER_USAGE.put(userId, JSON.stringify(userData)));
-}
+        if (!isUnlimited()) {
+          userData.credits -= 50;
+          userData.dailyCredits -= 50;
+          if (userData.scanCount === 4) { userData.credits += 50; achievementTriggered = "milestone_4"; }
+          else if (userData.scanCount === 10) { userData.credits += 50; achievementTriggered = "milestone_10"; }
+        }
+        userData.lastUsed = new Date().toISOString();
+        ctx.waitUntil(env.USER_USAGE.put(userId, JSON.stringify(userData)));
+      }
 
       let responseBody = type === "dish_detail" 
         ? { ...parsedData, isFullyAnalyzed: true, _debug_source: winner.source }
@@ -366,7 +346,7 @@ if (type === "menu" && !isUnlimited()) {
               }
             }).catch(reject);
           }
-      }, 500);
+        }, 500);
       });
     }
 
@@ -374,7 +354,6 @@ if (type === "menu" && !isUnlimited()) {
     if (request.method === 'POST' && url.pathname === '/api/verify-payment') {
       try {
         const { orderId, planId, userId } = await request.json();
-        
         const paypalResponse = await fetch(`https://api.paypal.com/v2/checkout/orders/${orderId}/capture`, {
           method: 'POST',
           headers: {

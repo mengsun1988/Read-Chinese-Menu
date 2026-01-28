@@ -1,34 +1,51 @@
 :root {
-  /* Radius tokens - 保持与当前UI完全一致的圆角值 */
-  --radius-primary: 2.2rem;
-  --radius-secondary: 3rem;
-  --radius-card: 1.5rem;
-  --radius-button: 1.2rem;
+  /* 字体回归 Poppins：保持品牌现代感 */
+  --font-heading: "Poppins", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-body: "Poppins", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+
+  /* 颜色修正：翡翠绿 */
+  --color-primary: #e11d48;     /* Rose 600 */
+  --color-emerald: #059669;    /* 翡翠绿 */
+  --color-background: #F8FAFC;  /* 纯净背景 */
+  --color-surface: #FFFFFF;     
+  --color-text: #0F172A;        
   
-  /* Color tokens - 精确匹配当前Tailwind色值 */
-  --color-primary: #e11d48; /* rose-600 */
-  --color-secondary: #047857; /* emerald-500 */
-  --color-background: #fcfbf9;
-  --color-text: #1e293b;
-  --color-error: #e11d48;
-  --color-success: #047857;
-  
-  /* Spacing tokens - 对应Tailwind间距系统 */
-  --spacing-sm: 0.5rem;   /* p-2 */
-  --spacing-md: 1rem;     /* p-4 */
-  --spacing-lg: 1.5rem;   /* p-6 */
-  --spacing-xl: 2rem;     /* p-8 */
-  
-  /* Typography tokens */
-  --font-heading: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-body: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --text-sm: 0.875rem;    /* text-sm */
-  --text-base: 1rem;      /* text-base */
-  --text-lg: 1.125rem;    /* text-lg */
-  --text-xl: 1.25rem;     /* text-xl */
-  
-  /* Shadow tokens - 匹配当前阴影效果 */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  /* 圆角与阴影规范 */
+  --radius-primary: 1.5rem;     
+  --radius-card: 3rem;          
+  --radius-button: 999px;       
+  --shadow-ios: 0 10px 40px rgba(0, 0, 0, 0.04);
+}
+
+/* 全局基础设置 */
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-background) !important;
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+  /* Poppins 字符间距微调，避免字间距过宽 */
+  letter-spacing: -0.01em; 
+}
+
+/* 标题排版：利用 Poppins 的粗体优势 */
+h1, h2, h3, .font-title {
+  font-family: var(--font-heading) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.03em !important;
+}
+
+/* 劫持 Tailwind 类名 */
+.bg-emerald-600 { background-color: var(--color-emerald) !important; }
+.text-emerald-600 { color: var(--color-emerald) !important; }
+
+/* 苹果风格点击反馈 */
+.active-spring:active {
+  transform: scale(0.96);
+  transition: transform 0.2s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+/* 磨砂玻璃效果 */
+.backdrop-blur-md {
+  backdrop-filter: blur(25px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(25px) saturate(200%) !important;
 }

@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { AppStatus, RecognitionMode, Ingredient, StoreResult } from './types';
-import { processMenuImage, processStorefrontImage, getDishDeepDetail } from './services/geminiService';
+import { processMenuImage, processStorefrontImage, getDishDeepDetail, WORKER_URL, getOrCreateUserId } from './services/geminiService';
 import { PayPalScriptProvider } from "@paypal/react-paypal-js";
 
 // 基础组件
@@ -108,11 +108,31 @@ const App: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (mode === RecognitionMode.MENU && !isUnlimited() && totalCredits < 50) {
-      setShowPricing(true); 
-      setTimeout(scrollToPricing, 300); 
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      return;
+    // 移动信用检查到文件选择后，但处理前
+    if (mode === RecognitionMode.MENU) {
+      try {
+        const response = await fetch(WORKER_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            type: "check_credits",
+            userId: getOrCreateUserId()
+          }),
+        });
+
+        if (response.status === 403) {
+          const errorData = await response.json();
+          if (errorData.error === "OUT_OF_CREDITS" || errorData.error === "DAILY_CREDIT_EXCEEDED") {
+            setShowPricing(true);
+            setTimeout(scrollToPricing, 300);
+            if (fileInputRef.current) fileInputRef.current.value = "";
+            return;
+          }
+        }
+      } catch (err: any) {
+        console.error("Credit check failed:", err);
+        // 可以选择显示错误或继续
+      }
     }
 
     setStatus(AppStatus.LOADING);
