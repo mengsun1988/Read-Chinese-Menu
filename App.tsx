@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { AppStatus, RecognitionMode, Ingredient, StoreResult } from './types';
 import { processMenuImage, processStorefrontImage, getDishDeepDetail, WORKER_URL, getOrCreateUserId } from './services/geminiService';
 import { PayPalScriptProvider } from "@paypal/react-paypal-js";
@@ -24,7 +24,8 @@ import { HomeIdleView } from './views/HomeIdleView';
 import { EffectLayer } from './components/EffectLayer';
 
 const App: React.FC = () => {
-  const { usage, setUsage, totalCredits, isUnlimited, handleDailyShare } = useUserUsage();
+  // 从自定义 Hook 中获取状态与方法
+  const { usage, isUnlimited, syncWithBackend, handleDailyShare, handleGameWin, clearAchievement } = useUserUsage();
 
   const [status, setStatus] = useState<AppStatus>(AppStatus.IDLE);
   const [mode, setMode] = useState<RecognitionMode>(RecognitionMode.MENU);
@@ -45,6 +46,7 @@ const App: React.FC = () => {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // --- 辅助函数 ---
   const triggerUpload = () => fileInputRef.current?.click();
   const handleModeChange = (newMode: RecognitionMode) => { setMode(newMode); reset(); };
   
@@ -58,12 +60,8 @@ const App: React.FC = () => {
   };
 
   const scrollToPricing = () => {
-    const pricingSection = document.querySelector('.pricing-module-anchor'); 
-    if (pricingSection) {
-      pricingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } else {
-      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-    }
+    const element = document.getElementById('pricing-section');
+    if (element) element.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const scrollToCamera = () => {
@@ -71,15 +69,9 @@ const App: React.FC = () => {
     if (element) element.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
-  // --- 游戏奖励逻辑 ---
-  const handleGameWin = () => {
-    setUsage(prev => ({
-      ...prev,
-      credits: (prev.credits || 0) + 10,
-      achievementTriggered: 'game_win_reward'
-    }));
-  };
-
+  /**
+   * 图片压缩处理
+   */
   const getCompressedBase64 = (file: File): Promise<string> => {
     return new Promise((resolve) => {
       const reader = new FileReader();
@@ -96,66 +88,54 @@ const App: React.FC = () => {
             w *= r; h *= r;
           }
           canvas.width = w; canvas.height = h;
-          canvas.getContext('2d')?.drawImage(img, 0, 0, w, h);
-          const base = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, w, h);
+          const base = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
           if (base) resolve(base);
         };
       };
     });
   };
 
+  /**
+   * 核心文件上传与识别逻辑
+   */
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // --- 1. 立即响应：先进入 Loading 并显示预览，消除用户选择文件后的等待感 ---
     setStatus(AppStatus.LOADING);
     setPreviewUrl(URL.createObjectURL(file));
     setError(null);
 
     try {
-      // --- 2. 异步处理：在后台进行压缩和信用检查，不阻塞 UI 渲染 ---
       const base64 = await getCompressedBase64(file);
+      const userId = getOrCreateUserId();
 
       if (mode === RecognitionMode.MENU) {
-        // 后台检查点数
-        const checkResponse = await fetch(WORKER_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ 
-            type: "check_credits",
-            userId: getOrCreateUserId()
-          }),
-        });
-
-        if (checkResponse.status === 403 || checkResponse.status === 429) {
-          const errorData = await checkResponse.json();
-          if (errorData.error === "OUT_OF_CREDITS" || errorData.error === "DAILY_CREDIT_EXCEEDED") {
-            reset(); 
-            setShowPricing(true);
-            setTimeout(scrollToPricing, 300);
-            return;
-          }
-        }
-
-        // 识别逻辑
+        // 直接调用识别接口（Worker 内部会进行点数预检并自动扣费）
         const result = await processMenuImage(base64);
         
-        if (result && result.dishes && Array.isArray(result.dishes) && result.dishes.length > 0) {
+        if (result && result.dishes) {
           setDishes(result.dishes);
-          // 同步后端返回的最新状态
+          // 关键闭环：识别成功后，Worker 会返回最新的 usage 状态（含已扣除的点数和里程碑标记）
           if (result.usage) {
-            setUsage(result.usage);
+            syncWithBackend(result.usage);
           }
           setStatus(AppStatus.SUCCESS);
+        } else if (result && result.error === "OUT_OF_CREDITS") {
+          reset();
+          setShowPricing(true);
+          setTimeout(scrollToPricing, 300);
         } else {
           throw new Error("No dishes detected. Please try a clearer photo.");
         }
       } else {
-        // 门头模式
+        // 门头模式 (STREET) - 逻辑类似，但通常不扣费
         const rawResult = await processStorefrontImage(base64);
         if (rawResult) {
           setStoreResult(rawResult);
+          if (rawResult.usage) syncWithBackend(rawResult.usage);
           setStatus(AppStatus.SUCCESS);
         } else {
           throw new Error("Could not identify the storefront.");
@@ -167,33 +147,18 @@ const App: React.FC = () => {
     }
   };
 
-  const onPurchase = (plan: any) => {
-    setUsage(prev => {
-      const updated = { ...prev };
-      if (plan.id.endsWith('-day')) {
-        const days = parseInt(plan.id.split('-')[0]);
-        const msToAdd = days * 86400000;
-        const currentExpiry = updated.passExpiryDate ? new Date(updated.passExpiryDate).getTime() : Date.now();
-        const baseTime = currentExpiry > Date.now() ? currentExpiry : Date.now();
-        updated.passExpiryDate = new Date(baseTime + msToAdd).toISOString();
-        updated.achievementTriggered = 'purchase_bonus';
-      } else if (plan.isDonation) {
-        const creditsToAdd = plan.credits || 500;
-        updated.credits = (updated.credits || 0) + creditsToAdd;
-        updated.achievementTriggered = 'donation_bonus';
-      }
-      return updated;
-    });
+  /**
+   * 支付成功后的本地回调 (由 PricingModule 调用)
+   */
+  const onPurchaseSuccess = (updatedUserData: any) => {
+    syncWithBackend(updatedUserData);
     setShowPricing(false);
     
-    if (plan.id.endsWith('-day')) {
-      const days = parseInt(plan.id.split('-')[0]);
-      setCreditUpdateMessage(`Successfully added ${days}-day unlimited access`);
-    } else if (plan.isDonation) {
-      const creditsToAdd = plan.credits || 500;
-      setCreditUpdateMessage(`Successfully added ${creditsToAdd} credits`);
+    // 设置成功提示消息
+    if (updatedUserData.passExpiryDate) {
+      setCreditUpdateMessage(`Premium Access Activated!`);
     } else {
-      setCreditUpdateMessage(`Purchase successful!`);
+      setCreditUpdateMessage(`Credits Topped Up!`);
     }
   };
 
@@ -209,7 +174,7 @@ const App: React.FC = () => {
           setDishes(prev => prev.map(d => d.id === dish.id ? updatedDish : d));
         }
       } catch (e) {
-        console.error("Analysis Failed:", e);
+        console.error("Deep Analysis Failed:", e);
       } finally {
         setLoadingDetail(false);
       }
@@ -223,30 +188,35 @@ const App: React.FC = () => {
       intent: "capture"
     }}>
       <div className="min-h-screen pb-0 bg-[#fafafa] font-sans w-full">
+        {/* 动画特效层：监听里程碑奖励触发 */}
         <EffectLayer 
           trigger={usage.achievementTriggered} 
-          onComplete={() => setUsage(prev => ({ ...prev, achievementTriggered: null }))} 
+          onComplete={clearAchievement} 
         />
 
         <A2HSManager />
         
         <main className="w-full relative">
-          <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
+          <input 
+            type="file" 
+            accept="image/*" 
+            className="hidden" 
+            ref={fileInputRef} 
+            onChange={handleFileChange} 
+          />
 
           {status === AppStatus.IDLE && (
-            <div id="home-view">
-              <HomeIdleView 
-                mode={mode}
-                onModeChange={handleModeChange}
-                onTriggerUpload={triggerUpload}
-                onOpenSurvival={() => setShowSurvival(true)}
-                onPurchase={onPurchase}
-                onHandleDailyShare={handleDailyShare}
-                usage={usage}
-                onShowDishDetail={handleDishClick}
-                onGameWin={handleGameWin} 
-              />
-            </div>
+            <HomeIdleView 
+              mode={mode}
+              onModeChange={handleModeChange}
+              onTriggerUpload={triggerUpload}
+              onOpenSurvival={() => setShowSurvival(true)}
+              onPurchase={() => setShowPricing(true)}
+              onHandleDailyShare={() => handleDailyShare(getOrCreateUserId())}
+              usage={usage}
+              onShowDishDetail={handleDishClick}
+              onGameWin={() => handleGameWin(getOrCreateUserId())} 
+            />
           )}
 
           <div className="max-w-5xl mx-auto px-6">
@@ -261,7 +231,7 @@ const App: React.FC = () => {
                 <div className="w-20 h-20 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto">
                   <WarningIcon className="w-10 h-10" />
                 </div>
-                <h2 className="text-3xl font-bold text-slate-900 uppercase italic tracking-tighter">Scan Failed</h2>
+                <h2 className="text-3xl font-bold text-slate-900 uppercase tracking-tighter">Scan Failed</h2>
                 <p className="text-slate-400 text-xs font-bold leading-relaxed">{error}</p>
                 <button onClick={reset} className="bg-slate-900 text-white font-black py-4 px-12 rounded-full shadow-lg active:scale-95 transition-all uppercase tracking-widest text-[10px]">Retry Scan</button>
               </div>
@@ -269,6 +239,7 @@ const App: React.FC = () => {
 
             {status === AppStatus.SUCCESS && (
               <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 mt-10 pb-32">
+                {/* 顶部状态栏 */}
                 <div className="flex justify-between items-center bg-slate-900 p-6 rounded-[2rem] shadow-2xl sticky top-4 z-[110] mx-2 border border-white/5">
                   <div className="flex items-center gap-4">
                     {previewUrl && <img src={previewUrl} className="w-12 h-12 object-cover rounded-xl ring-2 ring-white/10" alt="Preview" />}
@@ -277,13 +248,14 @@ const App: React.FC = () => {
                         {mode === RecognitionMode.MENU ? `${dishes.length} Items Found` : "Shop Identified"}
                       </h3>
                       <p className="text-[9px] font-black text-rose-400 uppercase tracking-widest leading-none">
-                        {mode === RecognitionMode.STREET ? "Free Recognition" : (isUnlimited() ? "Premium Active" : `${usage.credits} Credits Left`)}
+                        {isUnlimited ? "Premium Active" : `${usage.credits} Credits Left`}
                       </p>
                     </div>
                   </div>
                   <button onClick={reset} className="bg-white/10 hover:bg-white/20 text-white font-black py-2.5 px-6 rounded-full text-[10px] uppercase tracking-wider backdrop-blur-sm transition-colors border border-white/10">Done</button>
                 </div>
                 
+                {/* 结果展示 */}
                 {mode === RecognitionMode.MENU ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-2">
                     {dishes.map((dish, index) => (
@@ -307,15 +279,16 @@ const App: React.FC = () => {
           onTos={() => setLegalView('tos')} 
         />
 
+        {/* 各种弹窗/覆盖层 */}
         <SurvivalCardView isOpen={showSurvival} onClose={() => setShowSurvival(false)} />
         
         {showPricing && (
           <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setShowPricing(false)} />
             <div className="relative w-full max-w-5xl animate-in fade-in zoom-in duration-300">
-              <div className="bg-white rounded-[3rem] overflow-hidden shadow-2xl relative pricing-module-anchor">
+              <div className="bg-white rounded-[3rem] overflow-hidden shadow-2xl relative">
                   <PricingModule 
-                    onPurchase={onPurchase} 
+                    onPurchase={onPurchaseSuccess} 
                     onLater={() => setShowPricing(false)} 
                   />
                   <button 

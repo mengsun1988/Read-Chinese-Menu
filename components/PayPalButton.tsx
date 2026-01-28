@@ -42,7 +42,7 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({ amount, planName, on
       )}
 
       {/* 按钮区域：允许高度自适应，防止溢出 */}
-      <div className="w-full transition-all duration-500">
+      <div className="w-full transition-all duration-500 min-h-[45px]">
         {isResolved && (
           <PayPalButtons
             key={amount + planName}

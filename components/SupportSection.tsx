@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { PayPalButton } from './PayPalButton';
+import { WORKER_URL, getOrCreateUserId } from '../services/geminiService';
 
 interface SupportTier {
   id: string;
@@ -13,11 +14,13 @@ interface SupportTier {
 }
 
 export const SupportSection: React.FC<{ 
-  onPurchase: (plan: any) => void;
+  onPurchase: (updatedUsage: any) => void; // 修正：接收后端返回的最新状态
   credits: number;
 }> = ({ onPurchase, credits }) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [activeId, setActiveId] = useState<string | null>('coffee'); // 追踪当前滚到中间的卡片
+  const [activeId, setActiveId] = useState<string | null>('coffee');
+  const [isVerifying, setIsVerifying] = useState(false); // 新增：验证状态
+  
   const scrollRef = useRef<HTMLDivElement>(null);
   const middleCardRef = useRef<HTMLDivElement>(null);
 
@@ -27,12 +30,12 @@ export const SupportSection: React.FC<{
     { id: 'cheesecake', name: 'Buy me a Cheesecake', price: '$9', amount: 9.0, credits: '1000 Credits', meals: '(20 meals)', description: 'The ultimate treat for hard work.', icon: '🍰' }
   ];
 
-  // 1. 实现滚动检测：哪张卡片在中间就放大哪张
+  // 1. 实现滚动检测
   useEffect(() => {
     const observerOptions = {
       root: scrollRef.current,
-      threshold: 0.6, // 当卡片露出 60% 时触发
-      rootMargin: '0px -25% 0px -25%' // 聚焦在容器中心区域
+      threshold: 0.6,
+      rootMargin: '0px -25% 0px -25%'
     };
 
     const observer = new IntersectionObserver((entries) => {
@@ -50,7 +53,7 @@ export const SupportSection: React.FC<{
     return () => observer.disconnect();
   }, []);
 
-  // 2. 初始化默认居中到 Coffee - 仅当信用不足时
+  // 2. 初始化默认居中
   useEffect(() => {
     const timer = setTimeout(() => {
       if (middleCardRef.current && credits < 50) {
@@ -64,15 +67,39 @@ export const SupportSection: React.FC<{
     return () => clearTimeout(timer);
   }, [credits]);
 
-  const handleSuccess = (tier: SupportTier, details: any) => {
-    onPurchase({ 
-      id: tier.id, 
-      name: tier.name, 
-      amount: tier.amount,
-      credits: parseInt(tier.credits.replace(' Credits', '')), 
-      isDonation: true 
-    });
-    setSelectedId(null);
+  /**
+   * 关键闭环逻辑：支付成功后通知后端增加点数
+   */
+  const handleSuccess = async (tier: SupportTier, orderDetails: any) => {
+    setIsVerifying(true);
+    try {
+      const response = await fetch(`${WORKER_URL}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'verify_order',
+          userId: getOrCreateUserId(),
+          orderId: orderDetails.id,
+          planId: tier.id, // 后端通过 ID 判断增加点数还是天数
+          isDonation: true // 标记这是捐赠点数充值
+        })
+      });
+
+      if (!response.ok) throw new Error('Credit update failed');
+      
+      const result = await response.json();
+      
+      if (result.success && result.usage) {
+        // 同步到全局 State
+        onPurchase(result.usage);
+      }
+    } catch (error) {
+      console.error("Support update error:", error);
+      alert("Support received! But credit sync failed. Please contact us.");
+    } finally {
+      setIsVerifying(false);
+      setSelectedId(null);
+    }
   };
 
   return (
@@ -85,7 +112,6 @@ export const SupportSection: React.FC<{
       </div>
 
       <div className="relative w-full">
-        {/* 滚动容器 */}
         <div 
           ref={scrollRef}
           className="flex flex-row md:grid md:grid-cols-3 gap-4 md:gap-6 no-scrollbar overflow-x-auto px-[20vw] md:px-0 py-12 -my-12 snap-x snap-mandatory"
@@ -105,7 +131,6 @@ export const SupportSection: React.FC<{
                     : 'border-orange-100 shadow-sm opacity-50 scale-90'
                 } ${isSelected ? 'ring-[6px] ring-orange-100' : ''}`}
               >
-                {/* Status Badge */}
                 <div className="h-6 mb-2">
                   {tier.id === 'coffee' && (
                     <div className={`bg-orange-600 text-white text-[8px] font-black px-3 py-1 rounded-full shadow-lg transition-opacity duration-300 ${isCenter ? 'opacity-100' : 'opacity-0'}`}>
@@ -135,25 +160,34 @@ export const SupportSection: React.FC<{
                 <div className="w-full mt-auto">
                   {selectedId === tier.id ? (
                     <div className="w-full animate-in zoom-in duration-300 min-h-[140px] flex flex-col items-center justify-center">
-                      <div className="w-full max-w-[300px] mx-auto">
-                        <PayPalButton 
-                          amount={tier.amount.toString()} 
-                          planName={tier.name} 
-                          onSuccess={(details) => handleSuccess(tier, details)} 
-                        />
-                      </div>
-                      <button 
-                        onClick={() => setSelectedId(null)} 
-                        className="mt-2 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] hover:text-orange-600 transition-colors py-2"
-                      >
-                        ← Back
-                      </button>
+                      {isVerifying ? (
+                        <div className="flex flex-col items-center py-4 space-y-3">
+                          <div className="w-6 h-6 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+                          <span className="text-[8px] font-black uppercase tracking-widest text-orange-600 animate-pulse">Syncing Credits...</span>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="w-full max-w-[300px] mx-auto">
+                            <PayPalButton 
+                              amount={tier.amount.toString()} 
+                              planName={tier.name} 
+                              onSuccess={(details) => handleSuccess(tier, details)} 
+                            />
+                          </div>
+                          <button 
+                            onClick={() => setSelectedId(null)} 
+                            className="mt-2 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] hover:text-orange-600 transition-colors py-2"
+                          >
+                            ← Back
+                          </button>
+                        </>
+                      )}
                     </div>
                   ) : (
                     <button 
                       onClick={() => setSelectedId(tier.id)}
                       className="w-full py-4 bg-slate-900 text-white rounded-full font-black text-[9px] uppercase tracking-[0.2em] shadow-lg hover:bg-orange-600 transition-all active:scale-95 disabled:opacity-30"
-                      disabled={!isCenter && window.innerWidth < 768} // 手机端只有中间的能点
+                      disabled={!isCenter && window.innerWidth < 768}
                     >
                       Send Support
                     </button>

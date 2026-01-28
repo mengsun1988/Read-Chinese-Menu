@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { RefundModal } from './RefundModal';
 import { PayPalButton } from './PayPalButton';
+import { WORKER_URL, getOrCreateUserId } from '../services/geminiService'; // 引入必要工具
 
 interface Plan {
   id: string;
@@ -11,11 +12,14 @@ interface Plan {
   highlight?: boolean;
 }
 
-export const PricingModule: React.FC<{ onPurchase: (plan: Plan) => void }> = ({ onPurchase }) => {
+// 修正 Props 定义：onPurchase 应该接收后端返回的最新 Usage 对象
+export const PricingModule: React.FC<{ onPurchase: (updatedUsage: any) => void; onLater?: () => void }> = ({ onPurchase, onLater }) => {
   const [isExpanded, setIsExpanded] = useState(false); 
   const [isRefundModalOpen, setIsRefundModalOpen] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>('7-day');
+  const [isVerifying, setIsVerifying] = useState(false); // 新增：验证状态
+  
   const scrollRef = useRef<HTMLDivElement>(null);
   const middleCardRef = useRef<HTMLDivElement>(null);
 
@@ -69,15 +73,44 @@ export const PricingModule: React.FC<{ onPurchase: (plan: Plan) => void }> = ({ 
     return () => container.removeEventListener('scroll', handleScroll);
   }, [activeId, selectedPlanId, isExpanded]);
 
-  const handlePaymentSuccess = (plan: Plan, details: any) => {
-    onPurchase(plan);
-    setSelectedPlanId(null);
+  /**
+   * 关键修正：支付成功后去后端验证
+   */
+  const handlePaymentSuccess = async (plan: Plan, orderDetails: any) => {
+    setIsVerifying(true);
+    try {
+      // 请求 Worker 验证订单并更新用户权益
+      const response = await fetch(`${WORKER_URL}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'verify_order',
+          userId: getOrCreateUserId(),
+          orderId: orderDetails.id,
+          planId: plan.id
+        })
+      });
+
+      if (!response.ok) throw new Error('Verification failed');
+      
+      const result = await response.json();
+      
+      // 成功：将 Worker 返回的最新的 usage 对象传给 App.tsx
+      if (result.success && result.usage) {
+        onPurchase(result.usage);
+      }
+    } catch (error) {
+      console.error("Order verification error:", error);
+      alert("Payment captured but sync failed. Please refresh the app.");
+    } finally {
+      setIsVerifying(false);
+      setSelectedPlanId(null);
+    }
   };
 
   return (
     <div className="py-2 space-y-4 max-w-full">
       {!isExpanded ? (
-        /* 修改点：样式现在与游戏卡/生存卡完全一致 */
         <button 
           onClick={() => setIsExpanded(true)}
           className="w-full bg-rose-600 border border-rose-500/50 p-8 rounded-[3rem] flex items-center gap-6 shadow-md shadow-rose-100/50 active:scale-[0.98] hover:shadow-lg hover:shadow-rose-200/40 hover:-translate-y-1 transition-all group"
@@ -99,7 +132,7 @@ export const PricingModule: React.FC<{ onPurchase: (plan: Plan) => void }> = ({ 
               Unlimited access to hidden fat detection & guides.
             </p>
             <button 
-              onClick={() => setIsExpanded(false)}
+              onClick={onLater || (() => setIsExpanded(false))}
               className="absolute top-0 right-6 text-slate-300 hover:text-slate-900 font-black text-lg transition-colors"
             >✕</button>
           </div>
@@ -125,8 +158,8 @@ export const PricingModule: React.FC<{ onPurchase: (plan: Plan) => void }> = ({ 
                       selectedPlanId === null ? 'snap-center' : ''
                     } ${
                       plan.highlight 
-                      ? 'bg-rose-600 border-rose-700 z-10' 
-                      : 'bg-white border-slate-100'
+                      ? 'bg-rose-600 border-rose-700 z-10 text-white' 
+                      : 'bg-white border-slate-100 text-slate-900'
                     } ${
                       isActive 
                       ? 'ring-[6px] ring-rose-200 border-rose-400 scale-100 opacity-100 shadow-xl' 
@@ -156,19 +189,28 @@ export const PricingModule: React.FC<{ onPurchase: (plan: Plan) => void }> = ({ 
                     <div className="space-y-4">
                       {selectedPlanId === plan.id ? (
                         <div className="animate-in fade-in zoom-in duration-500 min-h-[160px] relative z-[100]">
-                          <PayPalButton 
-                            amount={plan.amount.toString()} 
-                            planName={plan.name} 
-                            onSuccess={(details) => handlePaymentSuccess(plan, details)} 
-                          />
-                          <button 
-                            onClick={() => setSelectedPlanId(null)}
-                            className={`w-full mt-4 text-[9px] font-black uppercase tracking-widest underline underline-offset-4 ${
-                              plan.highlight ? 'text-white/60 hover:text-white' : 'text-slate-400 hover:text-rose-600'
-                            }`}
-                          >
-                            Cancel Selection
-                          </button>
+                          {isVerifying ? (
+                            <div className="flex flex-col items-center justify-center py-8 space-y-4">
+                              <div className="w-8 h-8 border-4 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
+                              <p className="text-[10px] font-black uppercase tracking-widest animate-pulse">Verifying Payment...</p>
+                            </div>
+                          ) : (
+                            <>
+                              <PayPalButton 
+                                amount={plan.amount.toString()} 
+                                planName={plan.name} 
+                                onSuccess={(details) => handlePaymentSuccess(plan, details)} 
+                              />
+                              <button 
+                                onClick={() => setSelectedPlanId(null)}
+                                className={`w-full mt-4 text-[9px] font-black uppercase tracking-widest underline underline-offset-4 ${
+                                  plan.highlight ? 'text-white/60 hover:text-white' : 'text-slate-400 hover:text-rose-600'
+                                }`}
+                              >
+                                Cancel Selection
+                              </button>
+                            </>
+                          )}
                         </div>
                       ) : (
                         <button 
