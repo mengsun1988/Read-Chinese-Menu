@@ -273,7 +273,7 @@ export const HomeIdleView: React.FC<Props> = ({
 
         <div className="text-center pt-4">
           <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em]">© 2026<br/>Read Chinese Menu • Safe Travels</p>
-          <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.4em] mt-1">v1.0 • Secure via Cloudflare</p>
+          <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.4em] mt-1">v1.05 • Secure via Cloudflare</p>
         </div>
       </div>
 
