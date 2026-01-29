@@ -1,6 +1,9 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 export const AboutUs: React.FC = () => {
+  const { t } = useTranslation();
+
   return (
     <section className="bg-white rounded-[2.5rem] p-10 md:p-14 shadow-xl border border-slate-50 text-center relative overflow-hidden group">
       {/* 顶部装饰条 */}
@@ -8,22 +11,22 @@ export const AboutUs: React.FC = () => {
       
       <div className="relative z-10 space-y-6">
         <div className="inline-block px-3 py-0.5 border border-slate-100 rounded-full text-[9px] font-bold uppercase tracking-[0.2em] text-slate-400">
-          Our Vision
+          {t('home.ourVision')}
         </div>
         
         <h3 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter leading-tight">
-          More than just <span className="text-rose-600">Reading a Menu</span>
+          {t('home.moreThanReading')} <span className="text-rose-600">{t('home.pageTitle')}</span>
         </h3>
         
         <div className="max-w-2xl mx-auto space-y-6">
-          {/* 这里放入了你的初衷，精简后的英文版本 */}
           <div className="space-y-4">
+            {/* 尝试调用 visionQuote，如果没加这个 Key，则回退显示 refundBridge */}
             <p className="text-slate-600 text-sm md:text-base font-medium leading-relaxed italic opacity-90">
-              "In a strange land, the best memories are found when we feel seen, heard, and cared for. We are here to help you cross the language barrier to share a smile with a kind stranger, to discover stories hidden in remote corners, and to create moments that linger long after the meal is over."
+              "{t('home.visionQuote')}"
             </p>
             
             <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.15em] leading-relaxed max-w-lg mx-auto border-t border-slate-50 pt-4">
-              Dedicated to every explorer who believes that no one should miss out on the beauty of a culture simply because they couldn’t find the words.
+              {t('home.visionFooter')}
             </p>
           </div>
         </div>
@@ -32,12 +35,16 @@ export const AboutUs: React.FC = () => {
         <div className="flex justify-center items-center gap-8 pt-4">
             <div className="text-center">
               <div className="text-xl font-black text-slate-900 leading-none">12k+</div>
-              <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Dishes Decoded</div>
+              <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                {t('home.dishesDecoded')}
+              </div>
             </div>
             <div className="h-6 w-px bg-slate-100"></div>
             <div className="text-center">
               <div className="text-xl font-black text-slate-900 leading-none">50+</div>
-              <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">Regions Covered</div>
+              <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                {t('home.regionsCovered')}
+              </div>
             </div>
         </div>
       </div>
