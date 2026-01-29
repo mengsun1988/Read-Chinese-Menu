@@ -47,7 +47,7 @@ async function fetchWithRetry(url: string, options: any, retries = 2): Promise<R
 export async function getDishDeepDetail(name_cn: string, name_en: string): Promise<any> {
   const userId = getOrCreateUserId();
   try {
-    const response = await fetchWithRetry(WORKER_URL, {
+    const response = await fetchWithRetry(`${WORKER_URL}/api/scan`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ 
@@ -93,7 +93,7 @@ export async function processMenuImage(base64Image: string): Promise<any> {
   const userId = getOrCreateUserId();
   
   try {
-    const response = await fetchWithRetry(WORKER_URL, {
+    const response = await fetchWithRetry(`${WORKER_URL}/api/scan`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Accept": "application/json" },
       body: JSON.stringify({ 
@@ -191,7 +191,7 @@ export async function processStorefrontImage(base64Image: string): Promise<Store
   };
   
   try {
-    const response = await fetchWithRetry(WORKER_URL, {
+    const response = await fetchWithRetry(`${WORKER_URL}/api/scan`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "Accept": "application/json" },
       body: JSON.stringify({ image: cleanedBase64, type: "storefront", userId: userId }),
