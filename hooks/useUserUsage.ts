@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { UserUsage } from '../types';
-import { WORKER_URL, getOrCreateUserId } from '../services/geminiService';
+import { WORKER_URL } from '../services/geminiService';
 
 const STORAGE_KEY = 'china_menu_usage';
 
@@ -19,7 +19,9 @@ export const useUserUsage = () => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (!saved) return DEFAULT_USAGE;
     try {
-      return JSON.parse(saved);
+      const parsed = JSON.parse(saved);
+      // 确保基础字段存在
+      return { ...DEFAULT_USAGE, ...parsed };
     } catch {
       return DEFAULT_USAGE;
     }
@@ -30,62 +32,52 @@ export const useUserUsage = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(usage));
   }, [usage]);
 
-  // 计算属性：是否处于无限次通行证有效期
+  // 计算属性
   const isUnlimited = usage.passExpiryDate 
     ? new Date(usage.passExpiryDate).getTime() > Date.now() 
     : false;
 
   /**
-   * 关键函数：同步后端数据
-   * 识别成功、支付成功或触发动作奖励后调用
+   * 修正后的核心同步函数
+   * 直接接受后端完整的 usage 对象
    */
-  const syncWithBackend = (backendUsage: Partial<UserUsage>) => {
+  const syncWithBackend = (backendUsage: any) => {
+    if (!backendUsage) return;
+
     setUsage(prev => {
-      const newUsage = {
+      // 1. 映射后端字段名到前端字段名 (如 lastShareDate -> dailyShareDate)
+      const mappedUsage: UserUsage = {
         ...prev,
-        ...backendUsage, // 以后端返回的字段为准覆盖本地
+        credits: backendUsage.credits !== undefined ? backendUsage.credits : prev.credits,
+        scanCount: backendUsage.scanCount !== undefined ? backendUsage.scanCount : prev.scanCount,
+        shareCount: backendUsage.shareCount !== undefined ? backendUsage.shareCount : prev.shareCount,
+        gameWinCount: backendUsage.gameWinCount !== undefined ? backendUsage.gameWinCount : prev.gameWinCount,
+        passExpiryDate: backendUsage.passExpiryDate || prev.passExpiryDate,
+        // 特别注意：Worker 返回的是 lastShareDate，前端存的是 dailyShareDate
+        dailyShareDate: backendUsage.lastShareDate ? backendUsage.lastShareDate.split('T')[0] : prev.dailyShareDate,
         achievementTriggered: backendUsage.achievementTriggered || null
       };
-      
-      // 检查day pass是否过期：如果之前有pass但现在过期了，需要显示实际点数
-      const hadPass = prev.passExpiryDate && new Date(prev.passExpiryDate).getTime() > Date.now();
-      const hasPassNow = newUsage.passExpiryDate && newUsage.passExpiryDate && new Date(newUsage.passExpiryDate).getTime() > Date.now();
-      
-      // 如果pass刚过期（从有到无），确保显示后端返回的实际点数
-      if (hadPass && !hasPassNow && backendUsage.credits !== undefined) {
-        newUsage.credits = backendUsage.credits;
-      }
-      
-      return newUsage;
+
+      return mappedUsage;
     });
   };
 
-  /**
-   * 处理每日分享奖励 (API 驱动)
-   */
   const handleDailyShare = async (userId: string) => {
     const today = new Date().toISOString().split('T')[0];
     
-    // 前端预检：是否已达总上限或今日已领
-    if (usage.shareCount >= 5) {
-      alert("You have reached the maximum sharing rewards (5/5).");
-      return;
-    }
-    if (usage.dailyShareDate === today) {
-      alert("You've already claimed today's share reward. Come back tomorrow!");
+    if (usage.shareCount >= 5 || usage.dailyShareDate === today) {
+      alert("Reward already claimed or limit reached.");
       return;
     }
 
-    // 触发原生分享
     if (navigator.share) {
       try {
         await navigator.share({
           title: 'Read Chinese Menu',
-          text: 'The best tool to translate Chinese menus! Get 50 free credits.',
+          text: 'The best tool to translate Chinese menus!',
           url: window.location.origin
         });
 
-        // 分享动作成功后，请求后端加点
         const res = await fetch(`${WORKER_URL}/api/user-action`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -93,42 +85,21 @@ export const useUserUsage = () => {
         });
         
         const data = await res.json();
+        // 直接使用 syncWithBackend 处理返回的所有数据
         if (data.userData) {
-          const backendData = data.userData;
-          const isPassActive = backendData.passExpiryDate && 
-            new Date(backendData.passExpiryDate).getTime() > Date.now();
-
-          if (isPassActive) {
-            // day pass期间：后台加点，但前端不更新显示（保持unlimited）
-            setUsage(prev => ({
-              ...prev,
-              shareCount: backendData.shareCount,
-              // 确保映射 Worker 的 lastShareDate 到本地的 dailyShareDate
-              dailyShareDate: (backendData.lastShareDate || today).split('T')[0],
-            }));
-          } else {
-            // 非day pass期间：正常同步所有数据
-            syncWithBackend({
-              ...backendData,
-              dailyShareDate: (backendData.lastShareDate || today).split('T')[0]
-            });
-            if (data.achievementTriggered) alert("Success! +50 Credits added.");
-          }
+          syncWithBackend({
+            ...data.userData,
+            achievementTriggered: data.achievementTriggered
+          });
         }
       } catch (err) {
-        console.log("Share cancelled or failed");
+        console.log("Share failed");
       }
-    } else {
-      alert("Sharing is not supported on this browser. Use a mobile device!");
     }
   };
 
-  /**
-   * 游戏获胜加点 (API 驱动)
-   */
   const handleGameWin = async (userId: string) => {
     if (usage.gameWinCount >= 5) return;
-
     try {
       const res = await fetch(`${WORKER_URL}/api/user-action`, {
         method: 'POST',
@@ -137,27 +108,16 @@ export const useUserUsage = () => {
       });
       const data = await res.json();
       if (data.userData) {
-        const backendData = data.userData;
-        const isPassActive = backendData.passExpiryDate && 
-          new Date(backendData.passExpiryDate).getTime() > Date.now();
-
-        if (isPassActive) {
-          setUsage(prev => ({
-            ...prev,
-            gameWinCount: backendData.gameWinCount,
-          }));
-        } else {
-          syncWithBackend(backendData);
-        }
+        syncWithBackend({
+          ...data.userData,
+          achievementTriggered: data.achievementTriggered
+        });
       }
     } catch (e) {
       console.error("Game reward failed", e);
     }
   };
 
-  /**
-   * 重置奖励标记 (动画播放完后调用)
-   */
   const clearAchievement = () => {
     setUsage(prev => ({ ...prev, achievementTriggered: null }));
   };
