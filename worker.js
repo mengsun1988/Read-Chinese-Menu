@@ -70,14 +70,14 @@ export default {
           });
         }
         
-        // 频率限制：防止滥用（基于 userId）
+        // 频率限制：防止滥用
         const rateLimitKey = `rate_limit:action:${userId}`;
         const rateLimitData = await env.USER_USAGE.get(rateLimitKey);
         const now = Date.now();
         if (rateLimitData) {
           const { count, resetTime } = JSON.parse(rateLimitData);
           if (now < resetTime) {
-            if (count >= 10) { // 每分钟最多10次动作请求
+            if (count >= 10) {
               return new Response(JSON.stringify({ error: "Rate limit exceeded. Please wait a moment." }), { 
                 status: 429, headers: corsHeaders 
               });
@@ -119,25 +119,25 @@ export default {
     }
 
     // --- 4. 识别核心：点数预检与竞速识别 ---
-    if (request.method === 'POST' && (url.pathname === '/' || url.pathname === '/api/scan')) {
+    const isScanPath = url.pathname === '/' || url.pathname.includes('scan');
+    
+    if (request.method === 'POST' && isScanPath) {
       try {
         const { image: base64Image, userId, type = "menu", name_cn } = await request.json();
         
-        // 安全验证：检查必要参数
-        if (!userId || !image) {
-          return new Response(JSON.stringify({ error: "Missing required parameters" }), { 
+        if (!userId || !base64Image) {
+          return new Response(JSON.stringify({ error: "Missing required parameters (userId or image)" }), { 
             status: 400, headers: corsHeaders 
           });
         }
         
-        // 频率限制：防止滥用（基于 userId）
         const rateLimitKey = `rate_limit:${userId}`;
         const rateLimitData = await env.USER_USAGE.get(rateLimitKey);
         const now = Date.now();
         if (rateLimitData) {
           const { count, resetTime } = JSON.parse(rateLimitData);
           if (now < resetTime) {
-            if (count >= 30) { // 每分钟最多30次请求
+            if (count >= 30) {
               return new Response(JSON.stringify({ error: "Rate limit exceeded. Please wait a moment." }), { 
                 status: 429, headers: corsHeaders 
               });
@@ -151,13 +151,11 @@ export default {
         }
         
         let userData = await getUserData(userId);
-    // 安全修复：使用环境变量而不是 Origin 头来支持 localhost 免检
-    // 生产环境：不设置 ENABLE_DEV_MODE，正常检查点数
-    // 开发环境：在 wrangler.toml 或 Cloudflare 控制台设置 ENABLE_DEV_MODE = "true"
-    const isDevMode = env.ENABLE_DEV_MODE === "true";
-    const isUnlimited = isDevMode || (userData.passExpiryDate && new Date(userData.passExpiryDate).getTime() > Date.now());
+        const isDevMode = env.ENABLE_DEV_MODE === "true";
+        const isUnlimited = isDevMode || (userData.passExpiryDate && new Date(userData.passExpiryDate).getTime() > Date.now());
 
-    if (!isUnlimited && userData.credits < 50) {
+        // 仅在菜单模式下预检点数
+        if (type === "menu" && !isUnlimited && userData.credits < 50) {
           return new Response(JSON.stringify({ error: "OUT_OF_CREDITS", credits: userData.credits }), {
             status: 403, headers: corsHeaders
           });
@@ -171,7 +169,7 @@ export default {
               role: "user",
               content: type === "dish_detail" 
                 ? `Analyze "${name_cn}". Return JSON: { "classic_ingredients": [{"name_cn": "...", "name_en": "..."}], "potential_ingredients": [{"name_cn": "...", "name_en": "..."}], "spiciness_level": 0-5, "pinyin": "", "pronunciation": "", "allergens": [], "description": "", "has_animal_fats": true/false }.`
-                : [{ type: "text", text: "Analyze menu. Return JSON {dishes:[{name_cn, name_en, price, description, pinyin, pronunciation, spiciness_level}]}. JSON ONLY." }, { type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Image}` } }]
+                : [{ type: "text", text: "Identify all dishes. For EACH dish, you MUST return: 'name_cn', 'name_en', 'price', 'description' (MUST be in English), 'ingredients' (array of strings), 'pinyin', and 'spiciness_level' (0-5). Return valid JSON {dishes: []}." }, { type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Image}` } }]
             }],
             response_format: { type: "json_object" }
           };
@@ -180,99 +178,96 @@ export default {
             body: JSON.stringify(payload), signal: controller.signal
           });
           const d = await res.json();
+          if (d.error) throw new Error("Qwen Error: " + d.error.message);
           return { source: 'qwen', content: d.choices[0].message.content };
         };
 
         const taskGemini = async () => {
-          const prompt = type === "dish_detail" ? `Detail for "${name_cn}" in JSON` : "Analyze menu. Return JSON {dishes:[]}.";
+          const prompt = type === "dish_detail" ? `Detail for "${name_cn}" in JSON` : "Scan this menu. Return a JSON object with a 'dishes' array. For each dish, you MUST include: 'name_cn', 'name_en', 'price', 'description' (in English), 'ingredients' (array of strings), 'pinyin', 'pronunciation', and 'spiciness_level'. If a field is unknown, provide an empty string or 0, do not omit it. JSON ONLY.";
           const payload = {
             contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: "image/jpeg", data: base64Image } }] }],
-            generationConfig: { responseMimeType: "application/json" }
+            generationConfig: { responseMimeType: "application/json", temperature: 0.1 }
           };
           const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${env.GEMINI_API_KEY}`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload), signal: controller.signal
           });
           const d = await res.json();
+          if (d.error) throw new Error("Gemini Error: " + d.error.message);
           return { source: 'gemini', content: d.candidates[0].content.parts[0].text };
         };
 
+        // 竞速执行
         const winner = await Promise.any([taskQwen(), taskGemini()]);
         controller.abort();
         
         const parsedData = JSON.parse(winner.content.replace(/```json|```/g, ""));
         let achievementTriggered = null;
 
-        // 安全修复：只有成功识别（有菜品结果）才扣点
-        // 重新获取最新数据，防止并发问题
+        // 获取最新用户数据
         userData = await getUserData(userId);
-        const isDevModeNow = env.ENABLE_DEV_MODE === "true";
-        const isUnlimitedNow = isDevModeNow || (userData.passExpiryDate && new Date(userData.passExpiryDate).getTime() > Date.now());
+        const isUnlimitedNow = (env.ENABLE_DEV_MODE === "true") || (userData.passExpiryDate && new Date(userData.passExpiryDate).getTime() > Date.now());
         
-        if (type === "menu" && parsedData.dishes?.length > 0) {
-          // 再次验证点数（防止并发请求绕过）
-          if (!isUnlimitedNow && userData.credits < 50) {
-            return new Response(JSON.stringify({ 
-              error: "OUT_OF_CREDITS", 
-              credits: userData.credits,
-              dishes: [] 
-            }), {
-              status: 403, headers: corsHeaders
-            });
-          }
-          
-          userData.scanCount += 1;
-          if (!isUnlimitedNow) {
-            // 先扣50点
-            userData.credits -= 50;
-            // 第4次识别后立即奖励50点（此时显示0点，然后立即变成50点）
-            if (userData.scanCount === 4) { 
-              userData.credits += 50; 
-              achievementTriggered = "milestone_4"; 
-            }
-            else if (userData.scanCount === 10) { 
-              userData.credits += 50; 
-              achievementTriggered = "milestone_10"; 
-            }
-            else if (userData.scanCount === 20) { 
-              userData.credits += 50; 
-              achievementTriggered = "milestone_20"; 
+        // --- 核心扣费逻辑修改：精准判断是否识别成功 ---
+        const isMenuSuccess = type === "menu" && Array.isArray(parsedData.dishes) && parsedData.dishes.length > 0;
+        const isDetailSuccess = type === "dish_detail" && (parsedData.classic_ingredients || parsedData.description);
+
+        // 只有在成功识别的情况下才进行后续处理
+        if (isMenuSuccess || isDetailSuccess) {
+          userData.lastUsed = new Date().toISOString();
+
+          // 只有菜单识别成功才扣 50 点
+          if (isMenuSuccess) {
+            userData.scanCount += 1;
+
+            if (!isUnlimitedNow) {
+              userData.credits = Math.max(0, userData.credits - 50);
+
+              // 里程碑奖励逻辑
+              if (userData.scanCount === 4) { userData.credits += 50; achievementTriggered = "milestone_4"; }
+              else if (userData.scanCount === 10) { userData.credits += 50; achievementTriggered = "milestone_10"; }
+              else if (userData.scanCount === 20) { userData.credits += 50; achievementTriggered = "milestone_20"; }
             }
           }
+
+          // 只要识别成功（无论 menu 还是 detail），就将更新后的数据存入 KV
           await env.USER_USAGE.put(userId, JSON.stringify(userData));
         }
 
         return new Response(JSON.stringify({
           ...parsedData,
-          usage: { ...userData, isUnlimited: isUnlimitedNow, achievementTriggered, _debug_source: winner.source }
+          usage: { 
+            ...userData, 
+            isUnlimited: isUnlimitedNow, 
+            achievementTriggered, 
+            _debug_source: winner.source 
+          }
         }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
       } catch (err) {
-        return new Response(JSON.stringify({ error: err.message }), { status: 200, headers: corsHeaders });
+        return new Response(JSON.stringify({ error: "Service busy or AI failed: " + err.message }), { 
+          status: 500, 
+          headers: corsHeaders 
+        });
       }
     }
 
-    // --- 5. 支付验证：支持 DayPass 和 Donation 点数包 ---
+    // --- 5. 支付验证 ---
     if (request.method === 'POST' && (url.pathname === '/api/verify-payment' || url.pathname === '/api/verify_order')) {
       try {
         const { orderId, planId, userId, isDonation } = await request.json();
         
-        // 安全验证：检查必要参数
         if (!orderId || !planId || !userId) {
           return new Response(JSON.stringify({ error: "Missing required parameters" }), { 
             status: 400, headers: corsHeaders 
           });
         }
         
-        // 验证 planId 格式，防止注入攻击
         const validPlanIds = ['soda', 'coffee', 'cheesecake', '3-day', '7-day', '15-day', 'pack-150', 'pack-400', 'pack-1000'];
         if (!validPlanIds.includes(planId) && !planId.startsWith('pack-')) {
-          return new Response(JSON.stringify({ error: "Invalid plan ID" }), { 
-            status: 400, headers: corsHeaders 
-          });
+          return new Response(JSON.stringify({ error: "Invalid plan ID" }), { status: 400, headers: corsHeaders });
         }
         
-        // 防重处理
         const processedKey = `order_processed:${orderId}`;
         const alreadyProcessed = await env.USER_USAGE.get(processedKey);
         if (alreadyProcessed) {
@@ -280,7 +275,6 @@ export default {
           return new Response(JSON.stringify({ success: true, userData: currentData }), { headers: corsHeaders });
         }
 
-        // PayPal Access Token
         const paypalApiBase = env.PAYPAL_MODE === 'sandbox' ? 'https://api-m.sandbox.paypal.com' : 'https://api-m.paypal.com';
         const authRes = await fetch(`${paypalApiBase}/v1/oauth2/token`, {
           method: 'POST',
@@ -292,7 +286,6 @@ export default {
         });
         const { access_token } = await authRes.json();
 
-        // Capture Order
         const captureRes = await fetch(`${paypalApiBase}/v2/checkout/orders/${orderId}/capture`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${access_token}`, 'Content-Type': 'application/json' },
@@ -303,13 +296,10 @@ export default {
 
         let userData = await getUserData(userId);
 
-        // 权益发放逻辑
         if (isDonation || planId.startsWith('pack-') || ['soda', 'coffee', 'cheesecake'].includes(planId)) {
-          // 点数包逻辑
           const packs = { "soda": 150, "pack-150": 150, "coffee": 400, "pack-400": 400, "cheesecake": 1000, "pack-1000": 1000 };
           userData.credits += (packs[planId] || 0);
         } else if (planId.includes('-day')) {
-          // 无限卡逻辑
           const days = parseInt(planId.split('-')[0]);
           const baseTime = (userData.passExpiryDate && new Date(userData.passExpiryDate) > new Date())
             ? new Date(userData.passExpiryDate).getTime()
@@ -318,16 +308,14 @@ export default {
         }
 
         await env.USER_USAGE.put(userId, JSON.stringify(userData));
-        await env.USER_USAGE.put(processedKey, 'true', { expirationTtl: 604800 }); // 记录保存7天
+        await env.USER_USAGE.put(processedKey, 'true', { expirationTtl: 604800 });
 
-        return new Response(JSON.stringify({ success: true, userData, usage: userData }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        return new Response(JSON.stringify({ success: true, userData }), { headers: corsHeaders });
       } catch (e) {
         return new Response(JSON.stringify({ error: e.message }), { status: 400, headers: corsHeaders });
       }
     }
 
-    return new Response("Not Found", { status: 404 });
+    return new Response("Not Found", { status: 404, headers: corsHeaders });
   }
 }
