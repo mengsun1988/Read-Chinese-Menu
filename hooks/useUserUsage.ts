@@ -35,19 +35,6 @@ export const useUserUsage = () => {
     ? new Date(usage.passExpiryDate).getTime() > Date.now() 
     : false;
 
-  // 检查day pass是否过期：每次usage变化时检查，如果过期则确保显示实际点数
-  useEffect(() => {
-    if (usage.passExpiryDate) {
-      const expiryTime = new Date(usage.passExpiryDate).getTime();
-      const now = Date.now();
-      // 如果pass已过期，确保credits显示的是实际值（不是unlimited）
-      if (expiryTime <= now) {
-        // pass已过期，credits应该显示实际值
-        // 这个逻辑在syncWithBackend中已经处理，这里只是确保状态正确
-      }
-    }
-  }, [usage.passExpiryDate, usage.credits]);
-
   /**
    * 关键函数：同步后端数据
    * 识别成功、支付成功或触发动作奖励后调用
@@ -62,7 +49,7 @@ export const useUserUsage = () => {
       
       // 检查day pass是否过期：如果之前有pass但现在过期了，需要显示实际点数
       const hadPass = prev.passExpiryDate && new Date(prev.passExpiryDate).getTime() > Date.now();
-      const hasPassNow = newUsage.passExpiryDate && new Date(newUsage.passExpiryDate).getTime() > Date.now();
+      const hasPassNow = newUsage.passExpiryDate && newUsage.passExpiryDate && new Date(newUsage.passExpiryDate).getTime() > Date.now();
       
       // 如果pass刚过期（从有到无），确保显示后端返回的实际点数
       if (hadPass && !hasPassNow && backendUsage.credits !== undefined) {
@@ -107,22 +94,24 @@ export const useUserUsage = () => {
         
         const data = await res.json();
         if (data.userData) {
-          // 如果处于day pass期间，后台加点但前端不显示变化（保持unlimited状态）
-          const isPassActive = data.userData.passExpiryDate && 
-            new Date(data.userData.passExpiryDate).getTime() > Date.now();
+          const backendData = data.userData;
+          const isPassActive = backendData.passExpiryDate && 
+            new Date(backendData.passExpiryDate).getTime() > Date.now();
+
           if (isPassActive) {
             // day pass期间：后台加点，但前端不更新显示（保持unlimited）
-            // 只更新其他字段如shareCount
             setUsage(prev => ({
               ...prev,
-              shareCount: data.userData.shareCount,
-              lastShareDate: data.userData.lastShareDate,
-              dailyShareDate: new Date().toISOString().split('T')[0],
-              // credits不更新，保持显示unlimited
+              shareCount: backendData.shareCount,
+              // 确保映射 Worker 的 lastShareDate 到本地的 dailyShareDate
+              dailyShareDate: (backendData.lastShareDate || today).split('T')[0],
             }));
           } else {
             // 非day pass期间：正常同步所有数据
-            syncWithBackend(data.userData);
+            syncWithBackend({
+              ...backendData,
+              dailyShareDate: (backendData.lastShareDate || today).split('T')[0]
+            });
             if (data.achievementTriggered) alert("Success! +50 Credits added.");
           }
         }
@@ -138,7 +127,7 @@ export const useUserUsage = () => {
    * 游戏获胜加点 (API 驱动)
    */
   const handleGameWin = async (userId: string) => {
-    if (usage.gameWinCount >= 5) return; // 超过5次静默处理
+    if (usage.gameWinCount >= 5) return;
 
     try {
       const res = await fetch(`${WORKER_URL}/api/user-action`, {
@@ -148,20 +137,17 @@ export const useUserUsage = () => {
       });
       const data = await res.json();
       if (data.userData) {
-        // 如果处于day pass期间，后台加点但前端不显示变化（保持unlimited状态）
-        const isPassActive = data.userData.passExpiryDate && 
-          new Date(data.userData.passExpiryDate).getTime() > Date.now();
+        const backendData = data.userData;
+        const isPassActive = backendData.passExpiryDate && 
+          new Date(backendData.passExpiryDate).getTime() > Date.now();
+
         if (isPassActive) {
-          // day pass期间：后台加点，但前端不更新显示（保持unlimited）
-          // 只更新其他字段如gameWinCount
           setUsage(prev => ({
             ...prev,
-            gameWinCount: data.userData.gameWinCount,
-            // credits不更新，保持显示unlimited
+            gameWinCount: backendData.gameWinCount,
           }));
         } else {
-          // 非day pass期间：正常同步所有数据
-          syncWithBackend(data.userData);
+          syncWithBackend(backendData);
         }
       }
     } catch (e) {

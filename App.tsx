@@ -118,7 +118,7 @@ const App: React.FC = () => {
         
         if (result && result.dishes) {
           setDishes(result.dishes);
-          // 关键闭环：识别成功后，Worker 会返回最新的 usage 状态（含已扣除的点数和里程碑标记）
+          // 关键闭环：识别成功后，Worker 会返回最新的 usage 状态
           if (result.usage) {
             syncWithBackend(result.usage);
           }
@@ -131,7 +131,7 @@ const App: React.FC = () => {
           throw new Error("No dishes detected. Please try a clearer photo.");
         }
       } else {
-        // 门头模式 (STREET) - 逻辑类似，但通常不扣费
+        // 门头模式 (STREET)
         const rawResult = await processStorefrontImage(base64);
         if (rawResult) {
           setStoreResult(rawResult);
@@ -148,13 +148,12 @@ const App: React.FC = () => {
   };
 
   /**
-   * 支付成功后的本地回调 (由 PricingModule 调用)
+   * 支付成功后的本地回调
    */
   const onPurchaseSuccess = (updatedUserData: any) => {
     syncWithBackend(updatedUserData);
     setShowPricing(false);
     
-    // 设置成功提示消息
     if (updatedUserData.passExpiryDate) {
       setCreditUpdateMessage(`Premium Access Activated!`);
     } else {
@@ -162,22 +161,45 @@ const App: React.FC = () => {
     }
   };
 
+  /**
+   * 菜品详情点击：处理深度分析与数据合并
+   */
   const handleDishClick = async (dish: any) => {
+    // 1. 先展示已有信息，开启 Modal
     setSelectedDish(dish);
-    if (!dish.isFullyAnalyzed) {
-      setLoadingDetail(true);
-      try {
-        const deepInfo = await getDishDeepDetail(dish.name_cn, dish.name_en);
-        if (deepInfo) {
-          const updatedDish = { ...dish, ...deepInfo, isFullyAnalyzed: true };
-          setSelectedDish(updatedDish);
-          setDishes(prev => prev.map(d => d.id === dish.id ? updatedDish : d));
-        }
-      } catch (e) {
-        console.error("Deep Analysis Failed:", e);
-      } finally {
-        setLoadingDetail(false);
+    
+    // 2. 如果已经深度分析过，则不需要再次请求
+    if (dish.isFullyAnalyzed) return;
+
+    setLoadingDetail(true);
+    try {
+      // 调用 Worker 的 task: "dish_detail"
+      const deepInfo = await getDishDeepDetail(dish.name_cn, dish.name_en);
+      
+      if (deepInfo) {
+        // 合并数据，并显式映射 Worker 的 deep_ingredients 到分层字段
+        const updatedDish = { 
+          ...dish, 
+          ...deepInfo,
+          classic_ingredients: deepInfo.deep_ingredients?.classic || [],
+          potential_ingredients: deepInfo.deep_ingredients?.potential || [],
+          isFullyAnalyzed: true 
+        };
+
+        // 更新当前选中的菜品显示
+        setSelectedDish(updatedDish);
+        
+        // 同步回主列表 dishes 数组，防止关闭弹窗后丢失数据
+        setDishes(prev => prev.map(d => 
+          (d.id === dish.id || (d.name_cn === dish.name_cn && d.name_en === dish.name_en)) 
+            ? updatedDish 
+            : d
+        ));
       }
+    } catch (e) {
+      console.error("Deep Analysis Failed:", e);
+    } finally {
+      setLoadingDetail(false);
     }
   };
 
@@ -188,7 +210,7 @@ const App: React.FC = () => {
       intent: "capture"
     }}>
       <div className="min-h-screen pb-0 bg-[#fafafa] font-sans w-full">
-        {/* 动画特效层：监听里程碑奖励触发 */}
+        {/* 动画特效层 */}
         <EffectLayer 
           trigger={usage.achievementTriggered} 
           onComplete={clearAchievement} 
@@ -252,14 +274,18 @@ const App: React.FC = () => {
                       </p>
                     </div>
                   </div>
-                  <button onClick={reset} className="bg-white/10 hover:bg-white/20 text-white font-black py-2.5 px-6 rounded-full text-[10px] uppercase tracking-wider backdrop-blur-sm transition-colors border border-white/10">Done</button>
+                  <button onClick={reset} className="bg-white/10 hover:bg-white/20 text-white font-black py-2.5 px-6 rounded-full text-[10px] uppercase tracking-wider backdrop-blur-sm transition-colors border border-white/10">Restart</button>
                 </div>
                 
                 {/* 结果展示 */}
                 {mode === RecognitionMode.MENU ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-2">
                     {dishes.map((dish, index) => (
-                      <DishCard key={dish.id || `dish-${index}`} dish={dish} onClick={() => handleDishClick(dish)} />
+                      <DishCard 
+                        key={dish.id || `dish-${index}`} 
+                        dish={dish} 
+                        onClick={() => handleDishClick(dish)} 
+                      />
                     ))}
                   </div>
                 ) : (

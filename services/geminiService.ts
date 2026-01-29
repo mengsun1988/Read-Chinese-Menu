@@ -28,6 +28,7 @@ async function fetchWithRetry(url: string, options: any, retries = 2): Promise<R
   try {
     const response = await fetch(url, options);
     
+    // 处理特定的超时状态码
     if ((response.status === 524 || response.status === 504) && retries > 0) {
       console.warn(`检测到超时 (${response.status})，正在进行重试... 剩余次数: ${retries}`);
       return await fetchWithRetry(url, options, retries - 1);
@@ -43,6 +44,7 @@ async function fetchWithRetry(url: string, options: any, retries = 2): Promise<R
 
 /**
  * 🆕 深度详情解析 (第二步：点击卡片后触发)
+ * 完美匹配 Worker 中的 deep_ingredients 结构
  */
 export async function getDishDeepDetail(name_cn: string, name_en: string): Promise<any> {
   const userId = getOrCreateUserId();
@@ -61,20 +63,31 @@ export async function getDishDeepDetail(name_cn: string, name_en: string): Promi
     if (!response.ok) throw new Error("Deep analysis failed");
     const result = await response.json();
     
+    // 获取 Worker 深度分析返回的食材结构
+    const deepIngs = result.deep_ingredients || {};
+    
     return {
-      // 优先使用 classic_ingredients 和 potential_ingredients，如果没有则使用 ingredients
-      classic_ingredients: Array.isArray(result.classic_ingredients) ? result.classic_ingredients : 
-                          (Array.isArray(result.ingredients) ? result.ingredients : []),
-      potential_ingredients: Array.isArray(result.potential_ingredients) ? result.potential_ingredients : [],
-      // 保留 ingredients 字段以兼容旧代码
+      // 1. 核心字段映射：优先从 deep_ingredients 中提取
+      classic_ingredients: Array.isArray(deepIngs.classic) ? deepIngs.classic : 
+                           (Array.isArray(result.classic_ingredients) ? result.classic_ingredients : []),
+      
+      potential_ingredients: Array.isArray(deepIngs.potential) ? deepIngs.potential : 
+                             (Array.isArray(result.potential_ingredients) ? result.potential_ingredients : []),
+      
+      // 2. 兼容性处理：保留 ingredients 字段供旧组件或基础展示使用
       ingredients: Array.isArray(result.ingredients) ? result.ingredients : 
-                   (Array.isArray(result.classic_ingredients) ? result.classic_ingredients : []),
+                   (Array.isArray(deepIngs.classic) ? deepIngs.classic : []),
+      
+      // 3. 其他深度详情
       allergens: Array.isArray(result.allergens) ? result.allergens : [],
       spiciness: result.spiciness_level || result.spiciness || 0, 
       pinyin: result.pinyin || "",
       pronunciation: result.pronunciation || "",
       health_note: result.health_note || "",
       description: result.description || "",
+      has_animal_fats: result.has_animal_fats || false,
+      
+      // 4. 状态标记
       isFullyAnalyzed: true,
       _debug_source: result._debug_source || null
     };
@@ -86,7 +99,7 @@ export async function getDishDeepDetail(name_cn: string, name_en: string): Promi
 
 /**
  * 处理菜单图片 (第一步：识别所有可见菜品列表)
- * 修改点：返回包含 dishes 和 usage 的完整对象，而不仅仅是数组
+ * 返回包含 dishes 和 usage 的完整对象
  */
 export async function processMenuImage(base64Image: string): Promise<any> {
   const cleanedBase64 = cleanBase64(base64Image);
@@ -118,12 +131,11 @@ export async function processMenuImage(base64Image: string): Promise<any> {
     const result = await response.json();
     let rawArray: any[] = [];
 
-    // 防御性检查：确保服务器返回了有效结构
+    // 防御性检查
     if (!result || (typeof result !== 'object')) {
       throw new Error("Invalid server response format");
     }
 
-    // 防御性检查：处理可能的错误响应
     if (result.error) {
       throw new Error(result.error);
     }
@@ -136,7 +148,6 @@ export async function processMenuImage(base64Image: string): Promise<any> {
     } else if (result.name_cn || result.name_en || result.name) {
       rawArray = [result];
     } else {
-      // 防御性检查：确保至少有一种数据格式
       throw new Error("Unexpected server response structure");
     }
 
@@ -144,16 +155,8 @@ export async function processMenuImage(base64Image: string): Promise<any> {
       throw new Error("No dishes could be identified. Try a clearer photo.");
     }
 
-    // 防御性检查：验证菜品数据结构，增加对 .name 字段的宽容度
-    for (const item of rawArray) {
-      if (!item.name_cn && !item.name_en && !item.name) {
-        throw new Error("Incomplete dish data received from server");
-      }
-    }
-
     // 格式化菜品数据
     const formattedDishes = rawArray.map((item: any, index: number) => {
-      // 智能判断 name 字段的内容归属
       const hasChinese = (text: string) => /[\u4e00-\u9fa5]/.test(text);
       const inferredNameCn = item.name_cn || (item.name && hasChinese(item.name) ? item.name : "Unknown");
       const inferredNameEn = item.name_en || item.english_name || (item.name && !hasChinese(item.name) ? item.name : "Scanning...");
@@ -168,12 +171,12 @@ export async function processMenuImage(base64Image: string): Promise<any> {
         ingredients: Array.isArray(item.ingredients) ? item.ingredients : (item.core_ingredients || []),
         description: item.description || "",
         isFullyAnalyzed: item.isFullyAnalyzed || false, 
-        spiciness_level: item.spiciness_level || 0,
-        allergens: item.allergens || []
+        spiciness_level: item.spiciness_level || item.spiciness || 0,
+        allergens: item.allergens || [],
+        has_animal_fats: item.has_animal_fats || false
       };
     });
 
-    // 返回包含 dishes 列表、usage 状态和调试信息的对象
     return {
       dishes: formattedDishes,
       usage: result.usage || null,
@@ -211,7 +214,12 @@ export async function processStorefrontImage(base64Image: string): Promise<Store
 
     const result = await response.json();
     if (result && (result.name || result.name_cn)) {
-      return { ...fallback, ...result, _debug_source: result._debug_source || null } as StoreResult;
+      return { 
+        ...fallback, 
+        ...result, 
+        usage: result.usage || null,
+        _debug_source: result._debug_source || null 
+      } as StoreResult;
     }
     
     return { ...fallback, _debug_source: null } as StoreResult;
