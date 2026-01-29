@@ -44,6 +44,9 @@ export const useUserUsage = () => {
   const syncWithBackend = (backendUsage: any) => {
     if (!backendUsage) return;
 
+    // --- 核心调试行：在控制台打印后端传来的原始数据 ---
+    console.log("📊 Backend Sync Data:", backendUsage);
+    
     setUsage(prev => {
       // 1. 映射后端字段名到前端字段名 (如 lastShareDate -> dailyShareDate)
       const mappedUsage: UserUsage = {
