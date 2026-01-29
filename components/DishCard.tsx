@@ -1,6 +1,5 @@
 import React from 'react';
 import { ChiliIcon } from './Icons';
-import { Ingredient } from '../types';
 
 const SearchIconInternal = ({ className }: { className?: string }) => (
   <svg 
@@ -22,7 +21,10 @@ export const DishCard: React.FC<{ dish: any; onClick: () => void }> = ({ dish, o
   const nameEN = dish.name_en || "Unknown Dish";
   const spiciness = Number(dish.spiciness_level || 0);
   const isAnalyzed = dish.isFullyAnalyzed;
+  
+  // 核心改进：只要有数据就展示，不等待深度分析完成
   const ingredients = Array.isArray(dish.ingredients) ? dish.ingredients : [];
+  const hasExtraData = ingredients.length > 0 || !!dish.description;
 
   // 价格格式化：只保留数字 + Yuan 后缀
   const formatPrice = (p: any) => {
@@ -44,11 +46,11 @@ export const DishCard: React.FC<{ dish: any; onClick: () => void }> = ({ dish, o
       onClick={onClick} 
       className={`group relative text-left overflow-hidden bg-white border transition-all duration-500 w-full flex flex-col ${
         isAnalyzed 
-          ? 'border-rose-100 shadow-md rounded-[2.2rem] h-full' 
+          ? 'border-rose-200 shadow-md rounded-[2.2rem] h-full ring-1 ring-rose-100' 
           : 'border-slate-100 shadow-sm rounded-[1.5rem] h-fit hover:border-rose-200 hover:shadow-lg hover:-translate-y-1'
       }`}
     >
-      {/* 顶部极细进度条 */}
+      {/* 顶部极细进度条 - 仅在未分析时显示 */}
       {!isAnalyzed && (
         <div className="absolute top-0 left-0 w-full h-0.5 overflow-hidden bg-slate-50/50">
           <div className="h-full bg-rose-200/40 animate-[shimmer_3s_infinite] w-1/3"></div>
@@ -72,9 +74,9 @@ export const DishCard: React.FC<{ dish: any; onClick: () => void }> = ({ dish, o
             {nameCN}
           </h3>
           
-          {/* 只有分析过后且有内容时才渲染额外信息 */}
-          {isAnalyzed && (
-            <div className="animate-in fade-in zoom-in duration-500">
+          {/* 修改：只要有内容且符合展示条件就渲染 */}
+          {hasExtraData && (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
               {ingredients.length > 0 && (
                 <div className="flex flex-wrap gap-1 mb-2">
                   {ingredients.slice(0, 3).map((ing: any, i: number) => {
@@ -96,7 +98,6 @@ export const DishCard: React.FC<{ dish: any; onClick: () => void }> = ({ dish, o
           )}
         </div>
         
-        {/* 底部功能区：未分析时高度非常紧凑 */}
         <div className={`mt-auto flex items-center justify-between border-t border-slate-50 ${isAnalyzed ? 'pt-4' : 'pt-2'}`}>
           <div className="flex items-center gap-0.5">
             {[...Array(5)].map((_, i) => (
