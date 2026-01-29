@@ -1,0 +1,16 @@
+# https://www.robotstxt.org/robotstxt.html
+
+# 允许所有合法的搜索引擎爬虫访问
+User-agent: *
+Allow: /
+
+# 禁止爬取敏感或无意义的路径（如果你有这些文件夹的话）
+Disallow: /private/
+Disallow: /config/
+Disallow: /node_modules/
+
+# 告诉爬虫你的站点地图位置（有助于收录所有页面）
+Sitemap: https://readchinesemenu.com/sitemap.xml
+
+# 针对某些抓取频率过高的爬虫建议（可选）
+Crawl-delay: 10
