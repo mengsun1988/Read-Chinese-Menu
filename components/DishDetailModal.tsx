@@ -38,9 +38,9 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
   onSpicyClick,
   isLoadingDetail = false 
 }) => {
+  // 基础信息提取
   const nameCN = dish.name_cn || dish.dish_name_cn || dish.name || "未知菜品";
   const nameEN = dish.name_en || dish.dish_name_en || dish.english_name || "Unknown Dish";
-  
   const pinyin = formatChinesePhonetic(dish.pinyin || dish.pinyin_name || "");
   const pronunciation = formatChinesePhonetic(dish.pronunciation || dish.sounds_like || "");
 
@@ -52,7 +52,15 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
 
   const displayDescription = dish.description || "";
 
-  // 食材分层逻辑：匹配 Worker 的 JSON 结构
+  // 食材归一化处理函数：确保无论后端返回什么格式，都能正确显示
+  const normalizeIng = (ing: any): Ingredient => {
+    if (typeof ing === 'string') return { name_en: ing, name_cn: '' };
+    return {
+      name_en: ing.name_en || ing.en || 'Unknown',
+      name_cn: ing.name_cn || ing.cn || ''
+    };
+  };
+
   const classicIngredients = Array.isArray(dish.classic_ingredients) ? dish.classic_ingredients : [];
   const potentialIngredients = Array.isArray(dish.potential_ingredients) ? dish.potential_ingredients : [];
   const fallbackIngredients = Array.isArray(dish.ingredients) ? dish.ingredients : [];
@@ -90,15 +98,11 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
           
           <div className="space-y-3 text-left relative z-0">
             <h2 className="text-[9px] font-black uppercase tracking-[0.2em] opacity-70 mb-1">Authentic Selection</h2>
-            
             <div className="space-y-1">
                 <p className="text-4xl font-black tracking-tighter drop-shadow-sm leading-tight">{nameEN}</p>
                 <div className="flex items-center gap-3 py-1">
                   <p className="text-3xl font-black tracking-tighter drop-shadow-sm">{nameCN}</p>
-                  <button 
-                    onClick={speakDishName} 
-                    className="bg-white text-red-600 w-10 h-10 rounded-xl flex items-center justify-center active:scale-90 transition-all shadow-lg shrink-0 border-2 border-red-50"
-                  >
+                  <button onClick={speakDishName} className="bg-white text-red-600 w-10 h-10 rounded-xl flex items-center justify-center active:scale-90 transition-all shadow-lg shrink-0 border-2 border-red-50">
                     <SpeakerIcon className="w-5 h-5" />
                   </button>
                 </div>
@@ -106,11 +110,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
 
             {(pinyin || pronunciation) && (
               <div className="flex flex-col gap-1.5 pt-2 mt-1 border-t border-white/10 w-fit">
-                {pinyin && (
-                  <p className="text-sm font-medium text-yellow-300 lowercase tracking-normal italic leading-none">
-                    {pinyin}
-                  </p>
-                )}
+                {pinyin && <p className="text-sm font-medium text-yellow-300 lowercase italic leading-none">{pinyin}</p>}
                 {pronunciation && (
                   <p className="text-[11px] font-medium text-white/80 italic flex items-center gap-2">
                     <span className="opacity-50 not-italic font-normal">Approx:</span> "{pronunciation}"
@@ -126,16 +126,13 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
                  {displayPrice}
                </span>
              ) : <div />}
-             <button 
-               onClick={handleImageSearch} 
-               className="bg-white text-slate-700 px-4 py-2.5 rounded-2xl font-black text-[10px] shadow-xl flex items-center gap-2 active:scale-95 border border-slate-100 transition-all uppercase tracking-widest"
-             >
+             <button onClick={handleImageSearch} className="bg-white text-slate-700 px-4 py-2.5 rounded-2xl font-black text-[10px] shadow-xl flex items-center gap-2 active:scale-95 border border-slate-100 transition-all uppercase tracking-widest">
                🔍 Search Photos
              </button>
           </div>
         </div>
 
-        {/* Content Section */}
+        {/* Scrollable Content */}
         <div className="p-8 pt-12 overflow-y-auto flex-1 space-y-8 text-slate-900 text-left custom-scrollbar">
           
           {!isLoadingDetail && dish.has_animal_fats && (
@@ -145,7 +142,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
             </div>
           )}
 
-          {/* Description Section */}
+          {/* AI Insight */}
           <section className="bg-white p-6 rounded-[2.2rem] border border-slate-100 shadow-sm">
             <h4 className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] mb-3">AI Deep Insight</h4>
             {isLoadingDetail ? (
@@ -160,15 +157,15 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
             )}
           </section>
 
-          {/* Ingredients Grid */}
+          {/* Ingredients Sections */}
           <section>
             <h4 className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] mb-4 flex items-center justify-between">
               Core Components
               {isLoadingDetail && <span className="text-rose-500 animate-pulse lowercase font-normal">Analyzing...</span>}
             </h4>
             
-            {/* 1. 深度解析的主料 */}
-            {classicIngredients.length > 0 ? (
+            {/* 1. Main Ingredients (Classic) */}
+            {classicIngredients.length > 0 && (
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-1 h-4 bg-rose-600 rounded-full"></div>
@@ -176,25 +173,20 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {classicIngredients.map((ing: any, i: number) => {
-                    const en = typeof ing === 'string' ? ing : (ing.name_en || ing.en);
-                    const cn = typeof ing === 'string' ? '' : (ing.name_cn || ing.cn);
+                    const data = normalizeIng(ing);
                     return (
-                      <button 
-                        key={i} 
-                        onClick={() => onIngredientClick(ing)} 
-                        className="p-4 bg-rose-50/50 hover:bg-rose-100/50 rounded-2xl text-left border-2 border-rose-100 transition-all active:scale-95 flex flex-col justify-center h-24 shadow-sm"
-                      >
-                        <span className="text-sm font-black text-rose-700 leading-tight mb-1 line-clamp-2 uppercase tracking-tight">{en}</span>
-                        <span className="text-[11px] font-bold text-rose-400 tracking-wide">{cn}</span>
+                      <button key={i} onClick={() => onIngredientClick(data)} className="p-4 bg-rose-50/50 hover:bg-rose-100/50 rounded-2xl text-left border-2 border-rose-100 transition-all active:scale-95 flex flex-col justify-center h-24 shadow-sm">
+                        <span className="text-sm font-black text-rose-700 leading-tight mb-1 line-clamp-2 uppercase tracking-tight">{data.name_en}</span>
+                        <span className="text-[11px] font-bold text-rose-400 tracking-wide">{data.name_cn}</span>
                       </button>
                     );
                   })}
                 </div>
               </div>
-            ) : null}
+            )}
 
-            {/* 2. 深度解析的辅料 */}
-            {potentialIngredients.length > 0 ? (
+            {/* 2. Potential Ingredients */}
+            {potentialIngredients.length > 0 && (
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-1 h-4 bg-amber-500 rounded-full"></div>
@@ -202,44 +194,33 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {potentialIngredients.map((ing: any, i: number) => {
-                    const en = typeof ing === 'string' ? ing : (ing.name_en || ing.en);
-                    const cn = typeof ing === 'string' ? '' : (ing.name_cn || ing.cn);
+                    const data = normalizeIng(ing);
                     return (
-                      <button 
-                        key={i} 
-                        onClick={() => onIngredientClick(ing)} 
-                        className="p-4 bg-amber-50/50 hover:bg-amber-100/50 rounded-2xl text-left border-2 border-amber-100 transition-all active:scale-95 flex flex-col justify-center h-24 shadow-sm"
-                      >
-                        <span className="text-sm font-black text-amber-700 leading-tight mb-1 line-clamp-2 uppercase tracking-tight">{en}</span>
-                        <span className="text-[11px] font-bold text-amber-500 tracking-wide">{cn}</span>
+                      <button key={i} onClick={() => onIngredientClick(data)} className="p-4 bg-amber-50/50 hover:bg-amber-100/50 rounded-2xl text-left border-2 border-amber-100 transition-all active:scale-95 flex flex-col justify-center h-24 shadow-sm">
+                        <span className="text-sm font-black text-amber-700 leading-tight mb-1 line-clamp-2 uppercase tracking-tight">{data.name_en}</span>
+                        <span className="text-[11px] font-bold text-amber-500 tracking-wide">{data.name_cn}</span>
                       </button>
                     );
                   })}
                 </div>
               </div>
-            ) : null}
+            )}
 
-            {/* 3. 无深度详情时的兜底列表 */}
+            {/* 3. Fallback (Plain Ingredients) */}
             {!isLoadingDetail && classicIngredients.length === 0 && potentialIngredients.length === 0 && fallbackIngredients.length > 0 && (
               <div className="grid grid-cols-2 gap-3">
                 {fallbackIngredients.map((ing: any, i: number) => {
-                  const en = typeof ing === 'string' ? ing : (ing.name_en || ing.en);
-                  const cn = typeof ing === 'string' ? '' : (ing.name_cn || ing.cn);
+                  const data = normalizeIng(ing);
                   return (
-                    <button 
-                      key={i} 
-                      onClick={() => onIngredientClick(ing)} 
-                      className="p-4 bg-white hover:bg-slate-50 rounded-2xl text-left border border-slate-200 transition-all active:scale-95 flex flex-col justify-center h-24"
-                    >
-                      <span className="text-sm font-black text-slate-700 leading-tight mb-1 line-clamp-2 uppercase tracking-tight">{en}</span>
-                      <span className="text-[11px] font-bold text-slate-400 tracking-wide">{cn}</span>
+                    <button key={i} onClick={() => onIngredientClick(data)} className="p-4 bg-white hover:bg-slate-50 rounded-2xl text-left border border-slate-200 transition-all active:scale-95 flex flex-col justify-center h-24">
+                      <span className="text-sm font-black text-slate-700 leading-tight mb-1 line-clamp-2 uppercase tracking-tight">{data.name_en}</span>
+                      <span className="text-[11px] font-bold text-slate-400 tracking-wide">{data.name_cn}</span>
                     </button>
                   );
                 })}
               </div>
             )}
 
-            {/* 加载骨架屏 */}
             {isLoadingDetail && classicIngredients.length === 0 && (
               <div className="grid grid-cols-2 gap-3">
                 {[1, 2, 3, 4].map(i => (
@@ -254,16 +235,12 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
             <button 
               onClick={onSpicyClick} 
               className={`p-6 rounded-[2rem] border-2 text-left transition-all active:scale-95 ${
-                isLoadingDetail 
-                  ? 'bg-slate-50 border-slate-100 opacity-60' 
-                  : spicyLevel > 0 
-                    ? 'bg-red-600 border-red-700 shadow-lg shadow-red-50' 
-                    : 'bg-slate-100 border-slate-200 shadow-none'
+                isLoadingDetail ? 'bg-slate-50 border-slate-100 opacity-60' 
+                : spicyLevel > 0 ? 'bg-red-600 border-red-700 shadow-lg shadow-red-50' 
+                : 'bg-slate-100 border-slate-200 shadow-none'
               }`}
             >
-              <h4 className={`text-[8px] font-black uppercase mb-3 tracking-widest ${
-                isLoadingDetail ? 'text-slate-400' : spicyLevel > 0 ? 'text-white/70' : 'text-slate-400'
-              }`}>Heat Level</h4>
+              <h4 className={`text-[8px] font-black uppercase mb-3 tracking-widest ${isLoadingDetail || spicyLevel === 0 ? 'text-slate-400' : 'text-white/70'}`}>Heat Level</h4>
               <div className="flex items-center justify-between">
                 <div className="flex gap-0.5">
                   {[...Array(5)].map((_, i) => (
@@ -271,9 +248,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
                   ))}
                 </div>
                 {!isLoadingDetail && (
-                  <span className={`text-[9px] font-black uppercase ${spicyInfo.color}`}>
-                    {spicyInfo.label}
-                  </span>
+                  <span className={`text-[9px] font-black uppercase ${spicyInfo.color}`}>{spicyInfo.label}</span>
                 )}
               </div>
             </button>

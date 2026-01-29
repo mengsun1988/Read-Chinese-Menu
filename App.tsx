@@ -24,7 +24,6 @@ import { HomeIdleView } from './views/HomeIdleView';
 import { EffectLayer } from './components/EffectLayer';
 
 const App: React.FC = () => {
-  // 从自定义 Hook 中获取状态与方法
   const { usage, isUnlimited, syncWithBackend, handleDailyShare, handleGameWin, clearAchievement } = useUserUsage();
 
   const [status, setStatus] = useState<AppStatus>(AppStatus.IDLE);
@@ -46,7 +45,6 @@ const App: React.FC = () => {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // --- 辅助函数 ---
   const triggerUpload = () => fileInputRef.current?.click();
   const handleModeChange = (newMode: RecognitionMode) => { setMode(newMode); reset(); };
   
@@ -69,9 +67,6 @@ const App: React.FC = () => {
     if (element) element.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
-  /**
-   * 图片压缩处理
-   */
   const getCompressedBase64 = (file: File): Promise<string> => {
     return new Promise((resolve) => {
       const reader = new FileReader();
@@ -97,9 +92,6 @@ const App: React.FC = () => {
     });
   };
 
-  /**
-   * 核心文件上传与识别逻辑
-   */
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -110,28 +102,27 @@ const App: React.FC = () => {
 
     try {
       const base64 = await getCompressedBase64(file);
-      const userId = getOrCreateUserId();
-
+      
       if (mode === RecognitionMode.MENU) {
-        // 直接调用识别接口（Worker 内部会进行点数预检并自动扣费）
         const result = await processMenuImage(base64);
         
-        if (result && result.dishes) {
+        if (result && result.error === "OUT_OF_CREDITS") {
+          reset();
+          setShowPricing(true);
+          setTimeout(scrollToPricing, 300);
+          return;
+        }
+
+        if (result && Array.isArray(result.dishes) && result.dishes.length > 0) {
           setDishes(result.dishes);
-          // 关键闭环：识别成功后，Worker 会返回最新的 usage 状态
           if (result.usage) {
             syncWithBackend(result.usage);
           }
           setStatus(AppStatus.SUCCESS);
-        } else if (result && result.error === "OUT_OF_CREDITS") {
-          reset();
-          setShowPricing(true);
-          setTimeout(scrollToPricing, 300);
         } else {
           throw new Error("No dishes detected. Please try a clearer photo.");
         }
       } else {
-        // 门头模式 (STREET)
         const rawResult = await processStorefrontImage(base64);
         if (rawResult) {
           setStoreResult(rawResult);
@@ -147,13 +138,9 @@ const App: React.FC = () => {
     }
   };
 
-  /**
-   * 支付成功后的本地回调
-   */
   const onPurchaseSuccess = (updatedUserData: any) => {
     syncWithBackend(updatedUserData);
     setShowPricing(false);
-    
     if (updatedUserData.passExpiryDate) {
       setCreditUpdateMessage(`Premium Access Activated!`);
     } else {
@@ -162,38 +149,32 @@ const App: React.FC = () => {
   };
 
   /**
-   * 菜品详情点击：处理深度分析与数据合并
+   * 核心修正：直接映射 Worker 返回的食材字段
    */
   const handleDishClick = async (dish: any) => {
-    // 1. 先展示已有信息，开启 Modal
     setSelectedDish(dish);
-    
-    // 2. 如果已经深度分析过，则不需要再次请求
     if (dish.isFullyAnalyzed) return;
 
     setLoadingDetail(true);
     try {
-      // 调用 Worker 的 task: "dish_detail"
-      const deepInfo = await getDishDeepDetail(dish.name_cn, dish.name_en);
+      const result = await getDishDeepDetail(dish.name_cn, dish.name_en);
       
-      if (deepInfo) {
-        // 合并数据，并显式映射 Worker 的 deep_ingredients 到分层字段
+      if (result) {
+        if (result.usage) syncWithBackend(result.usage);
+
+        // 核心映射：Worker 直接返回 classic_ingredients，不需要从 deep_ingredients 找
         const updatedDish = { 
           ...dish, 
-          ...deepInfo,
-          classic_ingredients: deepInfo.deep_ingredients?.classic || [],
-          potential_ingredients: deepInfo.deep_ingredients?.potential || [],
+          ...result,
+          classic_ingredients: result.classic_ingredients || [],
+          potential_ingredients: result.potential_ingredients || [],
           isFullyAnalyzed: true 
         };
 
-        // 更新当前选中的菜品显示
         setSelectedDish(updatedDish);
-        
-        // 同步回主列表 dishes 数组，防止关闭弹窗后丢失数据
         setDishes(prev => prev.map(d => 
           (d.id === dish.id || (d.name_cn === dish.name_cn && d.name_en === dish.name_en)) 
-            ? updatedDish 
-            : d
+            ? updatedDish : d
         ));
       }
     } catch (e) {
@@ -210,23 +191,13 @@ const App: React.FC = () => {
       intent: "capture"
     }}>
       <div className="min-h-screen pb-0 bg-[#fafafa] font-sans w-full">
-        {/* 动画特效层 */}
         <EffectLayer 
           trigger={usage.achievementTriggered} 
           onComplete={clearAchievement} 
         />
-
         <A2HSManager />
-        
         <main className="w-full relative">
-          <input 
-            type="file" 
-            accept="image/*" 
-            className="hidden" 
-            ref={fileInputRef} 
-            onChange={handleFileChange} 
-          />
-
+          <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
           {status === AppStatus.IDLE && (
             <HomeIdleView 
               mode={mode}
@@ -240,28 +211,18 @@ const App: React.FC = () => {
               onGameWin={() => handleGameWin(getOrCreateUserId())} 
             />
           )}
-
           <div className="max-w-5xl mx-auto px-6">
-            {status === AppStatus.LOADING && (
-              <div className="py-20 animate-in fade-in duration-500">
-                <LoadingScreen />
-              </div>
-            )}
-
+            {status === AppStatus.LOADING && <div className="py-20 animate-in fade-in duration-500"><LoadingScreen /></div>}
             {status === AppStatus.ERROR && (
               <div className="bg-white border border-rose-100 rounded-[3rem] p-16 text-center space-y-6 shadow-sm mt-20">
-                <div className="w-20 h-20 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto">
-                  <WarningIcon className="w-10 h-10" />
-                </div>
+                <div className="w-20 h-20 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto"><WarningIcon className="w-10 h-10" /></div>
                 <h2 className="text-3xl font-bold text-slate-900 uppercase tracking-tighter">Scan Failed</h2>
                 <p className="text-slate-400 text-xs font-bold leading-relaxed">{error}</p>
                 <button onClick={reset} className="bg-slate-900 text-white font-black py-4 px-12 rounded-full shadow-lg active:scale-95 transition-all uppercase tracking-widest text-[10px]">Retry Scan</button>
               </div>
             )}
-
             {status === AppStatus.SUCCESS && (
               <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 mt-10 pb-32">
-                {/* 顶部状态栏 */}
                 <div className="flex justify-between items-center bg-slate-900 p-6 rounded-[2rem] shadow-2xl sticky top-4 z-[110] mx-2 border border-white/5">
                   <div className="flex items-center gap-4">
                     {previewUrl && <img src={previewUrl} className="w-12 h-12 object-cover rounded-xl ring-2 ring-white/10" alt="Preview" />}
@@ -276,16 +237,10 @@ const App: React.FC = () => {
                   </div>
                   <button onClick={reset} className="bg-white/10 hover:bg-white/20 text-white font-black py-2.5 px-6 rounded-full text-[10px] uppercase tracking-wider backdrop-blur-sm transition-colors border border-white/10">Restart</button>
                 </div>
-                
-                {/* 结果展示 */}
                 {mode === RecognitionMode.MENU ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-2">
                     {dishes.map((dish, index) => (
-                      <DishCard 
-                        key={dish.id || `dish-${index}`} 
-                        dish={dish} 
-                        onClick={() => handleDishClick(dish)} 
-                      />
+                      <DishCard key={dish.id || `dish-${index}`} dish={dish} onClick={() => handleDishClick(dish)} />
                     ))}
                   </div>
                 ) : (
@@ -295,7 +250,6 @@ const App: React.FC = () => {
             )}
           </div>
         </main>
-
         <Footer 
           onMenuScan={() => { handleModeChange(RecognitionMode.MENU); setTimeout(scrollToCamera, 100); }} 
           onStreetScan={() => { handleModeChange(RecognitionMode.STREET); setTimeout(scrollToCamera, 100); }} 
@@ -304,56 +258,35 @@ const App: React.FC = () => {
           onPrivacy={() => setLegalView('privacy')} 
           onTos={() => setLegalView('tos')} 
         />
-
-        {/* 各种弹窗/覆盖层 */}
         <SurvivalCardView isOpen={showSurvival} onClose={() => setShowSurvival(false)} />
-        
         {showPricing && (
           <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setShowPricing(false)} />
             <div className="relative w-full max-w-5xl animate-in fade-in zoom-in duration-300">
               <div className="bg-white rounded-[3rem] overflow-hidden shadow-2xl relative">
-                  <PricingModule 
-                    onPurchase={onPurchaseSuccess} 
-                    onLater={() => setShowPricing(false)} 
-                  />
-                  <button 
-                    onClick={() => setShowPricing(false)}
-                    className="absolute top-6 right-8 text-slate-400 hover:text-slate-900 font-black text-2xl z-50"
-                  >✕</button>
+                  <PricingModule onPurchase={onPurchaseSuccess} onLater={() => setShowPricing(false)} />
+                  <button onClick={() => setShowPricing(false)} className="absolute top-6 right-8 text-slate-400 hover:text-slate-900 font-black text-2xl z-50">✕</button>
               </div>
             </div>
           </div>
         )}
-
         {selectedDish && (
           <DishDetailModal 
             dish={selectedDish} 
             onClose={() => setSelectedDish(null)} 
             isLoadingDetail={loadingDetail}
             onIngredientClick={(ing: Ingredient) => setWaiterContext({ 
-              type: 'ingredient', 
-              content_en: ing.name_en, 
-              content_cn: ing.name_cn 
+              type: 'ingredient', content_en: ing.name_en, content_cn: ing.name_cn 
             })}
             onSpicyClick={() => setWaiterContext({ 
-              type: 'spiciness', 
-              content_en: 'Spiciness preference', 
-              content_cn: '辣度要求' 
+              type: 'spiciness', content_en: 'Spiciness preference', content_cn: '辣度要求' 
             })}
           />
         )}
-
         {waiterContext && <WaiterCard {...waiterContext} onClose={() => setWaiterContext(null)} />}
         {showStaffHelper && <StaffHelperModal onClose={() => setShowStaffHelper(false)} />}
         {legalView && <LegalModal type={legalView} onClose={() => setLegalView(null)} />}
-        
-        {creditUpdateMessage && (
-          <CreditUpdateCard 
-            message={creditUpdateMessage} 
-            onClose={() => setCreditUpdateMessage(null)} 
-          />
-        )}
+        {creditUpdateMessage && <CreditUpdateCard message={creditUpdateMessage} onClose={() => setCreditUpdateMessage(null)} />}
       </div>
     </PayPalScriptProvider>
   );

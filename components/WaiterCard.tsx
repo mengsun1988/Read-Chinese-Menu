@@ -13,20 +13,29 @@ export const WaiterCard: React.FC<WaiterCardProps> = ({ type, content_en, conten
   const speak = useCallback((text: string) => {
     if (!window.speechSynthesis) return;
     window.speechSynthesis.cancel();
+    
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'zh-CN';
     utterance.rate = 0.85;
 
+    // 优化的发音人查找逻辑
     const voices = window.speechSynthesis.getVoices();
     const chineseVoice = voices.find(v => 
       (v.lang.includes('zh-CN') || v.lang.includes('zh_CN')) && !v.name.includes('Google')
     ) || voices.find(v => v.lang.includes('zh'));
+    
     if (chineseVoice) utterance.voice = chineseVoice;
     window.speechSynthesis.speak(utterance);
   }, []);
 
+  // 确保在移动端浏览器准备好语音引擎
   useEffect(() => {
-    if (window.speechSynthesis) window.speechSynthesis.getVoices();
+    if (window.speechSynthesis) {
+      window.speechSynthesis.getVoices();
+      if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        window.speechSynthesis.onvoiceschanged = window.speechSynthesis.getVoices;
+      }
+    }
   }, []);
 
   const options = type === 'ingredient' 
