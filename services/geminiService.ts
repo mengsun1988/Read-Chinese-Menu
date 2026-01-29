@@ -133,7 +133,7 @@ export async function processMenuImage(base64Image: string): Promise<any> {
       rawArray = result.dishes;
     } else if (Array.isArray(result)) {
       rawArray = result;
-    } else if (result.name_cn || result.name_en) {
+    } else if (result.name_cn || result.name_en || result.name) {
       rawArray = [result];
     } else {
       // 防御性检查：确保至少有一种数据格式
@@ -144,27 +144,34 @@ export async function processMenuImage(base64Image: string): Promise<any> {
       throw new Error("No dishes could be identified. Try a clearer photo.");
     }
 
-    // 防御性检查：验证菜品数据结构
+    // 防御性检查：验证菜品数据结构，增加对 .name 字段的宽容度
     for (const item of rawArray) {
-      if (!item.name_cn && !item.name_en) {
+      if (!item.name_cn && !item.name_en && !item.name) {
         throw new Error("Incomplete dish data received from server");
       }
     }
 
     // 格式化菜品数据
-    const formattedDishes = rawArray.map((item: any, index: number) => ({
-      id: item.id || `dish-${Date.now()}-${index}`,
-      name_cn: item.name_cn || item.name || "Unknown",
-      name_en: item.name_en || item.english_name || "Scanning...",
-      pinyin: item.pinyin || "",
-      pronunciation: item.pronunciation || "",
-      price: item.price || "",
-      ingredients: Array.isArray(item.ingredients) ? item.ingredients : (item.core_ingredients || []),
-      description: item.description || "",
-      isFullyAnalyzed: item.isFullyAnalyzed || false, 
-      spiciness_level: item.spiciness_level || 0,
-      allergens: item.allergens || []
-    }));
+    const formattedDishes = rawArray.map((item: any, index: number) => {
+      // 智能判断 name 字段的内容归属
+      const hasChinese = (text: string) => /[\u4e00-\u9fa5]/.test(text);
+      const inferredNameCn = item.name_cn || (item.name && hasChinese(item.name) ? item.name : "Unknown");
+      const inferredNameEn = item.name_en || item.english_name || (item.name && !hasChinese(item.name) ? item.name : "Scanning...");
+
+      return {
+        id: item.id || `dish-${Date.now()}-${index}`,
+        name_cn: inferredNameCn,
+        name_en: inferredNameEn,
+        pinyin: item.pinyin || "",
+        pronunciation: item.pronunciation || "",
+        price: item.price || "",
+        ingredients: Array.isArray(item.ingredients) ? item.ingredients : (item.core_ingredients || []),
+        description: item.description || "",
+        isFullyAnalyzed: item.isFullyAnalyzed || false, 
+        spiciness_level: item.spiciness_level || 0,
+        allergens: item.allergens || []
+      };
+    });
 
     // 返回包含 dishes 列表、usage 状态和调试信息的对象
     return {
