@@ -263,7 +263,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
                     <span key={i} className="text-[9px] font-black uppercase bg-emerald-600 px-2.5 py-1 rounded-lg text-white">{a}</span>
                   ))
                 ) : (
-                  <span className="text-[10px] font-bold text-emerald-700 italic">No Allergens detected.</span>
+                  <span className="text-[10px] font-bold text-emerald-700 italic">No Allergens detected. Confirm with server if you have severe allergies. </span>
                 )}
               </div>
             </div>
