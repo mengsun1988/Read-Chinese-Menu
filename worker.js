@@ -3,7 +3,7 @@ export default {
     const corsHeaders = {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, X-App-Source',
     };
 
     if (request.method === 'OPTIONS') {
@@ -11,6 +11,19 @@ export default {
     }
 
     const url = new URL(request.url);
+    const referer = request.headers.get("Referer");
+    const isScanPath = url.pathname === '/' || url.pathname.includes('scan');
+
+    // --- 安全防护：Referer 校验 ---
+    // 只有 API 扫描路径需要强制校验 Referer
+    if (isScanPath && request.method === 'POST') {
+      if (!referer || !referer.includes("readchinesemenu.com")) {
+        return new Response(JSON.stringify({ error: "Access Denied: Invalid Source" }), { 
+          status: 403, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        });
+      }
+    }
 
     async function getUserData(userId) {
       const defaultData = {
@@ -90,7 +103,6 @@ export default {
     }
 
     // --- API: Main AI Scan (Menu/Dish/Store) ---
-    const isScanPath = url.pathname === '/' || url.pathname.includes('scan');
     if (request.method === 'POST' && isScanPath) {
       try {
         const { image: base64Image, userId, type = "menu", name_cn, lang = "en" } = await request.json();
@@ -195,12 +207,11 @@ export default {
         const isUnlimitedNow = (env.ENABLE_DEV_MODE === "true") || (userData.passExpiryDate && new Date(userData.passExpiryDate).getTime() > Date.now());
         
         const isMenuSuccess = (type === "menu") && Array.isArray(parsedData.dishes) && parsedData.dishes.length > 0;
-        const isStoreSuccess = (type === "store") && (parsedData.store || parsedData.name); // 增加容错
+        const isStoreSuccess = (type === "store") && (parsedData.store || parsedData.name); 
         const isDetailSuccess = type === "dish_detail" && (parsedData.classic_ingredients || parsedData.description);
 
         if (isMenuSuccess || isStoreSuccess || isDetailSuccess) {
           userData.lastUsed = new Date().toISOString();
-          // 仅当类型为 menu 且识别成功时扣费
           if (isMenuSuccess) {
             userData.scanCount += 1;
             if (!isUnlimitedNow) {
