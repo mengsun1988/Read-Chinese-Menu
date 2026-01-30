@@ -6,8 +6,13 @@
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-
     gtag('config', 'G-YWYL2JQ1SD');
+
+    // 域名强制重定向脚本：确保从 readchinesemenu.com 跳转到 www 版本
+    // 放在这里可以确保第一时间执行，且保留 ?lang= 所有的 URL 参数
+    if (window.location.hostname === 'readchinesemenu.com') {
+      window.location.replace('https://www.readchinesemenu.com' + window.location.pathname + window.location.search);
+    }
   </script>
 
   <meta charset="UTF-8">
