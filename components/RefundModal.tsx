@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface RefundModalProps {
   isOpen: boolean;
@@ -6,6 +7,8 @@ interface RefundModalProps {
 }
 
 export const RefundModal: React.FC<RefundModalProps> = ({ isOpen, onClose }) => {
+  const { t } = useTranslation();
+
   if (!isOpen) return null;
 
   return (
@@ -21,9 +24,11 @@ export const RefundModal: React.FC<RefundModalProps> = ({ isOpen, onClose }) => 
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
             </svg>
           </div>
-          <h3 className="text-3xl font-semibold text-slate-900 tracking-tight">Fair & Simple Refunds</h3>
+          <h3 className="text-3xl font-semibold text-slate-900 tracking-tight">
+            {t('refund.title')}
+          </h3>
           <p className="text-slate-500 font-medium italic text-sm">
-            "We want to be your bridge to flavors, not a hurdle. If our tool isn't helping you explore, we don't want your money."
+            {t('refund.quote')}
           </p>
         </div>
 
@@ -33,24 +38,28 @@ export const RefundModal: React.FC<RefundModalProps> = ({ isOpen, onClose }) => 
             <div className="flex gap-4">
               <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center shrink-0 font-semibold text-xs">01</div>
               <div className="space-y-1">
-                <h4 className="font-semibold text-slate-900 text-sm uppercase tracking-wider">The 24h Window</h4>
-                <p className="text-slate-500 text-xs leading-relaxed font-medium">Request a refund within 24 hours of purchase, provided you've consumed 3 or fewer credits.</p>
+                <h4 className="font-semibold text-slate-900 text-sm uppercase tracking-wider">{t('refund.windowTitle')}</h4>
+                <p className="text-slate-500 text-xs leading-relaxed font-medium">{t('refund.windowContent')}</p>
               </div>
             </div>
 
             <div className="flex gap-4">
               <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center shrink-0 font-semibold text-xs">02</div>
               <div className="space-y-1">
-                <h4 className="font-semibold text-slate-900 text-sm uppercase tracking-wider">Technical Guarantee</h4>
-                <p className="text-slate-500 text-xs leading-relaxed font-medium">If our AI completely fails to read a clear, well-lit photo of a menu, you are entitled to a 100% full refund regardless of usage.</p>
+                <h4 className="font-semibold text-slate-900 text-sm uppercase tracking-wider">{t('refund.techTitle')}</h4>
+                <p className="text-slate-500 text-xs leading-relaxed font-medium">{t('refund.techContent')}</p>
               </div>
             </div>
 
             <div className="flex gap-4">
               <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center shrink-0 font-semibold text-xs">03</div>
               <div className="space-y-1">
-                <h4 className="font-semibold text-slate-900 text-sm uppercase tracking-wider">No-Fuss Process</h4>
-                <p className="text-slate-500 text-xs leading-relaxed font-medium">Simply email your PayPal transaction ID or a screenshot of your payment to <span className="text-rose-600 font-semibold">support@readchinesemenu.com</span>. No login or forms required.</p>
+                <h4 className="font-semibold text-slate-900 text-sm uppercase tracking-wider">{t('refund.processTitle')}</h4>
+                <p className="text-slate-500 text-xs leading-relaxed font-medium">
+                  {t('refund.processContent')}
+                  <span className="text-rose-600 font-semibold">info@readchinesemenu.com</span>
+                  {t('refund.processContentEnd')}
+                </p>
               </div>
             </div>
           </div>
@@ -59,7 +68,7 @@ export const RefundModal: React.FC<RefundModalProps> = ({ isOpen, onClose }) => 
             onClick={onClose}
             className="w-full bg-slate-900 text-white font-semibold py-4 rounded-2xl shadow-xl transition-all active:scale-95 text-sm uppercase tracking-widest hover:bg-slate-800"
           >
-            I Understand
+            {t('refund.understand')}
           </button>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface CreditUpdateCardProps {
   message: string;
@@ -6,6 +7,7 @@ interface CreditUpdateCardProps {
 }
 
 export const CreditUpdateCard: React.FC<CreditUpdateCardProps> = ({ message, onClose }) => {
+  const { t } = useTranslation();
   const [isVisible, setIsVisible] = useState(true);
   const [isFading, setIsFading] = useState(false);
 
@@ -29,7 +31,7 @@ export const CreditUpdateCard: React.FC<CreditUpdateCardProps> = ({ message, onC
           </div>
           <div>
             <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-1">
-              CREDITS UPDATED
+              {t('creditUpdate.title')}
             </p>
             <p className="text-xs font-bold text-slate-900">{message}</p>
           </div>
@@ -38,7 +40,7 @@ export const CreditUpdateCard: React.FC<CreditUpdateCardProps> = ({ message, onC
           onClick={onClose}
           className="bg-emerald-600 text-white px-3 py-1.5 rounded-full text-[8px] font-black shadow-md uppercase tracking-wider"
         >
-          OK
+          {t('creditUpdate.ok')}
         </button>
       </div>
     </div>

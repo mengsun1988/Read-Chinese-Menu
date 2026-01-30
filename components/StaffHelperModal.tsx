@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { SpeakerIcon } from './Icons';
 
 interface StaffHelperModalProps {
@@ -6,7 +7,10 @@ interface StaffHelperModalProps {
 }
 
 export const StaffHelperModal: React.FC<StaffHelperModalProps> = ({ onClose }) => {
-  const messageEn = "I'd like to eat here. Is there a table available?";
+  const { t } = useTranslation();
+  
+  // 这两行是核心功能，即使切换到日语，也要让用户知道这句话的意思，并且让店员听懂中文
+  const messageEn = t('staffHelper.messageEn');
   const messageCn = "我想在这里吃饭，请问还有位子吗？";
 
   const speakText = () => {
@@ -31,7 +35,9 @@ export const StaffHelperModal: React.FC<StaffHelperModalProps> = ({ onClose }) =
 
       <div className="max-w-2xl w-full space-y-16">
         <div className="space-y-6">
-          <p className="text-xl opacity-80 font-medium uppercase tracking-[0.2em]">English Translation</p>
+          <p className="text-xl opacity-80 font-medium uppercase tracking-[0.2em]">
+            {t('staffHelper.headerLabel')}
+          </p>
           <h2 className="text-4xl md:text-5xl font-semibold leading-tight">{messageEn}</h2>
         </div>
 
@@ -49,12 +55,12 @@ export const StaffHelperModal: React.FC<StaffHelperModalProps> = ({ onClose }) =
           className="bg-white text-rose-600 px-10 py-6 rounded-[2.5rem] font-bold text-2xl flex items-center justify-center gap-4 mx-auto shadow-2xl hover:scale-105 active:scale-95 transition-all"
         >
           <SpeakerIcon className="w-8 h-8" />
-          <span>Play Audio / 播放语音</span>
+          <span>{t('staffHelper.playAudio')} / {t('staffHelper.playAudioCn')}</span>
         </button>
       </div>
 
       <p className="absolute bottom-12 text-[10px] font-semibold uppercase tracking-[0.4em] opacity-40">
-        Show this screen to the waiter • 请出示给服务员
+        {t('staffHelper.footerHint')} • {t('staffHelper.footerHintCn')}
       </p>
     </div>
   );

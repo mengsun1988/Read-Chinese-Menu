@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { PayPalScriptProvider } from "@paypal/react-paypal-js";
+import './src/i18n/i18n'; // 假设 index.tsx 在根目录
 
 /** 
  * --- ENVIRONMENT SETUP ---
