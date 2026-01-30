@@ -1,18 +1,14 @@
 {
   "redirects": [
     {
-      "source": "https://readchinesemenu.com/(.*)",
-      "destination": "https://www.readchinesemenu.com/$1",
-      "statusCode": 301
-    },
-    {
-      "source": "http://readchinesemenu.com/(.*)",
-      "destination": "https://www.readchinesemenu.com/$1",
-      "statusCode": 301
-    },
-    {
-      "source": "readchinesemenu.com/(.*)",
-      "destination": "https://www.readchinesemenu.com/$1",
+      "source": "/*",
+      "has": [
+        {
+          "type": "host",
+          "value": "readchinesemenu.com"
+        }
+      ],
+      "destination": "https://www.readchinesemenu.com/:path",
       "statusCode": 301
     }
   ]
