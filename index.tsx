@@ -1,11 +1,10 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { PayPalScriptProvider } from "@paypal/react-paypal-js";
-import './src/i18n/i18n'; // 假设 index.tsx 在根目录
+import './src/i18n/i18n'; // 确保 i18n 初始化在 App 渲染前
 
-/** 
- * --- ENVIRONMENT SETUP ---
+/** * --- ENVIRONMENT SETUP ---
  * Hardens the environment for the Gemini SDK and other services.
  */
 const syncEnvironment = () => {
@@ -14,11 +13,9 @@ const syncEnvironment = () => {
     if (!(window as any).process) (window as any).process = { env: {} };
     if (!(window as any).process.env) (window as any).process.env = {};
     
-    // Map VITE_API_KEY or VITE_GEMINI_API_KEY to process.env.API_KEY for @google/genai
     const apiKey = envSource.VITE_API_KEY || envSource.VITE_GEMINI_API_KEY || envSource.API_KEY || "";
     (window as any).process.env.API_KEY = apiKey;
 
-    // Sync all Vite-style variables to process.env
     Object.keys(envSource).forEach(key => {
       (window as any).process.env[key] = String(envSource[key]);
     });
@@ -29,18 +26,14 @@ const syncEnvironment = () => {
 
 syncEnvironment();
 
-/** 
- * --- PAYPAL CONFIGURATION ---
+/** * --- PAYPAL CONFIGURATION ---
  */
-const DEFAULT_PAYPAL_CLIENT_ID = "AdY7cjJGhxSVjZOPZr-LoHhX8JHtyQfNjmr6I8HjO4cv3cqW_U2zr1hpxa67nU8o4i6GoH0sFIh0P1aS"; 
-
 const getPayPalClientId = () => {
   const envSource = (import.meta as any).env || {};
   const clientId = envSource.VITE_PAYPAL_CLIENT_ID || (window as any).process?.env?.VITE_PAYPAL_CLIENT_ID;
   
-  // Hardened check: if empty, undefined string, or null, fallback to "sb" (sandbox) or default
   if (!clientId || clientId === "undefined" || clientId === "" || clientId === "null") {
-    return "sb"; // Fallback to sandbox to prevent SDK crash
+    return "sb"; 
   }
   return clientId;
 };
@@ -57,16 +50,19 @@ const paypalOptions = {
 const rootElement = document.getElementById('root');
 
 if (rootElement) {
-  // Use a small delay to ensure Tailwind CDN has processed the base DOM before React hydration
-  // and to avoid initial mounting race conditions.
+  // 注意：为了 LCP 性能，建议逐步弃用 Tailwind CDN 并移除这里的 setTimeout。
+  // 如果必须保留，请确保延迟时间尽可能短。
   setTimeout(() => {
     try {
       const root = ReactDOM.createRoot(rootElement);
       root.render(
         <React.StrictMode>
-          <PayPalScriptProvider options={paypalOptions}>
-            <App />
-          </PayPalScriptProvider>
+          {/* Suspense 是处理 i18next-http-backend 异步加载翻译文件的关键 */}
+          <Suspense fallback={<div style={{ padding: '20px', textAlign: 'center' }}>Loading...</div>}>
+            <PayPalScriptProvider options={paypalOptions}>
+              <App />
+            </PayPalScriptProvider>
+          </Suspense>
         </React.StrictMode>
       );
     } catch (err) {
@@ -76,7 +72,7 @@ if (rootElement) {
         <p>There was an error initializing the application. Please try refreshing the page.</p>
       </div>`;
     }
-  }, 100);
+  }, 50); // 将 100ms 缩短为 50ms 以微调性能
 } else {
   console.error("Fatal: #root not found.");
 }

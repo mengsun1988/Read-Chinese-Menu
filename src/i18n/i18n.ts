@@ -4,22 +4,31 @@ import HttpApi from 'i18next-http-backend';
 import LanguageDetector from 'i18next-browser-languagedetector';
 
 i18n
-  .use(HttpApi) // 允许从服务器/本地文件夹加载 JSON
-  .use(LanguageDetector) // 自动检测浏览器语言
+  .use(HttpApi)
+  .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     fallbackLng: 'en',
     debug: false,
     interpolation: {
-      escapeValue: false, // React 已经自带防 XSS 攻击，所以这里设为 false
+      escapeValue: false,
     },
     backend: {
-      // 关键：告诉 i18n 去哪里找你的 json 文件
       loadPath: '/locales/{{lng}}.json',
     },
+    detection: {
+      // 1. 按照你的需求设置优先级
+      order: ['querystring', 'localStorage', 'navigator'],
+      // 2. 指定参数名为 lang
+      lookupQuerystring: 'lang',
+      // 3. 自动保存用户的选择到 localStorage，下次进来直接用
+      caches: ['localStorage'],
+      // 4. 强制将 zh-CN 等格式转化为 zh，匹配你的文件名
+      convertDetectedLanguage: (lng) => lng.replace(/-.*/, ''),
+    },
     react: {
-      useSuspense: true, // 必须配合 index.tsx 里的 Suspense 使用
-    }
+      useSuspense: true,
+    },
   });
 
 export default i18n;
