@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PayPalButton } from './PayPalButton';
 import { WORKER_URL, getOrCreateUserId } from '../services/geminiService';
 
@@ -14,20 +15,50 @@ interface SupportTier {
 }
 
 export const SupportSection: React.FC<{ 
-  onPurchase: (updatedUsage: any) => void; // 修正：接收后端返回的最新状态
+  onPurchase: (updatedUsage: any) => void; 
   credits: number;
 }> = ({ onPurchase, credits }) => {
+  const { t } = useTranslation();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>('coffee');
-  const [isVerifying, setIsVerifying] = useState(false); // 新增：验证状态
+  const [isVerifying, setIsVerifying] = useState(false); 
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const middleCardRef = useRef<HTMLDivElement>(null);
 
+  // TIERS 数据完全从 JSON 中获取文案
+  // 注意：这里的 credits 字段我们保留数字部分，单位通过 t('common.credits') 统一处理
   const TIERS: SupportTier[] = [
-    { id: 'soda', name: 'Buy me a Coke', price: '$2', amount: 2.0, credits: '150 Credits', meals: '(3 meals)', description: 'A small kick to keep us coding.', icon: '🥤' },
-    { id: 'coffee', name: 'Buy me a Coffee', price: '$5', amount: 5.0, credits: '400 Credits', meals: '(8 meals)', description: 'Fueling our foodie explorations.', icon: '☕' },
-    { id: 'cheesecake', name: 'Buy me a Cheesecake', price: '$9', amount: 9.0, credits: '1000 Credits', meals: '(20 meals)', description: 'The ultimate treat for hard work.', icon: '🍰' }
+    { 
+      id: 'soda', 
+      name: t('support.tiers.soda.name'), 
+      price: '$2', 
+      amount: 2.0, 
+      credits: '150', 
+      meals: t('support.tiers.soda.meals'), 
+      description: t('support.tiers.soda.description'), 
+      icon: '🥤' 
+    },
+    { 
+      id: 'coffee', 
+      name: t('support.tiers.coffee.name'), 
+      price: '$5', 
+      amount: 5.0, 
+      credits: '400', 
+      meals: t('support.tiers.coffee.meals'), 
+      description: t('support.tiers.coffee.description'), 
+      icon: '☕' 
+    },
+    { 
+      id: 'cheesecake', 
+      name: t('support.tiers.cheesecake.name'), 
+      price: '$9', 
+      amount: 9.0, 
+      credits: '1000', 
+      meals: t('support.tiers.cheesecake.meals'), 
+      description: t('support.tiers.cheesecake.description'), 
+      icon: '🍰' 
+    }
   ];
 
   // 1. 实现滚动检测
@@ -79,8 +110,8 @@ export const SupportSection: React.FC<{
         body: JSON.stringify({
           userId: getOrCreateUserId(),
           orderId: orderDetails.id,
-          planId: tier.id, // 后端通过 ID 判断增加点数还是天数
-          isDonation: true // 标记这是捐赠点数充值
+          planId: tier.id, 
+          isDonation: true 
         })
       });
 
@@ -89,7 +120,6 @@ export const SupportSection: React.FC<{
       const result = await response.json();
       
       if (result.success && result.usage) {
-        // 同步到全局 State
         onPurchase(result.usage);
       }
     } catch (error) {
@@ -104,10 +134,13 @@ export const SupportSection: React.FC<{
   return (
     <section id="support-section" className="bg-orange-50/50 rounded-[3rem] p-8 md:p-16 border border-orange-100/50 text-center space-y-10 relative mx-auto max-w-full lg:max-w-6xl overflow-hidden">
       <div className="space-y-4 px-6">
-        <h3 className="text-2xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase leading-none">Support Our Journey</h3>
-        <p className="text-slate-500 max-w-xl mx-auto font-bold text-[10px] md:text-sm leading-relaxed uppercase tracking-wider">
-          Help us keep the servers alive. <br/> In return, we'll refuel your account with credits.
-        </p>
+        <h3 className="text-2xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase leading-none">
+          {t('support.title')}
+        </h3>
+        <p 
+          className="text-slate-500 max-w-xl mx-auto font-bold text-[10px] md:text-sm leading-relaxed uppercase tracking-wider"
+          dangerouslySetInnerHTML={{ __html: t('support.subtitle') }}
+        />
       </div>
 
       <div className="relative w-full">
@@ -133,14 +166,14 @@ export const SupportSection: React.FC<{
                 <div className="h-6 mb-2">
                   {tier.id === 'coffee' && (
                     <div className={`bg-orange-600 text-white text-[8px] font-black px-3 py-1 rounded-full shadow-lg transition-opacity duration-300 ${isCenter ? 'opacity-100' : 'opacity-0'}`}>
-                      RECOMMENDED
+                      {t('pricing.sevenDayPass.highlightText')}
                     </div>
                   )}
                 </div>
 
                 <div className="flex flex-col items-center mb-4">
                   <span className="bg-emerald-500 text-white text-[10px] font-black px-3 py-1 rounded-lg shadow-sm uppercase tracking-tight">
-                    +{tier.credits}
+                    +{tier.credits} {t('common.creditsLeft').split(' ')[0]}
                   </span>
                   <span className="text-[9px] font-bold text-emerald-600 mt-1 uppercase tracking-widest">{tier.meals}</span>
                 </div>
@@ -162,7 +195,9 @@ export const SupportSection: React.FC<{
                       {isVerifying ? (
                         <div className="flex flex-col items-center py-4 space-y-3">
                           <div className="w-6 h-6 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-                          <span className="text-[8px] font-black uppercase tracking-widest text-orange-600 animate-pulse">Syncing Credits...</span>
+                          <span className="text-[8px] font-black uppercase tracking-widest text-orange-600 animate-pulse">
+                            {t('common.syncingCredits')}
+                          </span>
                         </div>
                       ) : (
                         <>
@@ -177,7 +212,7 @@ export const SupportSection: React.FC<{
                             onClick={() => setSelectedId(null)} 
                             className="mt-2 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] hover:text-orange-600 transition-colors py-2"
                           >
-                            ← Back
+                            ← {t('common.back')}
                           </button>
                         </>
                       )}
@@ -188,7 +223,7 @@ export const SupportSection: React.FC<{
                       className="w-full py-4 bg-slate-900 text-white rounded-full font-black text-[9px] uppercase tracking-[0.2em] shadow-lg hover:bg-orange-600 transition-all active:scale-95 disabled:opacity-30"
                       disabled={!isCenter && window.innerWidth < 768}
                     >
-                      Send Support
+                      {t('common.sendSupport')}
                     </button>
                   )}
                 </div>
@@ -200,7 +235,7 @@ export const SupportSection: React.FC<{
 
       <div className="pt-4">
         <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] animate-pulse">
-          Secure payment via PayPal
+          {t('common.securePayment')}
         </p>
       </div>
       <style dangerouslySetInnerHTML={{ __html: `

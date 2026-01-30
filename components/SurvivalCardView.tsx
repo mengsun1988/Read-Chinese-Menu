@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { SurvivalCard, SURVIVAL_CATEGORIES, OFFICIAL_CARDS } from './SurvivalData';
 
 interface Props {
@@ -7,8 +8,10 @@ interface Props {
 }
 
 const API_BASE = "https://api.readchinesemenu.com/api/survival";
+const CACHE_KEY = "cached_survival_community";
 
 export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<string>("Safety");
   const [selectedCard, setSelectedCard] = useState<SurvivalCard | null>(null);
   const [communityCards, setCommunityCards] = useState<SurvivalCard[]>([]);
@@ -20,26 +23,34 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
   const [isTranslating, setIsTranslating] = useState(false);
 
   const fetchCommunityCards = useCallback(async () => {
+    // 1. 优先读取本地缓存实现秒开
+    if (communityCards.length === 0) {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) setCommunityCards(JSON.parse(cached));
+    }
+
     setIsLoading(true);
     try {
       const response = await fetch(API_BASE);
       if (response.ok) {
         const data = await response.json();
         setCommunityCards(data);
+        // 2. 存入缓存供下次使用
+        localStorage.setItem(CACHE_KEY, JSON.stringify(data));
       }
     } catch (err) {
       console.error("Failed to fetch cards:", err);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [communityCards.length]);
 
   useEffect(() => {
-    // 性能优化：只有在打开且没有缓存数据时才 fetch
-    if (isOpen && communityCards.length === 0) {
+    // 只要面板打开，就静默执行同步
+    if (isOpen) {
       fetchCommunityCards();
     }
-  }, [isOpen, fetchCommunityCards, communityCards.length]);
+  }, [isOpen, fetchCommunityCards]);
 
   const speak = useCallback((text: string) => {
     if (!window.speechSynthesis) return;
@@ -84,7 +95,7 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           action: 'add', 
-          newCard: { en: newEn, cn: newCn, icon: "✨", votes: 0 } 
+          newCard: { en: newEn, cn: newCn, icon: "✨", votes: 0, category: activeTab === "Community" ? "Street" : activeTab } 
         })
       });
       if (response.ok) {
@@ -99,7 +110,6 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
     }
   };
 
-  // 计算逻辑优化：减少过滤开销
   const filteredCards = useMemo(() => {
     if (activeTab === "Community") {
       return [...communityCards].sort((a, b) => (b.votes || 0) - (a.votes || 0));
@@ -118,8 +128,8 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
       <div className="bg-white border-b border-slate-100 shrink-0">
         <div className="max-w-3xl mx-auto px-6 pt-10 pb-4 flex justify-between items-end">
           <div className="text-left">
-            <p className="text-[9px] font-black text-rose-600 uppercase tracking-widest mb-1">CrowdSourced</p>
-            <h2 className="text-2xl font-black text-slate-900 tracking-tighter">Survival Cards</h2>
+            <p className="text-[9px] font-black text-rose-600 uppercase tracking-widest mb-1">{t('survival.badge')}</p>
+            <h2 className="text-2xl font-black text-slate-900 tracking-tighter">{t('survival.title')}</h2>
           </div>
           <button onClick={onClose} className="w-9 h-9 bg-slate-100 rounded-full flex items-center justify-center text-slate-900 active:scale-90 transition-all">
             <span className="text-lg">✕</span>
@@ -134,7 +144,7 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
             onClick={() => setShowAddForm(true)}
             className="w-full py-4 bg-rose-600 text-white rounded-2xl text-[10px] font-black tracking-widest shadow-lg shadow-rose-100 active:scale-[0.98] transition-all flex items-center justify-center gap-2 uppercase"
           >
-            <span>+ Contribute</span>
+            <span>+ {t('survival.contribute')}</span>
           </button>
 
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
@@ -145,7 +155,7 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
                 className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border shrink-0
                   ${activeTab === cat ? 'bg-slate-900 border-slate-900 text-white' : 'bg-white border-slate-200 text-slate-500'}`}
               >
-                {cat}
+                {t(`survival.categories.${cat}`)}
               </button>
             ))}
             <button
@@ -153,7 +163,7 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
               className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border shrink-0
                 ${activeTab === "Community" ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-white border-slate-200 text-emerald-600'}`}
             >
-              COMMUNITY
+              {t('survival.community')}
             </button>
           </div>
         </div>
@@ -162,9 +172,9 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
       {/* Grid View */}
       <div className="flex-1 overflow-y-auto no-scrollbar bg-slate-50">
         <div className="max-w-3xl mx-auto p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 content-start pb-32 grid-container">
-          {isLoading && communityCards.length === 0 ? (
-            <div className="col-span-full py-20 text-center text-slate-400 font-black animate-pulse uppercase tracking-widest text-[10px]">Loading...</div>
-          ) : filteredCards.map((card) => (
+          
+          {/* 直接渲染卡片，不再等待 isLoading */}
+          {filteredCards.map((card) => (
             <div
               key={card.id || card.en}
               onClick={() => { setSelectedCard(card); speak(card.cn); }}
@@ -172,11 +182,20 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
             >
               <div className="text-3xl text-center">{card.icon}</div>
               <div className="flex flex-col justify-center border-l border-slate-50 pl-2">
-                <p className="text-[14px] font-black text-slate-900 leading-tight italic tracking-tight line-clamp-2 mb-0.5">{card.en}</p>
+                <p className="text-[14px] font-black text-slate-900 leading-tight italic tracking-tight line-clamp-2 mb-0.5">
+                  {card.id ? t(`survival.cards.${card.id}`) : card.en}
+                </p>
                 <p className="text-[12px] font-bold text-slate-400 truncate">{card.cn}</p>
               </div>
             </div>
           ))}
+
+          {/* 仅在完全没有数据且加载时显示占位提示 */}
+          {isLoading && filteredCards.length === 0 && (
+            <div className="col-span-full py-20 text-center text-slate-400 font-black animate-pulse uppercase tracking-widest text-[10px]">
+              {t('survival.loading')}
+            </div>
+          )}
         </div>
       </div>
 
@@ -196,8 +215,10 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
               <div className="text-[6rem] drop-shadow-xl animate-bounce-slow shrink-0">{selectedCard.icon}</div>
               <div className="space-y-4">
                 <div className="space-y-1">
-                  <p className="text-rose-100/40 text-[9px] font-black uppercase tracking-widest">English Request</p>
-                  <h3 className="text-white text-xl font-black italic tracking-tighter line-clamp-2 leading-tight">{selectedCard.en}</h3>
+                  <p className="text-rose-100/40 text-[9px] font-black uppercase tracking-widest">{t('survival.overlay.requestLabel')}</p>
+                  <h3 className="text-white text-xl font-black italic tracking-tighter line-clamp-2 leading-tight">
+                    {selectedCard.id ? t(`survival.cards.${selectedCard.id}`) : selectedCard.en}
+                  </h3>
                 </div>
                 <div className="py-4">
                   <h2 className="text-white text-5xl font-black leading-tight drop-shadow-lg break-words animate-breathe">
@@ -223,21 +244,23 @@ export const SurvivalCardView: React.FC<Props> = ({ isOpen, onClose }) => {
           <form onSubmit={handleSubmit} className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 space-y-6 shadow-2xl relative">
             <button type="button" onClick={() => setShowAddForm(false)} className="absolute top-6 right-6 text-slate-300 font-bold text-lg">✕</button>
             <div className="text-center">
-              <h3 className="text-2xl font-black text-slate-900 tracking-tighter">Share Wisdom</h3>
+              <h3 className="text-2xl font-black text-slate-900 tracking-tighter">{t('survival.form.title')}</h3>
             </div>
             <div className="space-y-4">
               <input 
                 required autoFocus value={newEn} 
                 onChange={e => setNewEn(e.target.value)}
                 onBlur={handleTranslate}
-                placeholder="English Phrase" 
+                placeholder={t('survival.form.placeholder')} 
                 className="w-full bg-slate-50 rounded-xl px-5 py-4 text-sm font-bold text-slate-900 outline-none border-2 border-transparent focus:border-rose-100"
               />
               <div className="w-full bg-slate-900 rounded-xl px-5 py-4 flex items-center">
                 <p className="text-white font-black text-lg">{newCn || (newEn ? "..." : "")}</p>
               </div>
             </div>
-            <button type="submit" className="w-full py-5 rounded-full font-black text-xs bg-rose-600 text-white active:scale-95">Contribute</button>
+            <button type="submit" className="w-full py-5 rounded-full font-black text-xs bg-rose-600 text-white active:scale-95">
+              {t('survival.form.submit')}
+            </button>
           </form>
         </div>
       )}

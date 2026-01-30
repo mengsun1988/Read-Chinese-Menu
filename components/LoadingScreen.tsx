@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChopsticksIcon } from './Icons';
 
 interface LoadingScreenProps {
@@ -11,27 +12,14 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
   mode = 'menu', 
   status = 'analyzing' 
 }) => {
+  const { t } = useTranslation();
   const [msgIdx, setMsgIdx] = useState(0);
   const [progress, setProgress] = useState(0);
 
-  // 1. 感性文案：负责提供“情绪价值”
+  // 1. 感性文案：从 JSON 中获取数组
   const messages = mode === 'menu' 
-    ? [
-        "Preparing chopsticks... 🥢",
-        "Consulting the culinary database... 📚",
-        "Decoding Grandma's secret recipe... 👵",
-        "Identifying spicy levels & allergens... 🔥",
-        "Checking for hidden fats... 🐄",
-        "Almost there, stay hungry!  dumpling"
-      ]
-    : [
-        "Wandering through the alleyways... 🏘️",
-        "Checking the neighborhood map... 📍",
-        "Asking the local shopkeeper... 🏮",
-        "Polishing the storefront sign... ✨",
-        "Identifying hidden gems... 💎",
-        "Almost there, don't get lost! 🚶"
-      ];
+    ? t('loading.menuMessages', { returnObjects: true }) as string[]
+    : t('loading.streetMessages', { returnObjects: true }) as string[];
 
   // 2. 进度条逻辑
   useEffect(() => {
@@ -63,10 +51,10 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
         <div className="text-center space-y-6">
           <div className="text-6xl mb-4 animate-bounce">🥘</div>
           <h2 className="text-white text-5xl font-black italic tracking-tighter animate-in zoom-in duration-700">
-            Bon Appétit!
+            {t('loading.status.success')}
           </h2>
           <p className="text-rose-100 font-bold tracking-widest uppercase text-xs opacity-80 animate-pulse">
-            Enjoy your meal in China
+            {t('loading.enjoy')}
           </p>
         </div>
       </div>
@@ -119,9 +107,9 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
               }`}></span>
             </span>
             <span className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em]">
-              {status === 'compressing' && "Compressing Image..."}
-              {status === 'uploading' && "Sending to AI Server..."}
-              {status === 'analyzing' && "AI Deep Thinking..."}
+              {status === 'compressing' && t('loading.status.compressing')}
+              {status === 'uploading' && t('loading.status.uploading')}
+              {status === 'analyzing' && t('loading.status.analyzing')}
             </span>
           </div>
           <span className="text-sm font-black text-slate-900 tabular-nums">

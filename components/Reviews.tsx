@@ -1,29 +1,6 @@
 import React, { useState } from 'react';
 import { FeedbackType } from '../types';
-
-const REVIEWS = [
-  {
-    name: "Alex",
-    role: "Digital Nomad",
-    text: "Literally a lifesaver in Chengdu. I could finally order something other than fried rice!",
-    rating: 5,
-    avatar: "🎒"
-  },
-  {
-    name: "Sarah",
-    role: "Food Blogger",
-    text: "The allergen detection is what impressed me most. It found peanuts in a dish I usually think is safe.",
-    rating: 5,
-    avatar: "🥘"
-  },
-  {
-    name: "Marco",
-    role: "Backpacker",
-    text: "The 'Speak to Waiter' feature is genius. No more awkward pointing and guessing.",
-    rating: 4,
-    avatar: "🇮🇹"
-  }
-];
+import { useTranslation } from 'react-i18next';
 
 // 纸飞机图标组件
 const SendIcon = () => (
@@ -42,23 +19,41 @@ const SendIcon = () => (
 );
 
 export const Reviews: React.FC = () => {
+  const { t } = useTranslation();
   const [comment, setComment] = useState("");
   const [feedbackType, setFeedbackType] = useState<FeedbackType>('EXPERIENCE');
+
+  // 从 JSON 动态构建评论数组
+  const REVIEWS = [
+    {
+      ...t('reviews.list.rev1', { returnObjects: true }),
+      rating: 5,
+      avatar: "🎒"
+    },
+    {
+      ...t('reviews.list.rev2', { returnObjects: true }),
+      rating: 5,
+      avatar: "🥘"
+    },
+    {
+      ...t('reviews.list.rev3', { returnObjects: true }),
+      rating: 4,
+      avatar: "🇮🇹"
+    }
+  ];
 
   const handleSendEmail = () => {
     if (!comment.trim()) return;
     
-    // 映射标签文案
     const labels: Record<FeedbackType, string> = {
-      'EXPERIENCE': 'Review',
-      'IMPROVEMENT': 'Suggestion',
-      'STORY': 'User Story'
+      'EXPERIENCE': t('reviews.review'),
+      'IMPROVEMENT': t('reviews.suggestions'),
+      'STORY': t('reviews.story')
     };
     
     const subject = encodeURIComponent(`[${labels[feedbackType]}] Read Chinese Menu Feedback`);
     const body = encodeURIComponent(comment);
     
-    // 打开系统邮件客户端
     window.location.href = `mailto:feedback@readchinesemenu.com?subject=${subject}&body=${body}`;
   };
 
@@ -69,10 +64,9 @@ export const Reviews: React.FC = () => {
         <div 
           className="flex flex-row overflow-x-auto gap-4 no-scrollbar snap-x snap-mandatory px-12 -mx-8 py-10 -my-10"
         >
-          {/* 首部占位 */}
           <div className="shrink-0 w-1 md:hidden" />
           
-          {REVIEWS.map((rev, i) => (
+          {REVIEWS.map((rev: any, i) => (
             <div 
               key={i} 
               className="w-[280px] md:w-[360px] bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] shrink-0 snap-center flex flex-col justify-between transition-all duration-500 hover:scale-[1.02] hover:shadow-xl hover:border-rose-100 group"
@@ -100,7 +94,6 @@ export const Reviews: React.FC = () => {
             </div>
           ))}
           
-          {/* 尾部占位 */}
           <div className="shrink-0 w-1 md:hidden" />
         </div>
       </div>
@@ -108,16 +101,20 @@ export const Reviews: React.FC = () => {
       {/* 2. Feedback Card */}
       <div className="w-full bg-slate-900 p-10 md:p-16 rounded-[3rem] text-center space-y-8 border border-white/10 relative overflow-hidden">
         <div className="space-y-2 relative z-10">
-          <h3 className="text-2xl md:text-3xl font-semibold text-white tracking-tight">Enjoying the Experience?</h3>
-          <p className="text-slate-400 font-medium uppercase tracking-[0.2em] text-[10px]">Leave your feedback or share your story</p>
+          <h3 className="text-2xl md:text-3xl font-semibold text-white tracking-tight">
+            {t('reviews.enjoyExperience')}
+          </h3>
+          <p className="text-slate-400 font-medium uppercase tracking-[0.2em] text-[10px]">
+            {t('reviews.leaveFeedback')}
+          </p>
         </div>
 
         <div className="max-w-xl mx-auto space-y-6 relative z-10">
           <div className="flex flex-wrap justify-center gap-2">
             {[
-              { id: 'EXPERIENCE', label: 'Review' },
-              { id: 'IMPROVEMENT', label: 'Suggestions' },
-              { id: 'STORY', label: 'Story' }
+              { id: 'EXPERIENCE', label: t('reviews.review') },
+              { id: 'IMPROVEMENT', label: t('reviews.suggestions') },
+              { id: 'STORY', label: t('reviews.story') }
             ].map((cat) => (
               <button
                 key={cat.id}
@@ -136,7 +133,7 @@ export const Reviews: React.FC = () => {
           <textarea 
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            placeholder="Tell us what you think..."
+            placeholder={t('reviews.tellUs')}
             className="w-full bg-white/5 border border-white/10 rounded-[2rem] p-6 text-white placeholder:text-white/20 focus:outline-none focus:border-rose-500/50 transition-all min-h-[140px] resize-none font-medium text-sm"
           />
 
@@ -145,14 +142,13 @@ export const Reviews: React.FC = () => {
             disabled={!comment.trim()}
             className="group bg-rose-600 hover:bg-rose-500 disabled:opacity-50 disabled:hover:bg-rose-600 text-white font-bold py-4 px-10 rounded-2xl transition-all active:scale-95 text-base flex items-center justify-center gap-3 mx-auto shadow-xl shadow-rose-600/20"
           >
-            <span>Send via Email</span>
+            <span>{t('reviews.sendEmail')}</span>
             <div className="transition-transform group-hover:translate-x-1 group-hover:-translate-y-1">
               <SendIcon />
             </div>
           </button>
         </div>
 
-        {/* 背景装饰文字 */}
         <div className="absolute -bottom-6 -right-6 text-8xl font-black text-white/[0.02] select-none pointer-events-none uppercase italic">
           Feedback
         </div>

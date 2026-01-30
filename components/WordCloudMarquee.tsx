@@ -1,18 +1,5 @@
 import React, { useEffect, useState } from 'react';
-
-const DOMESTIC_DISHES = [
-  "Fish Flavored Shredded Pork (鱼香肉丝)", "Mapo Tofu (麻婆豆腐)", "Peking Duck (北京烤鸭)", 
-  "Soup Dumplings (小笼包)", "Spicy Hot Pot (麻辣香锅)", "Twice-Cooked Pork (回锅肉)", 
-  "Pan-Fried Buns (生煎包)", "Spicy Crayfish (麻辣小龙虾)", "Dan Dan Noodles (担担面)", 
-  "Lanzhou Beef Noodles (兰州牛肉面)", "Scallion Pancake (葱油饼)", "Sweet and Sour Ribs (糖醋排骨)",
-  "Hunan Sautéed Pork (小炒肉)", "Steamed Fish Head with Chili (剁椒鱼头)", "Boiled Fish with Chili (水煮鱼)",
-  "Wonton Soup (馄饨)", "Char Siu (叉烧)", "Hainanese Chicken Rice (海南鸡饭)",
-  "Zha Jiang Mian (炸酱面)", "Rou Jia Mo (肉夹馍)", "Stinky Tofu (臭豆腐)",
-  "Biang Biang Noodles (油泼扯面)", "Lion's Head Meatballs (狮子头)", "Dongpo Pork (东坡肉)",
-  "Bridge Crossing Noodles (过桥米线)", "Claypot Rice (煲仔饭)", "Beef Chow Fun (干炒牛河)",
-  "Kung Pao Chicken (宫保鸡丁)", "Braised Pork Belly (红烧肉)", "White Cut Chicken (白切鸡)",
-  "Stir-fried Pea Shoots (清炒豆苗)", "Preserved Egg Porridge (皮蛋瘦肉粥)", "Maltang (麻辣烫)"
-];
+import { useTranslation } from 'react-i18next';
 
 interface RowProps {
   items: Array<{en: string, cn: string, isHistory?: boolean, fullData?: any}>;
@@ -22,7 +9,7 @@ interface RowProps {
 }
 
 const Row = ({ items, onItemClick, reverse = false, duration = "40s" }: RowProps) => {
-  if (!items.length) return null;
+  if (!items || !items.length) return null;
   
   return (
     <div className="flex overflow-hidden mb-4 select-none w-full">
@@ -36,7 +23,6 @@ const Row = ({ items, onItemClick, reverse = false, duration = "40s" }: RowProps
               <button 
                 key={`${idx}-${i}`} 
                 onClick={() => onItemClick(item)}
-                // 核心改动：bg-white/40 + backdrop-blur 完美融入灰底
                 className={`px-6 py-3 border rounded-full shadow-[0_2px_15px_-3px_rgba(0,0,0,0.04)] flex items-center gap-4 transition-all active:scale-95 whitespace-nowrap backdrop-blur-md ${
                   item.isHistory 
                     ? 'bg-rose-50/60 border-rose-200/50 ring-1 ring-rose-100/50' 
@@ -44,13 +30,11 @@ const Row = ({ items, onItemClick, reverse = false, duration = "40s" }: RowProps
                 }`}
               >
                 <div className="flex flex-col items-start leading-none">
-                  {/* 英文主标题：加重加大 */}
                   <span className={`text-[13px] font-black uppercase tracking-tight mb-1 ${
                     item.isHistory ? 'text-rose-600' : 'text-slate-900'
                   }`}>
                     {item.en}
                   </span>
-                  {/* 中文副标题：缩小淡化 */}
                   <span className={`text-[9px] font-bold tracking-wider ${
                     item.isHistory ? 'text-rose-400' : 'text-slate-400'
                   }`}>
@@ -70,33 +54,59 @@ const Row = ({ items, onItemClick, reverse = false, duration = "40s" }: RowProps
 };
 
 export const WordCloudMarquee: React.FC<{ onShowDetail: (d: any) => void }> = ({ onShowDetail }) => {
+  const { t, i18n } = useTranslation();
   const [displayItems, setDisplayItems] = useState<any[]>([]);
 
   useEffect(() => {
     const loadCloudData = async () => {
-      const baseItems = DOMESTIC_DISHES.map(dish => {
+      // 1. 获取基础菜名数据（容错处理）
+      let dishesFromI18n: string[] = [];
+      try {
+        const rawDishes = t('wordCloud.dishes', { returnObjects: true });
+        dishesFromI18n = Array.isArray(rawDishes) ? rawDishes : [];
+      } catch (e) {
+        dishesFromI18n = [];
+      }
+      
+      const baseItems = dishesFromI18n.map(dish => {
         const [en, cnFull] = dish.split(' (');
-        return { en, cn: cnFull.replace(')', ''), isHistory: false };
+        return { 
+          en: en || dish, 
+          cn: cnFull ? cnFull.replace(')', '') : '', 
+          isHistory: false 
+        };
       });
 
+      // 2. 尝试获取历史数据
       try {
         const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8787' : '';
-        const response = await fetch(`${API_BASE}/api/history`);
-        if (!response.ok) throw new Error();
+        const response = await fetch(`${API_BASE}/api/history`, {
+          // 增加信号，如果请求时间过长则放弃，防止卡死
+          signal: AbortSignal.timeout(3000) 
+        });
+        
+        if (!response.ok) throw new Error("Backend offline");
         const historyData = await response.json();
         
         const historyItems = historyData.map((d: any) => ({
-          en: d.name_en, cn: d.name_cn, isHistory: true, fullData: d 
+          en: d.name_en, 
+          cn: d.name_cn, 
+          isHistory: true, 
+          fullData: d 
         }));
 
         const combined = [...historyItems, ...baseItems];
         setDisplayItems(combined.slice(0, 300));
       } catch (e) {
+        // 如果后端连接失败 (ERR_CONNECTION_REFUSED)，直接使用基础数据，控制台不再抛出未捕获异常
+        console.log("CloudMarquee: Backend not available, showing default dishes.");
         setDisplayItems(baseItems);
       }
     };
+
     loadCloudData();
-  }, []);
+    // 关键：监听 i18n.language 而非 t 函数引用
+  }, [i18n.language, t]); 
 
   const handleItemClick = (item: any) => {
     if (item.isHistory) {
@@ -110,25 +120,34 @@ export const WordCloudMarquee: React.FC<{ onShowDetail: (d: any) => void }> = ({
   if (displayItems.length === 0) return null;
 
   const rowCount = 4;
-  const rows = Array.from({ length: rowCount }, (_, i) => displayItems.filter((_, idx) => idx % rowCount === i));
+  const rows = Array.from({ length: rowCount }, (_, i) => 
+    displayItems.filter((_, idx) => idx % rowCount === i)
+  );
 
   return (
     <div className="w-full relative bg-transparent overflow-hidden">
-      {/* 标题部分按要求保持不动 */}
       <header className="mb-12 space-y-4 text-center px-4 max-w-4xl mx-auto">
         <div className="inline-flex items-center gap-2 px-3 py-1 bg-rose-50 border border-rose-100 rounded-full">
           <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-ping" />
-          <span className="text-[9px] font-bold text-rose-600 uppercase tracking-widest">Traveler Feed</span>
+          <span className="text-[9px] font-bold text-rose-600 uppercase tracking-widest">
+            {t('wordCloud.badge')}
+          </span>
         </div>
-        <h3 className="text-3xl font-black text-slate-900 tracking-tighter uppercase">Recently Identified</h3>
+        <h3 className="text-3xl font-black text-slate-900 tracking-tighter uppercase">
+          {t('wordCloud.title')}
+        </h3>
       </header>
 
-      {/* 词云轨道 */}
       <div className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-[100vw] space-y-2">
-        <Row items={rows[0]} onItemClick={handleItemClick} duration="100s" />
-        <Row items={rows[1]} onItemClick={handleItemClick} reverse duration="80s" />
-        <Row items={rows[2]} onItemClick={handleItemClick} duration="110s" />
-        <Row items={rows[3]} onItemClick={handleItemClick} reverse duration="90s" />
+        {rows.map((rowItems, index) => (
+          <Row 
+            key={index}
+            items={rowItems} 
+            onItemClick={handleItemClick} 
+            reverse={index % 2 !== 0}
+            duration={`${90 + index * 10}s`} 
+          />
+        ))}
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `

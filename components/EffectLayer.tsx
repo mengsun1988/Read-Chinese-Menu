@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface EffectLayerProps {
   trigger: string | null;
@@ -6,6 +7,7 @@ interface EffectLayerProps {
 }
 
 export const EffectLayer: React.FC<EffectLayerProps> = ({ trigger, onComplete }) => {
+  const { t } = useTranslation();
   const [active, setActive] = useState<string | null>(null);
 
   useEffect(() => {
@@ -22,10 +24,16 @@ export const EffectLayer: React.FC<EffectLayerProps> = ({ trigger, onComplete })
 
   if (!active) return null;
 
+  // 辅助函数：解析 Milestone 数字
+  const getMilestoneNum = (str: string) => {
+    const match = str.match(/\d+/);
+    return match ? match[0] : "";
+  };
+
   return (
     <div className="fixed inset-0 pointer-events-none z-[3000] overflow-hidden">
-      {/* 场景 1: 里程碑奖励 (milestone_4, milestone_10, milestone_20) */}
-      {(active === 'milestone_4' || active === 'milestone_4_reward' || active === 'milestone_10' || active === 'milestone_20') && (
+      {/* 场景 1: 里程碑奖励 */}
+      {(active.includes('milestone')) && (
         <div className="absolute inset-0">
           {[...Array(20)].map((_, i) => (
             <div
@@ -41,32 +49,36 @@ export const EffectLayer: React.FC<EffectLayerProps> = ({ trigger, onComplete })
             </div>
           ))}
           <div className="absolute inset-0 flex items-center justify-center animate-message-pop">
-            <div className="bg-white/90 backdrop-blur-xl border-2 border-rose-500 px-8 py-4 rounded-[2rem] shadow-2xl">
+            <div className="bg-white/90 backdrop-blur-xl border-2 border-rose-500 px-8 py-4 rounded-[2rem] shadow-2xl text-center">
               <p className="text-rose-600 font-black text-xl italic uppercase tracking-tighter">
-                {active === 'milestone_4' ? 'Reward Unlocked! +50 Credits' : 
-                 active === 'milestone_10' ? 'Milestone 10! +50 Credits' :
-                 active === 'milestone_20' ? 'Milestone 20! +50 Credits' :
-                 'Reward Unlocked! +50 Credits'}
+                {active.includes('milestone') && !active.includes('reward') 
+                  ? t('effects.milestoneReached', { num: getMilestoneNum(active) }) 
+                  : t('effects.rewardUnlocked')}
+              </p>
+              <p className="text-rose-400 font-bold text-sm uppercase">
+                {t('effects.plusCredits', { count: 50 })}
               </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* 场景 2: 每日分享奖励 (share_bonus 或 daily_share_bonus) */}
+      {/* 场景 2: 每日分享奖励 */}
       {(active === 'share_bonus' || active === 'daily_share_bonus') && (
         <div className="absolute inset-0 flex items-center justify-center animate-message-pop">
-            <div className="bg-emerald-600 text-white px-8 py-4 rounded-[2rem] shadow-2xl flex items-center gap-3">
+            <div className="bg-emerald-600 text-white px-8 py-4 rounded-[2rem] shadow-2xl flex items-center gap-3 border-2 border-white/20">
               <span className="text-2xl">⚡</span>
-              <p className="font-black uppercase tracking-widest text-sm">Boosted! +50 Credits</p>
+              <div className="flex flex-col">
+                <p className="font-black uppercase tracking-widest text-sm leading-none">{t('effects.boosted')}</p>
+                <p className="font-bold text-[10px] opacity-80 mt-1">{t('effects.plusCredits', { count: 50 })}</p>
+              </div>
             </div>
         </div>
       )}
 
-      {/* 场景 3: 游戏获胜奖励 (game_bonus 或 game_win_reward) */}
+      {/* 场景 3: 游戏获胜奖励 */}
       {(active === 'game_bonus' || active === 'game_win_reward') && (
         <div className="absolute inset-0">
-          {/* 向上喷发的星星 */}
           {[...Array(12)].map((_, i) => (
             <div
               key={i}
@@ -81,8 +93,12 @@ export const EffectLayer: React.FC<EffectLayerProps> = ({ trigger, onComplete })
           ))}
           <div className="absolute inset-0 flex items-center justify-center animate-message-pop">
             <div className="bg-slate-900 border border-emerald-400/50 text-white px-8 py-4 rounded-[2rem] shadow-2xl flex flex-col items-center">
-              <span className="text-emerald-400 font-black text-2xl italic tracking-tighter">+10 CREDITS</span>
-              <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/50 mt-1">Master Mind Bonus</span>
+              <span className="text-emerald-400 font-black text-2xl italic tracking-tighter">
+                {t('effects.plusCredits', { count: 10 }).toUpperCase()}
+              </span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/50 mt-1">
+                {t('effects.masterMindBonus')}
+              </span>
             </div>
           </div>
         </div>
