@@ -215,7 +215,7 @@ export const HomeIdleView: React.FC<Props> = ({
 
       {/* 4. Footer & Sections */}
       <div className="w-full space-y-24 pb-20 bg-slate-50 border-t border-slate-100">
-        <div id="pricing-section" className="max-w-4xl mx-auto px-4 pt-20 animate-in slide-in-from-bottom-6 duration-700">
+        <div id="pricing-section" className="max-w-4xl mx-auto px-4 pt-20 animate-in slide-in-from-bottom-6 duration-300">
           <SupportSection onPurchase={onPurchase} credits={totalCredits} />
         </div>
 

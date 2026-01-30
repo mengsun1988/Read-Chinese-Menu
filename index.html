@@ -20,6 +20,7 @@
   </script>
 
   <title>Read Chinese Menus | AI Menu Translator (日本語, 한국어, Français, etc.)</title>
+  
   <meta name="description" content="AI-powered tool to translate Chinese menus & storefronts. Supports English, 日本語, 한국어, Français, Deutsch, Italiano, Español, Русский, ไทย, Indonesian, Malay, and Arabic. Instantly identify hidden lard, animal fats, and allergens.">
   <meta name="keywords" content="chinese menu translation, 中国語メニュー 翻訳, 中国語 お品書き 読み方, 中華料理 翻訳, travel china, restaurant guide, allergen detection, storefront translator, foreigner chinese dining, menu decoder, china travel app">
   
@@ -62,7 +63,7 @@
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Roboto:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Roboto:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
   
   <link rel="stylesheet" href="/src/styles/tokens.css">
   <style>
@@ -70,6 +71,11 @@
       --font-title: 'Poppins', sans-serif;
       --font-body: 'Roboto', sans-serif;
       --font-zh: 'Noto Sans SC', sans-serif;
+    }
+    /* 强制 LCP 元素 (h1) 字体显示优化 */
+    h1 {
+      font-family: var(--font-title);
+      font-display: swap; 
     }
     body {
       font-family: var(--font-body);
@@ -118,7 +124,6 @@
 </head>
 <body>
   <div id="root"></div>
-
   <script type="module" src="/index.tsx"></script>
 </body>
 </html>
