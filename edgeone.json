@@ -1,14 +1,14 @@
 {
   "redirects": [
     {
-      "source": "/*",
+      "source": "/:path*",
       "has": [
         {
           "type": "host",
           "value": "readchinesemenu.com"
         }
       ],
-      "destination": "https://www.readchinesemenu.com/:path",
+      "destination": "https://www.readchinesemenu.com/:path*",
       "statusCode": 301
     }
   ]
