@@ -1,0 +1,28 @@
+{
+  "name": "Read Chinese Menus",
+  "short_name": "Chinese Menu",
+  "start_url": "/?mode=pwa",
+  "display": "standalone",
+  "background_color": "#fcfbf9",
+  "theme_color": "#e11d48",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
