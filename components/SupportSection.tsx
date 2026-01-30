@@ -157,13 +157,13 @@ export const SupportSection: React.FC<{
                 key={tier.id} 
                 data-id={tier.id}
                 ref={tier.id === 'coffee' ? middleCardRef : null}
-                className={`support-card snap-center shrink-0 w-[240px] md:w-full bg-white/95 backdrop-blur-md p-6 rounded-[2.5rem] border transition-all duration-500 ease-out flex flex-col items-center group relative ${
+                className={`support-card snap-center shrink-0 w-[220px] md:w-full bg-white/95 backdrop-blur-md p-6 rounded-[2.5rem] border transition-all duration-500 ease-out flex flex-col items-center group relative ${
                   isCenter 
                     ? 'border-orange-400 z-10 shadow-xl scale-110 opacity-100' 
                     : 'border-orange-100 shadow-sm opacity-50 scale-90'
                 } ${isSelected ? 'ring-[6px] ring-orange-100' : ''}`}
               >
-                <div className="h-6 mb-2">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20">
                   {tier.id === 'coffee' && (
                     <div className={`bg-orange-600 text-white text-[8px] font-black px-3 py-1 rounded-full shadow-lg transition-opacity duration-300 ${isCenter ? 'opacity-100' : 'opacity-0'}`}>
                       {t('pricing.sevenDayPass.highlightText')}
@@ -178,14 +178,14 @@ export const SupportSection: React.FC<{
                   <span className="text-[9px] font-bold text-emerald-600 mt-1 uppercase tracking-widest">{tier.meals}</span>
                 </div>
 
-                <div className={`text-5xl mb-4 transition-transform duration-700 ${isCenter ? 'scale-110 rotate-3' : 'scale-90 opacity-50'}`}>
+                <div className={`text-4xl mb-4 transition-transform duration-700 ${isCenter ? 'scale-110 rotate-3' : 'scale-90 opacity-50'}`}>
                   {tier.icon}
                 </div>
                 
                 <h4 className="text-sm font-black text-slate-900 mb-1 uppercase tracking-tight leading-none">{tier.name}</h4>
                 <p className="text-2xl font-black text-orange-600 uppercase tracking-tighter mb-4">{tier.price}</p>
                 
-                <p className="text-[10px] text-slate-400 font-bold mb-6 h-12 flex items-center justify-center leading-relaxed px-2 text-center">
+                <p className="text-[10px] text-slate-400 font-bold mb-5 h-8 flex items-center justify-center leading-relaxed px-2 text-center">
                   {tier.description}
                 </p>
 

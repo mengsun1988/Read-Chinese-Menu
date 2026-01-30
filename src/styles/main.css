@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+@theme {
+  /* 强制覆盖 rose-600 为你指定的招牌色 */
+  --color-rose-600: #e11d48; 
+  /* 或者定义一个语义化颜色 */
+  --color-brand-red: #e11d48;
+}
+
+@import "./tokens.css";

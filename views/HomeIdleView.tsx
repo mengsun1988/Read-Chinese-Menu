@@ -93,17 +93,7 @@ export const HomeIdleView: React.FC<Props> = ({
 
   return (
     <div className="animate-in fade-in duration-700 w-full overflow-x-hidden bg-slate-50">
-      {/* 1. Sticky Bar */}
-      <div 
-        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-        className={`fixed top-4 left-1/2 -translate-x-1/2 z-[150] h-10 px-6 flex items-center justify-center transition-all duration-500 cursor-pointer rounded-full ${
-          isScrolled ? 'translate-y-0 opacity-100 bg-rose-600 shadow-[0_8px_30px_rgb(225,29,72,0.4)]' : '-translate-y-20 opacity-0 bg-transparent'
-        }`}
-      >
-        <span className="text-white font-black text-[10px] tracking-widest uppercase">{t('home.pageTitle')}</span>
-      </div>
-
-      {/* 2. Hero Section */}
+        {/* 2. Hero Section */}
       <header className="mb-12 space-y-8 text-center pt-20 px-4 max-w-4xl mx-auto">
         <div className="space-y-4">
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-rose-50 border border-rose-100 rounded-full shadow-sm">

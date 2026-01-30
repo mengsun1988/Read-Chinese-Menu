@@ -295,7 +295,7 @@ const App: React.FC = () => {
         
         {/* 悬浮红色胶囊 Header */}
         <div className="fixed top-4 left-0 right-0 z-[5000] px-4 pointer-events-none">
-          <header className="max-w-xl mx-auto h-14 bg-rose-500 rounded-full shadow-[0_10px_30px_rgba(244,63,94,0.4)] flex items-center justify-between px-6 pointer-events-auto">
+          <header className="max-w-4xl mx-auto h-14 bg-rose-600 rounded-full shadow-[0_10px_30px_rgba(244,63,94,0.4)] flex items-center justify-between px-6 pointer-events-auto">
             {/* 左侧文字标题 */}
             <div className="flex items-center">
               <h1 className="text-white font-black text-sm uppercase tracking-tighter">
@@ -321,12 +321,12 @@ const App: React.FC = () => {
               {isLangMenuOpen && (
                 <>
                   <div className="fixed inset-0 z-[-1]" onClick={() => setIsLangMenuOpen(false)} />
-                  <div className="absolute right-0 mt-4 w-52 bg-white rounded-[2rem] shadow-[0_25px_60px_rgba(0,0,0,0.15)] border border-slate-100 p-2.5 grid grid-cols-1 gap-1 animate-in fade-in zoom-in-95 slide-in-from-top-4 duration-300">
+                  <div className="absolute right-0 mt-4 w-35 bg-white rounded-[2rem] shadow-[0_25px_60px_rgba(0,0,0,0.15)] border border-slate-100 p-2.5 grid grid-cols-1 gap-1 animate-in fade-in zoom-in-95 slide-in-from-top-4 duration-300">
                     {SUPPORTED_LANGS.map((lang) => (
                       <button
                         key={lang.code}
                         onClick={() => changeLanguage(lang.code)}
-                        className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all active:scale-95 ${i18n.language.startsWith(lang.code) ? 'bg-rose-500 text-white shadow-lg' : 'hover:bg-slate-50 text-slate-600'}`}
+                        className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all active:scale-95 ${i18n.language.startsWith(lang.code) ? 'bg-rose-600 text-white shadow-lg' : 'hover:bg-slate-50 text-slate-600'}`}
                       >
                         <span className="text-xs font-bold tracking-tight">{lang.label}</span>
                         <span className={`text-[9px] font-black uppercase ${i18n.language.startsWith(lang.code) ? 'text-white/60' : 'text-slate-300'}`}>
