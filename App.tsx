@@ -119,47 +119,50 @@ const App: React.FC = () => {
     if (element) element.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
-  // 初始化：处理 URL 参数加载语言与页面方向 (优化英语兜底逻辑)
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const langParam = urlParams.get('lang');
-    
-    let targetLang = 'en'; // 默认英语
-    if (langParam) {
-      const matched = SUPPORTED_LANGS.find(l => langParam.startsWith(l.code));
-      if (matched) targetLang = matched.code;
+// ... 其他 useState 定义
+
+// 1. 这一行放在这里（组件顶层）
+const lastLangRef = useRef(i18n.language);
+
+// 2. 紧接着就是这个 useEffect，直接替换你刚才的那段
+useEffect(() => {
+  // 核心逻辑：只有状态成功、有菜品、且语言确实变了才执行
+  if (
+    status !== AppStatus.SUCCESS || 
+    !selectedDish || 
+    i18n.language === lastLangRef.current
+  ) {
+    // 同步语言状态，防止逻辑断层
+    lastLangRef.current = i18n.language;
+    return;
+  }
+
+  let ignore = false; 
+  lastLangRef.current = i18n.language;
+
+  const refreshDetail = async () => {
+    try {
+      const res = await getDishDeepDetail(
+        selectedDish.name_cn,
+        selectedDish.name_en,
+        i18n.language
+      );
+
+      if (!ignore && res) {
+        setSelectedDish(prev => (prev ? { ...prev, ...res } : null));
+        setDishes(prev =>
+          prev.map(d => (d.name_cn === selectedDish.name_cn ? { ...d, ...res } : d))
+        );
+      }
+    } catch (e) {
+      console.error("Language sync failed", e);
     }
+  };
 
-    i18n.changeLanguage(targetLang);
-    const config = SUPPORTED_LANGS.find(l => l.code === targetLang) || SUPPORTED_LANGS[0];
-    document.documentElement.dir = config.rtl ? 'rtl' : 'ltr';
-    document.documentElement.lang = targetLang;
-    document.title = t('site.title');
-  }, []);
+  refreshDetail();
 
-  useEffect(() => {
-    document.title = t('site.title');
-  }, [t]);
-
-  // 识别成功后，根据用户实时切换的语言同步深度解析详情
-  useEffect(() => {
-    if (selectedDish && status === AppStatus.SUCCESS) {
-      const refreshDetail = async () => {
-        try {
-          const res = await getDishDeepDetail(selectedDish.name_cn, selectedDish.name_en, i18n.language);
-          if (res) {
-            setSelectedDish((prev: any) => ({ ...prev, ...res }));
-            setDishes(prev => prev.map(d => 
-              (d.name_cn === selectedDish.name_cn) ? { ...d, ...res } : d
-            ));
-          }
-        } catch (e) {
-          console.error("Language sync failed", e);
-        }
-      };
-      refreshDetail();
-    }
-  }, [i18n.language]);
+  return () => { ignore = true; }; 
+}, [i18n.language, status]); // 移除 selectedDish 依赖，更精准
 
   const getCompressedBase64 = (file: File): Promise<string> => {
     return new Promise((resolve) => {
