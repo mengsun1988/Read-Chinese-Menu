@@ -3,37 +3,39 @@ import { initReactI18next } from 'react-i18next';
 import HttpApi from 'i18next-http-backend';
 import LanguageDetector from 'i18next-browser-languagedetector';
 
-// 路径解释：从 src/i18n/ 向上退两级到根目录，再进入 public
-import enPayload from '../../public/locales/en.json'; 
+// 导入英文包
+import enPayload from '../../public/locales/en.json';
 
 i18n
   .use(HttpApi)
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
-    // 关键优化：预载英文，消除首屏白屏
+    fallbackLng: 'en',
+    // 关键点 1：初始语言设置为 en 时，直接使用内存中的资源
+    // 这样加载首页（英文）就不需要发起 HTTP 请求
     resources: {
       en: { translation: enPayload }
     },
-    fallbackLng: 'en',
     debug: false,
     interpolation: {
       escapeValue: false,
     },
     backend: {
-      // 其他语言依然按需从服务器加载
+      // 关键点 2：确保路径绝对正确
       loadPath: '/locales/{{lng}}.json',
+      // 防止缓存导致切换不及时
+      queryStringParams: { v: '1.0.0' } 
     },
     detection: {
+      // 关键点 3：必须把 querystring 放在第一位，才能响应 ?lang= 变化
       order: ['querystring', 'localStorage', 'navigator'],
       lookupQuerystring: 'lang',
       caches: ['localStorage'],
       convertDetectedLanguage: (lng) => lng.replace(/-.*/, ''),
     },
-    react: {
-      // 英文环境现在无需等待，直接渲染
-      useSuspense: true, 
-    },
+    // 允许在没有加载完所有资源时渲染 fallbackLng
+    partialBundledLanguages: true,
   });
 
 export default i18n;

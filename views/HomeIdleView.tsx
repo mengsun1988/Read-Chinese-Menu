@@ -92,18 +92,26 @@ export const HomeIdleView: React.FC<Props> = ({
   ];
 
   return (
-    <div className="animate-in fade-in duration-700 w-full overflow-x-hidden bg-slate-50">
-        {/* 2. Hero Section */}
-      <header className="mb-12 space-y-8 text-center pt-20 px-4 max-w-4xl mx-auto">
-        <div className="space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-rose-50 border border-rose-100 rounded-full shadow-sm">
-            <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse" />
-            <span className="text-[9px] font-bold text-rose-600 uppercase tracking-widest">{t('home.chinaTravelMate')}</span>
-          </div>
-          <h1 className="text-5xl md:text-7xl font-bold text-slate-900 tracking-tighter leading-tight">
-             Read Chinese Menu
-          </h1>
-        </div>
+<div className="animate-in fade-in duration-700 w-full overflow-x-hidden bg-slate-50">
+  {/* 2. Hero Section */}
+  <header className="mb-10 space-y-6 text-center pt-16 px-4 max-w-4xl mx-auto">
+    <div className="space-y-4">
+      {/* 优化：减少阴影计算，使用更轻量的类名 */}
+      <div className="inline-flex items-center gap-2 px-3 py-1 bg-rose-50 border border-rose-100 rounded-full">
+        <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse" />
+        <span className="text-[9px] font-bold text-rose-600 uppercase tracking-widest">{t('home.chinaTravelMate')}</span>
+      </div>
+      
+      {/* 修改点 1：text-5xl -> text-4xl，微调字体大小 */}
+      {/* 修改点 2：将 Chinese Menu 包裹在 span 中并设为红色 */}
+      {/* 修改点 3：添加 content-visibility 提示浏览器优化渲染 */}
+      <h1 
+        className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter leading-[1.1]"
+        style={{ contentVisibility: 'auto' }} 
+      >
+        Read <span className="text-rose-600">Chinese Menu</span>
+      </h1>
+    </div>
 
         <div className="space-y-6">
           <div className="text-slate-500 font-medium text-sm md:text-base leading-relaxed max-w-md mx-auto">
