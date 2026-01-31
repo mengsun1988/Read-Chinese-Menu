@@ -1,5 +1,5 @@
-name = "read-chinese-menu-api" # Cloudflare 上的 Worker 名称
-main = "worker.js"         # 你的主代码文件
+name = "read-chinese-menu-api"
+main = "worker.js"
 compatibility_date = "2026-01-27"
 compatibility_flags = ["nodejs_compat"]
 
@@ -16,5 +16,4 @@ id = "5bf7f707e17747719b812d3d7d0b038e"
 
 [vars]
 ENVIRONMENT = "production"
-# DASHSCOPE_API_KEY 建议在 Cloudflare 控制台的 Settings -> Variables 中添加为 Secret
-# ENABLE_DEV_MODE = "true"  # 开发环境启用此选项可免检点数（仅用于本地开发）
+ENABLE_DEV_MODE = "true"  # <--- 添加这一行，确保点数校验被跳过

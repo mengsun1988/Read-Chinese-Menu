@@ -1,7 +1,17 @@
+/* [方案二] 只保留 Poppins 800 权重给 Logo 和大标题 */
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('/fonts/poppins-v24-latin-800.woff2') format('woff2');
+}
+
 :root {
-  /* 字体回归 Poppins：保持品牌现代感 */
-  --font-heading: "Poppins", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  --font-body: "Poppins", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  /* 标题变量使用 Poppins */
+  --font-heading: "Poppins", system-ui, -apple-system, sans-serif;
+  /* 正文变量完全使用原生系统字体 */
+  --font-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
   /* 颜色修正：翡翠绿 */
   --color-primary: #e11d48;     /* Rose 600 */
@@ -17,18 +27,17 @@
   --shadow-ios: 0 10px 40px rgba(0, 0, 0, 0.04);
 }
 
-/* 全局基础设置 */
+/* 全局基础设置：默认使用原生正文 */
 body {
   font-family: var(--font-body);
   background-color: var(--color-background) !important;
   color: var(--color-text);
   -webkit-font-smoothing: antialiased;
-  /* Poppins 字符间距微调，避免字间距过宽 */
-  letter-spacing: -0.01em; 
+  letter-spacing: normal; /* 系统字体不需要间距微调 */
 }
 
-/* 标题排版：利用 Poppins 的粗体优势 */
-h1, h2, h3, .font-title {
+/* 核心逻辑：所有标题标签和大尺寸类名强制使用 Poppins */
+h1, h2, h3, h4, .font-title, .text-xl, .text-2xl, .text-3xl, .text-4xl, .text-5xl {
   font-family: var(--font-heading) !important;
   font-weight: 800 !important;
   letter-spacing: -0.03em !important;

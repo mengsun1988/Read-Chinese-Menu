@@ -26,9 +26,10 @@ try {
 
 /**
  * --- PAYPAL CONFIGURATION ---
+ * 统一在顶层管理，App.tsx 内部不再声明
  */
 const paypalOptions = {
-  clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || "sb",
+  clientId: "Ac071qoDgiNf6B4M9f6s589LM97KMsJglC_3P6EaM7rw-6WLCf7lLNQeG1ixLX_Mib9nbBMODmxApG7e",
   currency: "USD",
   intent: "capture",
   components: "buttons",
@@ -43,9 +44,8 @@ if (rootElement) {
 
   root.render(
     <React.StrictMode>
-      {/* 将 fallback 设为 null。
-        这样在 React 准备就绪前，用户会持续看到 index.html 中定义的原生 Loading 动画，
-        避免了从 "原生 Loading" 跳到 "Reading menu..." 再跳到 "App 内容" 的多次闪烁。
+      {/* fallback 设为 null 是非常聪明的做法。
+        它能无缝承接 index.html 里的原生 LCP 渲染，直到 i18n 资源和 JS 逻辑全部就绪。
       */}
       <Suspense fallback={null}>
         <PayPalScriptProvider options={paypalOptions}>

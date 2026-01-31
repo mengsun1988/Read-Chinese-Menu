@@ -1,13 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { RecognitionMode, UserUsage } from '../types';
 import { CameraIcon, MessageSquareIcon } from '../components/Icons';
-import { WordCloudMarquee } from '../components/WordCloudMarquee';
-import { PricingModule } from '../components/PricingModule';
-import { AboutUs } from '../components/AboutUs';
-import { Reviews } from '../components/Reviews';
-import { SupportSection } from '../components/SupportSection';
-import MenuMasterMind from '../components/MenuMasterMind'; 
 import { useTranslation } from 'react-i18next';
+
+// [Performance] 1. 核心资源：保持同步导入，确保首屏渲染速度
+import { WordCloudMarquee } from '../components/WordCloudMarquee';
+
+// [Performance] 2. 非核心资源：改为动态导入，显著减小首屏 JS 体积
+const PricingModule = lazy(() => import('../components/PricingModule').then(m => ({ default: m.PricingModule })));
+const AboutUs = lazy(() => import('../components/AboutUs').then(m => ({ default: m.AboutUs })));
+const Reviews = lazy(() => import('../components/Reviews').then(m => ({ default: m.Reviews })));
+const SupportSection = lazy(() => import('../components/SupportSection').then(m => ({ default: m.SupportSection })));
+const MenuMasterMind = lazy(() => import('../components/MenuMasterMind'));
 
 interface Props {
   mode: RecognitionMode;
@@ -92,26 +96,20 @@ export const HomeIdleView: React.FC<Props> = ({
   ];
 
   return (
-<div className="animate-in fade-in duration-700 w-full overflow-x-hidden bg-slate-50">
-  {/* 2. Hero Section */}
-  <header className="mb-10 space-y-6 text-center pt-16 px-4 max-w-4xl mx-auto">
-    <div className="space-y-4">
-      {/* 优化：减少阴影计算，使用更轻量的类名 */}
-      <div className="inline-flex items-center gap-2 px-3 py-1 bg-rose-50 border border-rose-100 rounded-full">
-        <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse" />
-        <span className="text-[9px] font-bold text-rose-600 uppercase tracking-widest">{t('home.chinaTravelMate')}</span>
-      </div>
-      
-      {/* 修改点 1：text-5xl -> text-4xl，微调字体大小 */}
-      {/* 修改点 2：将 Chinese Menu 包裹在 span 中并设为红色 */}
-      {/* 修改点 3：添加 content-visibility 提示浏览器优化渲染 */}
-      <h1 
-        className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter leading-[1.1]"
-        style={{ contentVisibility: 'auto' }} 
-      >
-        Read <span className="text-rose-600">Chinese Menu</span>
-      </h1>
-    </div>
+    <div className="animate-in fade-in duration-500 w-full overflow-x-hidden bg-slate-50">
+      {/* 1. Hero Section */}
+      <header className="mb-10 space-y-6 text-center pt-16 px-4 max-w-4xl mx-auto">
+        <div className="space-y-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-rose-50 border border-rose-100 rounded-full">
+            <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse" />
+            <span className="text-[9px] font-bold text-rose-600 uppercase tracking-widest">{t('home.chinaTravelMate')}</span>
+          </div>
+          
+          {/* 【LCP 核心】大小写已恢复，类名对齐 index.html 的静态渲染 */}
+          <h1 className="lcp-title text-4xl md:text-6xl font-black text-slate-800 tracking-tighter leading-[1.1]">
+            Read <span className="text-rose-600">Chinese Menu</span>
+          </h1>
+        </div>
 
         <div className="space-y-6">
           <div className="text-slate-500 font-medium text-sm md:text-base leading-relaxed max-w-md mx-auto">
@@ -129,9 +127,8 @@ export const HomeIdleView: React.FC<Props> = ({
         </div>
       </header>
 
-      {/* 3. Interaction Area */}
+      {/* 2. Interaction Area */}
       <div className="max-w-lg mx-auto px-6 mb-16 space-y-5">
-        {/* Daily Share Reward */}
         {(!usage.dailyShareDate || usage.dailyShareDate !== new Date().toISOString().split('T')[0]) && usage.shareCount < 5 && (
           <div className="animate-in slide-in-from-top-4 duration-500">
             <button onClick={onHandleDailyShare} className="w-full bg-emerald-50/50 border border-emerald-100/80 p-5 rounded-[2.5rem] flex items-center justify-between group hover:bg-emerald-100/40 transition-all active:scale-98 shadow-sm">
@@ -139,7 +136,7 @@ export const HomeIdleView: React.FC<Props> = ({
                 <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-xl shadow-sm group-hover:rotate-12 transition-transform">🎁</div>
                 <div>
                   <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-1">{t('common.dailyReward')}</p>
-                  <p className="text-xs font-bold text-slate-900">{t('common.shareForCredits')}</p>
+                  <p className="text-xs font-bold text-slate-800">{t('common.shareForCredits')}</p>
                 </div>
               </div>
               <span className="bg-emerald-600 text-white px-3 py-1.5 rounded-full text-[8px] font-black shadow-md shadow-emerald-200 uppercase tracking-wider">{t('common.share')}</span>
@@ -147,7 +144,6 @@ export const HomeIdleView: React.FC<Props> = ({
           </div>
         )}
 
-        {/* Mode Switcher */}
         <div className="bg-slate-200/40 p-1.5 rounded-[2rem] flex gap-1 border border-slate-200/50 w-full relative">
           <button 
             onClick={() => onModeChange(RecognitionMode.MENU)} 
@@ -166,11 +162,10 @@ export const HomeIdleView: React.FC<Props> = ({
           </button>
           <button onClick={() => onModeChange(RecognitionMode.STREET)} className={`relative flex-1 h-[54px] flex items-center justify-center rounded-[1.4rem] text-[10px] font-black uppercase tracking-widest transition-all ${mode === RecognitionMode.STREET ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-500'}`}>
             {t('home.storefront')}
-            <span className="absolute -top-2 -right-1 bg-amber-400 text-[8px] text-slate-900 px-2 py-0.5 rounded-md font-black shadow-sm border border-white whitespace-nowrap h-[18px] flex items-center">{t('home.free')}</span>
+            <span className="absolute -top-2 -right-1 bg-amber-400 text-[8px] text-slate-800 px-2 py-0.5 rounded-md font-black shadow-sm border border-white whitespace-nowrap h-[18px] flex items-center">{t('home.free')}</span>
           </button>
         </div>
 
-        {/* Main Upload Card */}
         <div className="bg-white border border-slate-200/60 p-10 text-center flex flex-col items-center shadow-[0_15px_40px_rgba(0,0,0,0.03)] rounded-[3.5rem] relative overflow-hidden group hover:shadow-[0_20px_50px_rgba(225,29,72,0.08)] hover:border-rose-100 hover:-translate-y-1.5 transition-all duration-700">
           <div className={`absolute -top-24 -right-24 w-48 h-48 blur-3xl opacity-[0.06] rounded-full transition-colors duration-1000 ${mode === RecognitionMode.MENU ? 'bg-rose-500' : 'bg-slate-900'}`} />
           
@@ -178,7 +173,7 @@ export const HomeIdleView: React.FC<Props> = ({
             <CameraIcon className="w-10 h-10 text-white" />
           </button>
           
-          <h2 className="text-3xl font-black text-slate-900 mb-6 tracking-tighter">{mode === RecognitionMode.MENU ? t('common.scanMenu') : t('common.exploreSigns')}</h2>
+          <h2 className="text-3xl font-black text-slate-800 mb-6 tracking-tighter">{mode === RecognitionMode.MENU ? t('common.scanMenu') : t('common.exploreSigns')}</h2>
           
           <button onClick={(e) => handleMainAction(e)} className="w-full bg-slate-900 text-white font-black py-5 rounded-full shadow-xl shadow-slate-200 hover:bg-slate-800 hover:-translate-y-0.5 active:translate-y-0 transition-all uppercase tracking-[0.2em] text-xs">
             {t('common.uploadImage')}
@@ -190,12 +185,11 @@ export const HomeIdleView: React.FC<Props> = ({
             </span>
             <div className="flex items-center gap-2">
               <div className={`w-1.5 h-1.5 rounded-full ${totalCredits >= 50 || isUnlimited ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
-              <span className="text-[9px] font-black uppercase tracking-widest text-slate-900 opacity-40">{renderSubtext()}</span>
+              <span className="text-[9px] font-black uppercase tracking-widest text-slate-800 opacity-40">{renderSubtext()}</span>
             </div>
           </div>
         </div>
 
-        {/* Game Entry */}
         <button 
           onClick={() => setShowGame(true)}
           className="w-full bg-emerald-600 border border-emerald-500/50 p-8 rounded-[3rem] flex items-center gap-6 shadow-xl shadow-emerald-100 active:scale-[0.98] hover:shadow-2xl hover:shadow-emerald-200/50 hover:-translate-y-1 transition-all group"
@@ -210,74 +204,77 @@ export const HomeIdleView: React.FC<Props> = ({
           <span className="text-white/40 font-black text-xl group-hover:translate-x-1 transition-transform">→</span>
         </button>
 
-        {/* Survival Cards Entry */}
         <button onClick={onOpenSurvival} className="group relative w-full bg-white border border-slate-200/40 p-8 rounded-[3rem] flex items-center gap-6 shadow-md active:scale-[0.98] hover:shadow-xl hover:border-rose-100/50 hover:-translate-y-1 transition-all">
           <div className="w-14 h-14 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600 shrink-0 group-hover:bg-rose-600 group-hover:text-white transition-all duration-300"><MessageSquareIcon className="w-8 h-8" /></div>
           <div className="text-left flex-1">
-            <h3 className="text-slate-900 text-xl font-black tracking-tight uppercase leading-none">{t('home.survivalCards')}</h3>
+            <h3 className="text-slate-800 text-xl font-black tracking-tight uppercase leading-none">{t('home.survivalCards')}</h3>
             <p className="text-slate-400 text-[11px] font-bold mt-1">{t('home.commonPhrases')}</p>
           </div>
           <span className="text-slate-200 font-bold group-hover:translate-x-2 transition-transform">→</span>
         </button>
       </div>
 
-      {/* 4. Footer & Sections */}
-      <div className="w-full space-y-24 pb-20 bg-slate-50 border-t border-slate-100">
-        <div id="pricing-section" className="max-w-4xl mx-auto px-4 pt-20 animate-in slide-in-from-bottom-6 duration-300">
-          <SupportSection onPurchase={onPurchase} credits={totalCredits} />
-        </div>
+      {/* 3. Footer & Sections - 使用 Suspense 包裹懒加载组件 */}
+      <Suspense fallback={<div className="h-40 flex items-center justify-center text-slate-200">...</div>}>
+        <div className="w-full space-y-24 pb-20 bg-slate-50 border-t border-slate-100">
+          <div id="pricing-section" className="max-w-4xl mx-auto px-4 pt-20">
+            <SupportSection onPurchase={onPurchase} credits={totalCredits} />
+          </div>
 
-        <div className="max-w-5xl mx-auto px-4">
-          <PricingModule onPurchase={onPurchase} />
-        </div>
+          <div className="max-w-5xl mx-auto px-4">
+            <PricingModule onPurchase={onPurchase} />
+          </div>
 
-        <div className="py-20 border-y border-slate-200/30 bg-white/30 backdrop-blur-sm">
-          <WordCloudMarquee onShowDetail={onShowDishDetail} />
-        </div>
+          <div className="py-20 border-y border-slate-200/30 bg-white/30 backdrop-blur-sm">
+            <WordCloudMarquee onShowDetail={onShowDishDetail} />
+          </div>
 
-        <div className="max-w-4xl mx-auto px-4">
-          <AboutUs />
-        </div>
-        
-        <div className="space-y-8 w-full">
-          <h3 className="text-center text-3xl font-black text-slate-900 uppercase tracking-tighter">{t('home.gourmetFeed')}</h3>
-          <div className="flex overflow-x-auto gap-6 pb-4 snap-x snap-mandatory no-scrollbar px-[5vw]">
-            <Reviews isHorizontal />
+          <div className="max-w-4xl mx-auto px-4">
+            <AboutUs />
+          </div>
+          
+          <div className="space-y-8 w-full">
+            <h3 className="text-center text-3xl font-black text-slate-800 uppercase tracking-tighter">{t('home.gourmetFeed')}</h3>
+            <div className="flex overflow-x-auto gap-6 pb-4 snap-x snap-mandatory no-scrollbar px-[5vw]">
+              <Reviews isHorizontal />
+            </div>
+          </div>
+
+          <div className="space-y-8 pt-8 border-t border-slate-200/60 w-full py-12">
+            <h3 className="text-center text-3xl font-black text-slate-800 uppercase tracking-tighter">{t('home.commonQuestions')}</h3>
+            <div className="flex overflow-x-auto gap-4 pb-6 snap-x snap-mandatory no-scrollbar px-[5vw]">
+              {faqItems.map((item, idx) => (
+                <div 
+                  key={idx} 
+                  className="min-w-[320px] md:min-w-[400px] bg-white p-8 rounded-[3.5rem] snap-center flex flex-col border border-slate-100 shadow-[0_10px_30px_rgba(0,0,0,0.02)]"
+                >
+                  <p className="text-slate-800 font-black text-xl leading-tight mb-3">{item.q}</p>
+                  <div className="h-px w-8 bg-rose-200 mb-4" />
+                  <p className="text-slate-500 text-sm leading-relaxed">{item.a}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="text-center pt-4">
+            <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em]">© 2026<br/>Read Chinese Menu</p>
+            <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.4em] mt-1">{t('common.allRightsReserved')}</p>
           </div>
         </div>
+      </Suspense>
 
-        <div className="space-y-8 pt-8 border-t border-slate-200/60 w-full py-12">
-          <h3 className="text-center text-3xl font-black text-slate-900 uppercase tracking-tighter">{t('home.commonQuestions')}</h3>
-          <div className="flex overflow-x-auto gap-4 pb-6 snap-x snap-mandatory no-scrollbar px-[5vw]">
-            {faqItems.map((item, idx) => (
-              <div 
-                key={idx} 
-                className="min-w-[320px] md:min-w-[400px] bg-white p-8 rounded-[3.5rem] snap-center flex flex-col border border-slate-100 shadow-[0_10px_30px_rgba(0,0,0,0.02)]"
-              >
-                <p className="text-slate-900 font-black text-xl leading-tight mb-3">{item.q}</p>
-                <div className="h-px w-8 bg-rose-200 mb-4" />
-                <p className="text-slate-500 text-sm leading-relaxed">{item.a}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="text-center pt-4">
-          <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em]">© 2026<br/>Read Chinese Menu</p>
-          <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.4em] mt-1">{t('common.allRightsReserved')}</p>
-        </div>
-      </div>
-
-      {/* Overlays */}
+      {/* 4. Overlays - 模态框同样使用 Suspense */}
       {showPricingModal && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-500" onClick={() => setShowPricingModal(false)} />
           <div className="relative w-full max-w-5xl animate-in fade-in zoom-in-95 slide-in-from-bottom-8 duration-500 ease-out">
             <div className="bg-white rounded-[3.5rem] overflow-hidden shadow-2xl relative border border-white/20">
-                <PricingModule onPurchase={(p) => { onPurchase(p); setShowPricingModal(false); }} />
+                <Suspense fallback={<div className="h-[60vh] flex items-center justify-center">Loading...</div>}>
+                  <PricingModule onPurchase={(p) => { onPurchase(p); setShowPricingModal(false); }} />
+                </Suspense>
                 <button 
                   onClick={() => setShowPricingModal(false)}
-                  className="absolute top-6 right-8 text-slate-300 hover:text-slate-900 font-light text-3xl z-50 transition-colors"
+                  className="absolute top-6 right-8 text-slate-300 hover:text-slate-800 font-light text-3xl z-50 transition-colors"
                 >✕</button>
             </div>
           </div>
@@ -288,10 +285,12 @@ export const HomeIdleView: React.FC<Props> = ({
         <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-xl animate-in fade-in duration-500" onClick={() => setShowGame(false)} />
           <div className="relative w-full max-w-lg animate-in fade-in zoom-in-90 slide-in-from-bottom-12 duration-500 ease-out-expo">
-            <MenuMasterMind 
-              onFinish={() => setShowGame(false)} 
-              onAwardPoints={onGameWin} 
-            />
+            <Suspense fallback={null}>
+              <MenuMasterMind 
+                onFinish={() => setShowGame(false)} 
+                onAwardPoints={onGameWin} 
+              />
+            </Suspense>
           </div>
         </div>
       )}

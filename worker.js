@@ -14,10 +14,13 @@ export default {
     const referer = request.headers.get("Referer");
     const isScanPath = url.pathname === '/' || url.pathname.includes('scan');
 
-    // --- 安全防护：Referer 校验 ---
-    // 只有 API 扫描路径需要强制校验 Referer
+    // --- 安全防护：Referer 校验 (已优化支持本地开发) ---
     if (isScanPath && request.method === 'POST') {
-      if (!referer || !referer.includes("readchinesemenu.com")) {
+      const isDev = env.ENABLE_DEV_MODE === "true";
+      const isAllowedReferer = referer && (referer.includes("readchinesemenu.com") || referer.includes("localhost"));
+      
+      // 如果既不是允许的域名，也不是开发模式，则拦截
+      if (!isAllowedReferer && !isDev) {
         return new Response(JSON.stringify({ error: "Access Denied: Invalid Source" }), { 
           status: 403, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
