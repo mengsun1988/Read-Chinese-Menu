@@ -3,8 +3,8 @@ import { PayPalButtons, usePayPalScriptReducer } from "@paypal/react-paypal-js";
 
 interface PayPalButtonProps {
   amount: string;
-  planName: string;
-  onSuccess: (details: any) => void;
+  planName: string; // 确保传入的是 'soda', 'coffee', 'pack-150' 等 Worker 识别的 ID
+  onSuccess: (userData: any) => void;
 }
 
 export const PayPalButton: React.FC<PayPalButtonProps> = ({ amount, planName, onSuccess }) => {
@@ -12,9 +12,7 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({ amount, planName, on
   const [localError, setLocalError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isRejected) {
-      console.error("PayPal SDK failed to load.");
-    }
+    if (isRejected) console.error("PayPal SDK failed to load.");
   }, [isRejected]);
 
   if (isRejected || localError) {
@@ -25,7 +23,7 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({ amount, planName, on
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
           </svg>
         </div>
-        <p className="text-[10px] font-black text-slate-800 uppercase tracking-widest leading-tight">Connection Error</p>
+        <p className="text-[10px] font-black text-slate-800 uppercase tracking-widest leading-tight">{localError || "Connection Error"}</p>
         <button onClick={() => window.location.reload()} className="text-[9px] font-bold text-rose-600 underline uppercase mt-2">Retry</button>
       </div>
     );
@@ -33,7 +31,6 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({ amount, planName, on
 
   return (
     <div className="w-full flex flex-col items-center">
-      {/* 加载状态：移除了强制白色背景，改为轻量 loading */}
       {isPending && (
         <div className="flex flex-col items-center py-8 animate-pulse">
           <div className="w-6 h-6 border-[3px] border-slate-200 border-t-rose-600 rounded-full animate-spin mb-3"></div>
@@ -41,7 +38,6 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({ amount, planName, on
         </div>
       )}
 
-      {/* 按钮区域：允许高度自适应，防止溢出 */}
       <div className="w-full transition-all duration-500 min-h-[45px]">
         {isResolved && (
           <PayPalButtons
@@ -50,7 +46,7 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({ amount, planName, on
               layout: "vertical", 
               shape: "pill", 
               color: "blue", 
-              height: 45, // 微调高度使其更精致
+              height: 45, 
               label: "paypal" 
             }}
             createOrder={(data, actions) => {
@@ -58,19 +54,33 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({ amount, planName, on
                 intent: "CAPTURE",
                 purchase_units: [{
                   description: `Support - ${planName}`,
-                  amount: { 
-                    currency_code: "USD",
-                    value: amount 
-                  }
+                  amount: { currency_code: "USD", value: amount }
                 }]
               });
             }}
-            onApprove={async (data, actions) => {
+            onApprove={async (data) => {
               try {
-                const details = await actions.order?.capture();
-                if (details) onSuccess(details);
+                // 向你的 Worker 发起验证请求
+                const response = await fetch("https://api.readchinesemenu.com/api/verify-payment", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    orderId: data.orderID,
+                    planId: planName,
+                    userId: localStorage.getItem('userId') || 'guest'
+                  })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                  // 支付并验证成功，传回更新后的用户数据
+                  onSuccess(result.userData);
+                } else {
+                  setLocalError("Verification Failed");
+                }
               } catch (err) {
-                setLocalError("Transaction failed.");
+                setLocalError("Network Error");
               }
             }}
             onError={() => setLocalError("Gateway Error")}
@@ -78,7 +88,6 @@ export const PayPalButton: React.FC<PayPalButtonProps> = ({ amount, planName, on
         )}
       </div>
       
-      {/* 底部信任标：轻量化 */}
       {!isPending && (
         <div className="mt-4 flex items-center justify-center gap-1.5 opacity-30">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-2.5 h-2.5 text-slate-900">
