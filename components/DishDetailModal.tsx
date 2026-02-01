@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation, Trans } from 'react-i18next';
 import { ChiliIcon, AnimalFatIcon, SpeakerIcon } from './Icons';
 import { useDishTranslator } from '../src/hooks/useDishTranslator';
+import { getAllergenConfig } from '../src/utils/allergenHelper';
 
 interface Ingredient {
   name_en: string;
@@ -26,7 +27,6 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
   const { t, i18n } = useTranslation();
   const { translateDish } = useDishTranslator();
 
-  // 使用 Hook 处理后的 dish 数据
   const dish = translateDish(rawDish);
 
   if (!dish) return null;
@@ -48,9 +48,8 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
     return text.toLowerCase().replace(/[0-9]/g, (m) => numMap[m] + " ");
   };
 
-  // 统一变量命名，确保清晰
   const nameCN = dish.name_cn || "未知菜品";
-  const nameDisplay = dish.displayName; // 已经由 Hook 根据语言处理好了
+  const nameDisplay = dish.displayName;
   const pinyin = formatChinesePhonetic(dish.pinyin || dish.pinyin_name || "");
   const pronunciation = formatChinesePhonetic(dish.pronunciation || dish.sounds_like || "");
 
@@ -88,10 +87,8 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
           <div className="space-y-3 text-left relative z-0">
             <h2 className="text-[9px] font-black uppercase tracking-[0.2em] opacity-70 mb-1">{t('dishDetail.authenticSelection')}</h2>
             <div className="space-y-1">
-                {/* 菜品主标题：跟随语言环境的外文或中文 */}
                 <p className="text-4xl font-black tracking-tighter drop-shadow-sm leading-tight">{nameDisplay}</p>
                 <div className="flex items-center gap-3 py-1">
-                  {/* 副标题：始终显示原始中文名，用于对照 */}
                   <p className="text-3xl font-black tracking-tighter drop-shadow-sm">{nameCN}</p>
                   <button onClick={speakDishName} className="bg-white text-red-600 w-10 h-10 rounded-xl flex items-center justify-center active:scale-90 transition-all shadow-lg shrink-0 border-2 border-red-50">
                     <SpeakerIcon className="w-5 h-5" />
@@ -163,13 +160,9 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
                     onClick={() => onIngredientClick({ name_en: ing.name_en, name_cn: ing.name_cn })} 
                     className="p-4 bg-white hover:bg-slate-50 rounded-2xl text-left border border-slate-200 transition-all active:scale-95 flex flex-col justify-center h-24 shadow-sm"
                   >
-                    {/* 第一行：主标题，由 Hook 决定（中文下为中文，外文下为译名） */}
                     <span className="text-sm font-black text-slate-700 leading-tight mb-1 line-clamp-2 uppercase tracking-tight">
                       {ing.displayName}
                     </span>
-                    
-                    {/* 第二行：副标题对照逻辑 */}
-                    {/* 只有在非中文环境下，且 Hook 处理出的 name_cn 与 displayName 不相同时，才显示中文对照 */}
                     {!i18n.language.startsWith('zh') && ing.name_cn && ing.name_cn !== ing.displayName && (
                       <span className="text-[11px] font-bold text-slate-400 tracking-wide">
                         {ing.name_cn}
@@ -209,15 +202,29 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
               </div>
             </button>
 
-            <div className={`p-6 rounded-[2rem] border-2 flex flex-col justify-center transition-all ${isLoadingDetail ? 'bg-slate-50 border-slate-100' : 'bg-emerald-50 border-emerald-100'}`}>
-              <h4 className="text-[8px] font-black text-emerald-800/40 uppercase mb-3 tracking-widest">{t('dishDetail.dietaryFlags')}</h4>
-              <div className="flex flex-wrap gap-1.5">
+            {/* 过敏原卡片 - 调用外部 Helper 获取完整配置 */}
+            <div className={`p-6 rounded-[2rem] border-2 flex flex-col justify-center transition-all ${
+              isLoadingDetail ? 'bg-slate-50 border-slate-100' 
+              : dish.allergens?.length > 0 ? 'bg-amber-50 border-amber-200 shadow-md' 
+              : 'bg-emerald-50 border-emerald-100'
+            }`}>
+              <h4 className={`text-[8px] font-black uppercase mb-3 tracking-widest ${
+                dish.allergens?.length > 0 ? 'text-amber-800/40' : 'text-emerald-800/40'
+              }`}>{t('dishDetail.dietaryFlags')}</h4>
+              <div className="flex flex-wrap gap-2">
                 {isLoadingDetail ? (
                     <div className="h-4 w-24 bg-emerald-100/50 animate-pulse rounded-full" />
                 ) : dish.allergens?.length > 0 ? (
-                  dish.allergens.map((a: string, i: number) => (
-                    <span key={i} className="text-[9px] font-black uppercase bg-emerald-600 px-2.5 py-1 rounded-lg text-white">{a}</span>
-                  ))
+                  dish.allergens.map((a: string, i: number) => {
+                    // 调用外部 Helper
+                    const config = getAllergenConfig(a);
+                    return (
+                      <span key={i} className={`text-[9px] font-black uppercase ${config.bg} ${config.text} px-2.5 py-1.5 rounded-lg flex flex-col`}>
+                        {a}
+                        {config.desc && <span className="text-[7px] opacity-80 lowercase font-bold">{config.desc}</span>}
+                      </span>
+                    );
+                  })
                 ) : (
                   <span className="text-[10px] font-bold text-emerald-700 italic">{t('dishDetail.noAllergens')}</span>
                 )}

@@ -126,37 +126,51 @@ export default {
 
         const controller = new AbortController();
 
-        // --- Prompts ---
-        const getDetailPrompt = () => `Analyze dish "${name_cn}" and return JSON. 
-          Target language: ${lang}. 
-          Return: { 
+        // --- Prompts (Updated for Allergen Safety) ---
+        const getDetailPrompt = () => `Analyze dish "${name_cn}" and return JSON. Target language: ${lang}.
+          CRITICAL: You are a food safety expert. You MUST identify hidden allergens. 
+          1. Scan for Crustaceans (Crab/Shrimp) and Mollusks (Snails/Clams/Cockles/Abalone).
+          2. Check for Gluten: MUST include "Gluten" if dish contains Wheat, Flour, Noodles, or Soy Sauce.
+          3. Check for Soy: Include if Tofu, Bean Paste, or Soy Sauce is used.
+          4. Check for Nuts: Peanuts (including Peanut Oil), Tree nuts (Walnuts/Cashews).
+          5. Others: Milk, Egg, Fish, Sesame, Mustard.
+
+          Return JSON: { 
             "name_translated": "name in ${lang}", 
-            "classic_ingredients": [{"name_cn": "Mandarin Chinese", "name_en": "English", "name_translated": "${lang}"}], 
-            "potential_ingredients": [{"name_cn": "Mandarin Chinese", "name_en": "English", "name_translated": "${lang}"}], 
-            "spiciness_level": 0-5, "pinyin": "", "pronunciation": "", "allergens": [], 
+            "classic_ingredients": [{"name_cn": "...", "name_en": "...", "name_translated": "..."}], 
+            "potential_ingredients": [{"name_cn": "...", "name_en": "...", "name_translated": "..."}], 
+            "spiciness_level": 0-5, "pinyin": "", "pronunciation": "", 
+            "allergens": ["List all, e.g., 'Gluten', 'Soy', 'Crustaceans', 'Mollusks', 'Peanuts'"], 
             "description": "briefly in ${lang}", "has_animal_fats": true/false 
           }.`;
 
-        const getMenuPrompt = () => `Identify all dishes from menu and return JSON. 
-          Target language: ${lang}. 
+        const getMenuPrompt = () => `Identify all dishes from menu and return JSON. Target language: ${lang}.
+          For EACH dish, analyze ingredients deeply for safety:
+          - MUST identify Mollusks (mud snails, clams) and Crustaceans (crabs/shrimp).
+          - Identify "Gluten" if wheat-based (Noodles, Buns) or if Soy Sauce is present.
+          - Identify "Soy" for any bean products (Tofu, Yuba).
+          - Identify "Peanuts" if sauces or frying oils are used.
+          
           For EACH dish, return: { 
             "name_cn": "Simplified Mandarin Chinese (Not Japanese Kanji)", 
             "name_translated": "name in ${lang}", 
             "price": "...", "description": "...", 
-            "ingredients": [{ "name_cn": "Mandarin Chinese", "name_en": "English", "name_translated": "${lang}" }], 
+            "ingredients": [{ "name_cn": "...", "name_en": "...", "name_translated": "..." }], 
+            "allergens": ["..."],
             "pinyin": "...", "spiciness_level": 0-5 
           }. Return: { "dishes": [] }.`;
 
-        const getStorePrompt = () => `Identify this restaurant storefront/signboard and return JSON.
-          Target language: ${lang}.
-          Return MUST include a "store" object.
+        const getStorePrompt = () => `Identify this restaurant storefront and return JSON. Target language: ${lang}.
+          CRITICAL: If the sign mentions "Seafood", "Crab", "Fish", or "Sashimi", highlight it.
           Return: {
             "store": {
               "name": "Restaurant Name",
               "cuisine": "Type of food",
               "description": "Brief bio in ${lang}",
               "specialty_dishes": ["Dish 1", "Dish 2"],
-              "average_price_range": "$$"
+              "average_price_range": "$$",
+              "allergy_warning": "High risk for [e.g. Seafood/Peanuts] based on sign",
+              "is_seafood_specialty": true/false
             }
           }.`;
 
