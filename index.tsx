@@ -29,14 +29,14 @@ try {
  * 统一在顶层管理，App.tsx 内部不再声明
  */
 const paypalOptions = {
-  // 加上 as any 解决红线
   clientId: (import.meta as any).env.VITE_PAYPAL_CLIENT_ID || "default-id",
   currency: "USD",
   intent: "capture",
-  components: "buttons",
-  // 【关键】删除下面这一行，解决白屏问题
-  // "data-namespace": "paypal_sdk", 
-  "disable-funding": "paylater,credit,card"
+  // 1. 必须包含 applepay 组件
+  components: "buttons,applepay", 
+  // 2. 从禁用列表中移除 'card'，只保留 'paylater' 和 'credit' (如果你不需要分期的话)
+  "disable-funding": "paylater,credit", 
+  // 3. 必须确保没有 data-namespace，否则 Apple Pay 识别会出问题
 };
 
 const rootElement = document.getElementById('root');
