@@ -29,11 +29,13 @@ try {
  * 统一在顶层管理，App.tsx 内部不再声明
  */
 const paypalOptions = {
-  clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || "default-paypal-client-id",
+  // 加上 as any 解决红线
+  clientId: (import.meta as any).env.VITE_PAYPAL_CLIENT_ID || "default-id",
   currency: "USD",
   intent: "capture",
   components: "buttons",
-  "data-namespace": "paypal_sdk",
+  // 【关键】删除下面这一行，解决白屏问题
+  // "data-namespace": "paypal_sdk", 
   "disable-funding": "paylater,credit,card"
 };
 
