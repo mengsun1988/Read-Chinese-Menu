@@ -213,17 +213,17 @@
   "subtitle": "Help us keep the AI running and get extra credits for your journey.",
   "tiers": {
     "soda": {
-      "name": "A Cold Soda",
+      "name": "Buy Me A Cold Soda",
       "meals": "About 3 Meals",
       "description": "Perfect for a quick lunch scan."
     },
     "coffee": {
-      "name": "A Hot Coffee",
+      "name": "Buy Me A Hot Coffee",
       "meals": "About 10 Meals",
       "description": "The best companion for a food explorer."
     },
     "cheesecake": {
-      "name": "A Cheesecake",
+      "name": "Buy Me A Cheesecake",
       "meals": "About 25 Meals",
       "description": "Full access for your entire China trip."
     }
