@@ -14,12 +14,11 @@ export default {
     const referer = request.headers.get("Referer");
     const isScanPath = url.pathname === '/' || url.pathname.includes('scan');
 
-    // --- 安全防护：Referer 校验 (已优化支持本地开发) ---
+    // --- 安全防护：Referer 校验 ---
     if (isScanPath && request.method === 'POST') {
       const isDev = env.ENABLE_DEV_MODE === "true";
       const isAllowedReferer = referer && (referer.includes("readchinesemenu.com") || referer.includes("localhost"));
       
-      // 如果既不是允许的域名，也不是开发模式，则拦截
       if (!isAllowedReferer && !isDev) {
         return new Response(JSON.stringify({ error: "Access Denied: Invalid Source" }), { 
           status: 403, 
@@ -117,8 +116,8 @@ export default {
         const isDevMode = env.ENABLE_DEV_MODE === "true";
         const isUnlimited = isDevMode || (userData.passExpiryDate && new Date(userData.passExpiryDate).getTime() > Date.now());
 
-        // 仅在 menu 模式下检查积分。Store 和 Dish_detail 完全免费。
-        if (type === "menu" && !isUnlimited && userData.credits < 50) {
+        // 仅在 menu 模式下预检查
+        if (type === "menu" && !isUnlimited && (Number(userData.credits) || 0) < 50) {
           return new Response(JSON.stringify({ error: "OUT_OF_CREDITS", credits: userData.credits }), {
             status: 403, headers: corsHeaders
           });
@@ -126,7 +125,7 @@ export default {
 
         const controller = new AbortController();
 
-        // --- Prompts (Updated for Allergen Safety) ---
+        // --- 完整 Prompts (找回了所有的过敏原逻辑) ---
         const getDetailPrompt = () => `Analyze dish "${name_cn}" and return JSON. Target language: ${lang}.
           CRITICAL: You are a food safety expert. You MUST identify hidden allergens. 
           1. Scan for Crustaceans (Crab/Shrimp) and Mollusks (Snails/Clams/Cockles/Abalone).
@@ -175,13 +174,9 @@ export default {
           }.`;
 
         const taskQwen = async () => {
-          let promptText;
-          if (type === "dish_detail") promptText = getDetailPrompt();
-          else if (type === "store") promptText = getStorePrompt();
-          else promptText = getMenuPrompt();
-
+          let promptText = type === "dish_detail" ? getDetailPrompt() : (type === "store" ? getStorePrompt() : getMenuPrompt());
           const payload = {
-            model: type === "dish_detail" ? "qwen-plus" : "qwen3-vl-plus",
+            model: type === "dish_detail" ? "qwen-plus" : "qwen-vl-plus",
             messages: [{
               role: "user",
               content: type === "dish_detail" 
@@ -205,7 +200,7 @@ export default {
             contents: [{ parts: [{ text: promptText }, { inline_data: { mime_type: "image/jpeg", data: base64Image } }] }],
             generationConfig: { responseMimeType: "application/json", temperature: 0.1 }
           };
-          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${env.GEMINI_API_KEY}`, {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${env.GEMINI_API_KEY}`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload), signal: controller.signal
           });
@@ -218,28 +213,41 @@ export default {
         controller.abort();
         
         const parsedData = JSON.parse(winner.content.replace(/```json|```/g, ""));
+        
+        // --- 核心判定（结果导向） ---
+        const isMenuActuallyFound = Array.isArray(parsedData.dishes) && 
+                                    parsedData.dishes.length > 0 && 
+                                    (parsedData.dishes[0].name_cn || parsedData.dishes[0].name_translated);
+        
+        const isStoreFound = !!(parsedData.store || (parsedData.name && type === "store"));
+        const isDetailFound = !!(parsedData.classic_ingredients || parsedData.description);
+
         let achievementTriggered = null;
 
-        userData = await getUserData(userId);
-        const isUnlimitedNow = (env.ENABLE_DEV_MODE === "true") || (userData.passExpiryDate && new Date(userData.passExpiryDate).getTime() > Date.now());
-        
-        const isMenuSuccess = (type === "menu") && Array.isArray(parsedData.dishes) && parsedData.dishes.length > 0;
-        const isStoreSuccess = (type === "store") && (parsedData.store || parsedData.name); 
-        const isDetailSuccess = type === "dish_detail" && (parsedData.classic_ingredients || parsedData.description);
+        // 重新获取最新数据以防并发
+        let latestUserData = await getUserData(userId);
+        const isUnlimitedNow = (env.ENABLE_DEV_MODE === "true") || 
+                               (latestUserData.passExpiryDate && new Date(latestUserData.passExpiryDate).getTime() > Date.now());
 
-        if (isMenuSuccess || isStoreSuccess || isDetailSuccess) {
-          userData.lastUsed = new Date().toISOString();
-          if (isMenuSuccess) {
-            userData.scanCount += 1;
+        if (isMenuActuallyFound || isStoreFound || isDetailFound) {
+          latestUserData.lastUsed = new Date().toISOString();
+
+          // 核心扣费逻辑：只要出了菜品，就扣费
+          if (isMenuActuallyFound) {
+            latestUserData.scanCount = (latestUserData.scanCount || 0) + 1;
+            
             if (!isUnlimitedNow) {
-              userData.credits = Math.max(0, userData.credits - 50);
-              if ([4, 10, 20].includes(userData.scanCount)) {
-                userData.credits += 50;
-                achievementTriggered = `milestone_${userData.scanCount}`;
+              latestUserData.credits = Math.max(0, (Number(latestUserData.credits) || 0) - 50);
+              console.log(`[DEDUCT] User ${userId}: -50 credits. Remaining: ${latestUserData.credits}`);
+
+              if ([4, 10, 20].includes(latestUserData.scanCount)) {
+                latestUserData.credits += 50;
+                achievementTriggered = `milestone_${latestUserData.scanCount}`;
               }
             }
           }
-          await env.USER_USAGE.put(userId, JSON.stringify(userData));
+          await env.USER_USAGE.put(userId, JSON.stringify(latestUserData));
+          userData = latestUserData; 
         }
 
         return new Response(JSON.stringify({
@@ -252,7 +260,7 @@ export default {
       }
     }
 
-    // --- API: Payment Verification ---
+    // --- API: Payment Verification (保留原样) ---
     if (request.method === 'POST' && (url.pathname === '/api/verify-payment' || url.pathname === '/api/verify_order')) {
       try {
         const { orderId, planId, userId } = await request.json();
