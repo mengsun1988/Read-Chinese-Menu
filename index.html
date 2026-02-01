@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <link rel="preload" href="/fonts/poppins-v24-latin-800.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/src/styles/tokens.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="preload" href="/fonts/poppins-v24-latin-800.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="/src/styles/tokens.css" />
 
   <script>
     window.process = { env: { NODE_ENV: 'production' } };
@@ -13,17 +13,16 @@
   </script>
 
   <title>Read Chinese Menu | Menu Translator & Food Ingredient Decoder</title>
-  <meta name="description" content="Decode Chinese menus and storefronts worldwide. Whether you're in China, Singapore, or a local Chinatown, instantly identify authentic dishes, hidden lard, and food allergens.">
-  <meta name="keywords" content="chinese menu translator, scan chinese menu, food ingredient decoder, chinatown restaurant guide, lard detection in food, authentic chinese dish names, translate chinese signs, travel china food app, singapore dining helper, london chinatown menu">
-  
-  <meta property="og:title" content="Read Chinese Menu | Global Food Decoder">
-  <meta property="og:description" content="Instantly translate and decode Chinese menus anywhere. Identify ingredients and allergens with ease.">
-  <meta property="og:image" content="https://www.readchinesemenu.com/og-image.jpg">
-  <meta property="og:url" content="https://www.readchinesemenu.com">
-  <meta property="og:type" content="website">
+  <meta name="description" content="Decode Chinese menus and storefronts worldwide. Identify dishes, ingredients, allergens, and hidden lard instantly." />
 
-  <meta name="theme-color" content="#e11d48">
-  <link rel="manifest" href="/manifest.json">
+  <meta property="og:title" content="Read Chinese Menu | Global Food Decoder" />
+  <meta property="og:description" content="Instantly translate and decode Chinese menus anywhere." />
+  <meta property="og:image" content="https://www.readchinesemenu.com/og-image.jpg" />
+  <meta property="og:url" content="https://www.readchinesemenu.com" />
+  <meta property="og:type" content="website" />
+
+  <meta name="theme-color" content="#e11d48" />
+  <link rel="manifest" href="/manifest.json" />
 
   <link rel="alternate" hreflang="x-default" href="https://www.readchinesemenu.com/" />
   <link rel="alternate" hreflang="en" href="https://www.readchinesemenu.com/?lang=en" />
@@ -31,37 +30,52 @@
   <link rel="alternate" hreflang="ko" href="https://www.readchinesemenu.com/?lang=ko" />
   <link rel="alternate" hreflang="fr" href="https://www.readchinesemenu.com/?lang=fr" />
   <link rel="alternate" hreflang="de" href="https://www.readchinesemenu.com/?lang=de" />
-  <link rel="alternate" hreflang="it" href="https://www.readchinesemenu.com/?lang=it" />
   <link rel="alternate" hreflang="es" href="https://www.readchinesemenu.com/?lang=es" />
-  <link rel="alternate" hreflang="ru" href="https://www.readchinesemenu.com/?lang=ru" />
-  <link rel="alternate" hreflang="th" href="https://www.readchinesemenu.com/?lang=th" />
-  <link rel="alternate" hreflang="id" href="https://www.readchinesemenu.com/?lang=id" />
-  <link rel="alternate" hreflang="ms" href="https://www.readchinesemenu.com/?lang=ms" />
   <link rel="alternate" hreflang="ar" href="https://www.readchinesemenu.com/?lang=ar" />
-  
-  <script type="application/ld+json">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
+
+  <script>
+    // 屏蔽本地开发环境统计
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (isLocalhost) {
+      window['ga-disable-G-YWYL2JQ1SD'] = true;
+      window['umami-disable-tracking'] = 'true';
+    }
+  </script>
+
+  <script defer src="https://www.googletagmanager.com/gtag/js?id=G-YWYL2JQ1SD"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-YWYL2JQ1SD', {
+      'send_page_view': true,
+      'page_title': document.title
+    });
+  </script>
+
+  <script
+    defer
+    src="https://cloud.umami.is/script.js"
+    data-website-id="3357350e-4390-496e-92ce-6e1d43fab83c"
+  ></script>
+  <script type="importmap">
   {
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    "name": "Read Chinese Menu & Global Food Decoder",
-    "description": "A smart tool for translating Chinese menus and storefront signs globally. Helping foodies navigate authentic dining, identify allergens, and explore food culture.",
-    "applicationCategory": "TravelApplication",
-    "offers": {
-      "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "USD"
-    },
-    "operatingSystem": "Web"
+    "imports": {
+      "@paypal/react-paypal-js": "https://esm.sh/@paypal/react-paypal-js@^8.9.2",
+      "@google/genai": "https://esm.sh/@google/genai@^1.38.0"
+    }
   }
   </script>
-  
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
-  
+
+  <link rel="icon" href="/favicon.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
   <style>
     :root {
-      /* 方案二核心：正文回归原生系统字体库 */
       --font-main: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       --font-title: 'Poppins', sans-serif;
     }
@@ -89,15 +103,14 @@
       font-size: 40px;
       font-weight: 800;
       color: #1e293b;
-      margin: 0;
       letter-spacing: -0.05em;
-      text-transform: none; 
       line-height: 1.1;
     }
-    @media (min-width: 768px) { .lcp-title { font-size: 64px; } }
+    @media (min-width: 768px) {
+      .lcp-title { font-size: 64px; }
+    }
     .lcp-red { color: #e11d48; }
     .lcp-status {
-      font-family: var(--font-main); /* 状态文字用系统字体 */
       font-size: 11px;
       color: #e11d48;
       font-weight: 600;
@@ -106,42 +119,23 @@
       text-transform: uppercase;
       animation: pulse 1.5s infinite;
     }
-    @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
-  </style>
-
-  <script type="importmap">
-  {
-    "imports": {
-      "@paypal/react-paypal-js": "https://esm.sh/@paypal/react-paypal-js@^8.9.2",
-      "@google/genai": "https://esm.sh/@google/genai@^1.38.0"
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
     }
-  }
-  </script>
-  
-  <link rel="icon" href="/favicon.png">
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-
-  <script defer src="https://www.googletagmanager.com/gtag/js?id=G-YWYL2JQ1SD"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-YWYL2JQ1SD');
-  </script>
-  <script 
-    defer 
-    src="https://cloud.umami.is/script.js" 
-    data-website-id="3357350e-4390-496e-92ce-6e1d43fab83c"
-    data-domains="readchinesemenu.com,www.readchinesemenu.com"
-  ></script>
+  </style>
 </head>
+
 <body>
   <div id="root">
     <div class="lcp-pre-render">
-      <h1 class="lcp-title">Read <span class="lcp-red">Chinese Menu</span></h1>
+      <h1 class="lcp-title">
+        Read <span class="lcp-red">Chinese Menu</span>
+      </h1>
       <div class="lcp-status">Loading Dining Assistant...</div>
     </div>
   </div>
+
   <script type="module" src="/index.tsx"></script>
 </body>
 </html>
