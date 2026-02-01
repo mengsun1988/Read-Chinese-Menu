@@ -29,7 +29,7 @@ try {
  * 统一在顶层管理，App.tsx 内部不再声明
  */
 const paypalOptions = {
-  clientId: "Ac071qoDgiNf6B4M9f6s589LM97KMsJglC_3P6EaM7rw-6WLCf7lLNQeG1ixLX_Mib9nbBMODmxApG7e",
+  clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || "default-paypal-client-id",
   currency: "USD",
   intent: "capture",
   components: "buttons",
