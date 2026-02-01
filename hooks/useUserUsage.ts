@@ -38,29 +38,41 @@ export const useUserUsage = () => {
     : false;
 
   /**
+/**
    * 修正后的核心同步函数
-   * 直接接受后端完整的 usage 对象
+   * 增加了对不同后端字段名的兼容性处理
    */
   const syncWithBackend = (backendUsage: any) => {
     if (!backendUsage) return;
 
-    // --- 核心调试行：在控制台打印后端传来的原始数据 ---
-    console.log("📊 Backend Sync Data:", backendUsage);
+    console.log("📊 Backend Sync Triggered with:", backendUsage);
     
     setUsage(prev => {
-      // 1. 映射后端字段名到前端字段名 (如 lastShareDate -> dailyShareDate)
+      // 提取点数：兼容 backendUsage.credits 或 backendUsage.userData.credits
+      const newCredits = backendUsage.credits !== undefined 
+        ? backendUsage.credits 
+        : (backendUsage.userData?.credits !== undefined ? backendUsage.userData.credits : prev.credits);
+
       const mappedUsage: UserUsage = {
         ...prev,
-        credits: backendUsage.credits !== undefined ? backendUsage.credits : prev.credits,
-        scanCount: backendUsage.scanCount !== undefined ? backendUsage.scanCount : prev.scanCount,
-        shareCount: backendUsage.shareCount !== undefined ? backendUsage.shareCount : prev.shareCount,
-        gameWinCount: backendUsage.gameWinCount !== undefined ? backendUsage.gameWinCount : prev.gameWinCount,
-        passExpiryDate: backendUsage.passExpiryDate || prev.passExpiryDate,
-        // 特别注意：Worker 返回的是 lastShareDate，前端存的是 dailyShareDate
-        dailyShareDate: backendUsage.lastShareDate ? backendUsage.lastShareDate.split('T')[0] : prev.dailyShareDate,
+        // 确保点数被更新
+        credits: typeof newCredits === 'number' ? newCredits : prev.credits,
+        
+        scanCount: backendUsage.scanCount ?? backendUsage.userData?.scanCount ?? prev.scanCount,
+        shareCount: backendUsage.shareCount ?? backendUsage.userData?.shareCount ?? prev.shareCount,
+        gameWinCount: backendUsage.gameWinCount ?? backendUsage.userData?.gameWinCount ?? prev.gameWinCount,
+        
+        passExpiryDate: backendUsage.passExpiryDate ?? backendUsage.userData?.passExpiryDate ?? prev.passExpiryDate,
+        
+        // 日期处理防崩逻辑
+        dailyShareDate: (backendUsage.lastShareDate || backendUsage.userData?.lastShareDate) 
+          ? (backendUsage.lastShareDate || backendUsage.userData?.lastShareDate).split('T')[0] 
+          : prev.dailyShareDate,
+          
         achievementTriggered: backendUsage.achievementTriggered || null
       };
 
+      console.log("✅ State Successfully Updated to:", mappedUsage.credits);
       return mappedUsage;
     });
   };

@@ -195,20 +195,50 @@ const App: React.FC = () => {
     setCreditUpdateMessage(updatedUserData.passExpiryDate ? t('common.purchaseSuccessPremium') : t('common.purchaseSuccessCredits'));
   };
 
-  const handleDishClick = async (dish: any) => {
+const handleDishClick = async (dish: any) => {
+    // 1. 如果已经分析过了，直接打开 Modal，不走逻辑也不扣费
+    if (dish.isFullyAnalyzed) {
+      setSelectedDish(dish);
+      return;
+    }
+
+    // 2. 只有未分析的菜品才进入加载状态
     setSelectedDish(dish);
-    if (dish.isFullyAnalyzed) return;
     setLoadingDetail(true);
+
     try {
+      // 这里的 result 预期结构: { ...dishDetails, usage: { credits: 199, ... } }
       const result = await getDishDeepDetail(dish.name_cn, dish.name_en, i18n.language);
+      
       if (result) {
-        if (result.usage) syncWithBackend(result.usage);
-        const updatedDish = { ...dish, ...result, isFullyAnalyzed: true };
+        // --- 核心修改：点数同步 ---
+        // 确保我们将最新的 usage 对象传给 Hook 进行状态更新
+        if (result.usage) {
+          syncWithBackend(result.usage);
+        } else if (result.userData) {
+          // 兼容性处理：防止后端返回的是 userData 而不是 usage
+          syncWithBackend(result.userData);
+        }
+
+        const updatedDish = { 
+          ...dish, 
+          ...result, 
+          isFullyAnalyzed: true 
+        };
+        
+        // 3. 同时更新当前选中的菜品和列表中的菜品快照
         setSelectedDish(updatedDish);
-        setDishes(prev => prev.map(d => (d.name_cn === dish.name_cn ? updatedDish : d)));
+        setDishes(prev => prev.map(d => 
+          (d.name_cn === dish.name_cn || d.id === dish.id) ? updatedDish : d
+        ));
       }
-    } catch (e) { console.error("Deep Analysis Failed:", e); }
-    finally { setLoadingDetail(false); }
+    } catch (e) { 
+      console.error("Deep Analysis Failed:", e);
+      // 如果失败了，关闭 Modal 防止界面卡死在 Loading
+      setSelectedDish(null);
+    } finally { 
+      setLoadingDetail(false); 
+    }
   };
 
   const currentLangObj = SUPPORTED_LANGS.find(l => i18n.language.startsWith(l.code)) || SUPPORTED_LANGS[0];

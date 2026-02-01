@@ -72,30 +72,42 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
   const spicyLevel = Number(dish.spiciness_level || dish.spiciness || 0);
   const spicyInfo = getSpicyComparison(spicyLevel);
 
+  // 这里的处理逻辑必须非常清晰，直接透传给父组件
+  const handleIngredientAction = (e: React.MouseEvent, ing: any) => {
+    e.preventDefault();
+    e.stopPropagation(); // 阻止关闭 Modal
+    onIngredientClick({
+      name_en: ing.name_en || ing.displayName || "",
+      name_cn: ing.name_cn || ""
+    });
+  };
+
   return (
     <div className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-200" onClick={onClose}>
-      {/* 浮动常驻关闭按钮 (针对手机端) */}
+      {/* 手机端常驻关闭按钮，z-index 设为最高 */}
       <button 
         onClick={onClose} 
-        className="fixed top-4 right-4 z-[310] w-10 h-10 flex items-center justify-center bg-white/20 backdrop-blur-lg text-white rounded-full active:scale-90 transition-all sm:hidden"
+        className="fixed top-4 right-4 z-[320] w-10 h-10 flex items-center justify-center bg-white/20 backdrop-blur-lg text-white rounded-full active:scale-90 transition-all sm:hidden"
       >
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
       </button>
 
       <div 
-        className="bg-[#fcfbf9] w-full max-w-lg rounded-t-[2.5rem] sm:rounded-[3rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-10 duration-300 max-h-[92vh] flex flex-col"
+        className="bg-[#fcfbf9] w-full max-w-lg rounded-t-[2.5rem] sm:rounded-[3rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-10 duration-300 max-h-[92vh] flex flex-col relative"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* 滚动容器 */}
-        <div className="overflow-y-auto flex-1 custom-scrollbar">
+        {/* 顶部安全色块：确保滚动时 Header 顶部的颜色统一 */}
+        <div className="absolute top-0 left-0 right-0 h-20 bg-red-600 z-0" />
+
+        <div className="overflow-y-auto flex-1 custom-scrollbar relative z-10">
           
-          {/* Header Section - 现在包裹在滚动容器内 */}
+          {/* Header Section */}
           <div className="relative bg-red-600 pt-12 pb-16 px-8 text-white border-b-4 border-yellow-400">
             <button onClick={onClose} className="absolute top-5 right-5 w-10 h-10 hidden sm:flex items-center justify-center bg-black/10 text-white rounded-full hover:bg-black/20 active:scale-90 transition-all z-10">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
             
-            <div className="space-y-3 text-left relative z-0">
+            <div className="space-y-3 text-left">
               <h2 className="text-[9px] font-black uppercase tracking-[0.2em] opacity-70 mb-1">{t('dishDetail.authenticSelection')}</h2>
               <div className="space-y-1">
                   <p className="text-4xl font-black tracking-tighter drop-shadow-sm leading-tight">{nameDisplay}</p>
@@ -119,8 +131,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
               )}
             </div>
 
-            {/* Price & Search 悬浮条 */}
-            <div className="absolute -bottom-6 left-8 right-8 flex justify-between items-center">
+            <div className="absolute -bottom-6 left-8 right-8 flex justify-between items-center z-20">
                {dish.displayPrice ? (
                  <span className="bg-yellow-400 text-red-900 px-5 py-2 rounded-2xl font-black text-xl shadow-xl border-2 border-white">
                    {dish.displayPrice}
@@ -165,36 +176,31 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
                 {isLoadingDetail && <span className="text-rose-500 animate-pulse lowercase font-normal">{t('dishDetail.analyzing')}</span>}
               </h4>
               
-              {dish.displayIngredients && dish.displayIngredients.length > 0 ? (
-                <div className="grid grid-cols-2 gap-4">
-                  {dish.displayIngredients.map((ing: any, i: number) => (
-                    <button 
-                      key={i} 
-                      onClick={() => onIngredientClick({ name_en: ing.name_en, name_cn: ing.name_cn })} 
-                      className="p-5 bg-white hover:bg-slate-50 rounded-[1.8rem] text-left border border-slate-200 transition-all active:scale-95 flex flex-col justify-center min-h-[100px] shadow-sm"
-                    >
-                      <span className="text-[15px] font-black text-slate-800 leading-tight mb-1 line-clamp-2 uppercase tracking-tight">
-                        {ing.displayName}
-                      </span>
-                      {!i18n.language.startsWith('zh') && ing.name_cn && ing.name_cn !== ing.displayName && (
-                        <span className="text-xs font-bold text-slate-400 tracking-wide">
-                          {ing.name_cn}
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              ) : isLoadingDetail ? (
-                <div className="grid grid-cols-2 gap-4">
-                  {[1, 2, 3, 4].map(i => (
+              <div className="grid grid-cols-2 gap-4">
+                {isLoadingDetail ? (
+                  [1, 2, 3, 4].map(i => (
                     <div key={i} className="h-28 bg-slate-50 animate-pulse rounded-[1.8rem] border border-slate-100" />
-                  ))}
-                </div>
-              ) : null}
+                  ))
+                ) : dish.displayIngredients?.map((ing: any, i: number) => (
+                  <button 
+                    key={i} 
+                    onClick={(e) => handleIngredientAction(e, ing)} 
+                    className="p-5 bg-white hover:bg-slate-50 rounded-[1.8rem] text-left border border-slate-200 transition-all active:scale-95 flex flex-col justify-center min-h-[100px] shadow-sm group"
+                  >
+                    <span className="text-[15px] font-black text-slate-800 leading-tight mb-1 line-clamp-2 uppercase tracking-tight group-hover:text-red-600">
+                      {ing.displayName}
+                    </span>
+                    {!i18n.language.startsWith('zh') && ing.name_cn && (
+                      <span className="text-xs font-bold text-slate-400 tracking-wide">
+                        {ing.name_cn}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
             </section>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {/* Spicy Card */}
               <button 
                 onClick={onSpicyClick} 
                 className={`p-7 rounded-[2.5rem] border-2 text-left transition-all active:scale-95 ${
@@ -218,7 +224,6 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
                 </div>
               </button>
 
-              {/* Enhanced Allergen Card */}
               <div className={`p-7 rounded-[2.5rem] border-2 flex flex-col justify-start transition-all min-h-[120px] ${
                 isLoadingDetail ? 'bg-slate-50 border-slate-100' 
                 : dish.allergens?.length > 0 ? 'bg-amber-50 border-amber-200 shadow-sm' 
@@ -228,9 +233,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
                   dish.allergens?.length > 0 ? 'text-amber-800/50' : 'text-emerald-800/50'
                 }`}>{t('dishDetail.dietaryFlags')}</h4>
                 <div className="flex flex-wrap gap-2.5">
-                  {isLoadingDetail ? (
-                      <div className="h-5 w-24 bg-emerald-100/50 animate-pulse rounded-full" />
-                  ) : dish.allergens?.length > 0 ? (
+                  {!isLoadingDetail && dish.allergens?.length > 0 ? (
                     dish.allergens.map((a: string, i: number) => {
                       const config = getAllergenConfig(a);
                       return (
@@ -240,7 +243,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
                         </div>
                       );
                     })
-                  ) : (
+                  ) : !isLoadingDetail && (
                     <span className="text-xs font-bold text-emerald-700 italic px-1">{t('dishDetail.noAllergens')}</span>
                   )}
                 </div>
