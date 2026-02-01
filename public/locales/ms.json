@@ -1,5 +1,7 @@
 {
-    "site": { "title": "Baca Menu Cina | Alat Terjemahan Visual AI untuk Pelancongan & Makan di China" },
+  "site": {
+    "title": "Baca Menu Cina | Alat Terjemahan Visual AI untuk Pelancongan & Makan di China"
+  },
   "common": {
     "appError": "Ralat aplikasi",
     "appInitError": "Ralat berlaku semasa memulakan. Sila muat semula halaman.",
@@ -80,7 +82,12 @@
     "freeCredits": "Kredit percuma",
     "left": "baki",
     "currency": "Yuan",
-    "unknownDish": "Hidangan tidak diketahui"
+    "unknownDish": "Hidangan tidak diketahui",
+    "errorNoDishes": "Tiada hidangan ditemui dalam imej ini. Sila cuba foto yang lebih jelas.",
+    "errorNoShop": "Tidak dapat mengenal pasti restoran atau kedai. Sila cuba lagi.",
+    "errorUnexpected": "Ralat yang tidak dijangka berlaku. Sila cuba lagi sebentar nanti.",
+    "purchaseSuccessPremium": "Pas Premium diaktifkan! Nikmati penerokaan tanpa had.",
+    "purchaseSuccessCredits": "Kredit berjaya ditambahkan ke baki anda!"
   },
   "home": {
     "pageTitle": "Baca Menu Cina",
@@ -158,17 +165,412 @@
     "refundProcess": "Hanya hantar ID transaksi PayPal ke support@readchinesemenu.com. Tiada borang rumit."
   },
   "game": {
-    "perfectScore": "Skor sempurna!",
-    "wellDone": "Syabas!",
-    "score": "Skor: {{score}} / 5",
-    "plus10Rewarded": "+10 kredit diberikan",
-    "getFiveFive": "Dapatkan 5/5 untuk meraih kredit!",
-    "finishGame": "Tamat permainan",
-    "literalTranslation": "Terjemahan harfiah",
-    "travelerInsight": "Tips pengembara",
-    "coreIngredients": "Bahan utama",
-    "nextDish": "Hidangan seterusnya",
-    "seeResults": "Lihat keputusan"
+    "title": "Menu Master Mind",
+    "status": {
+      "finish": "Selesai",
+      "next": "Lanjut",
+      "results": "Keputusan",
+      "score": "Skor: {{score}} / 5",
+      "perfect": "Sempurna!",
+      "wellDone": "Syabas!",
+      "reward": "+10 kredit diberikan",
+      "hint": "Dapatkan 5/5 untuk meraih kredit!",
+      "literalLabel": "Harfiah",
+      "insight": "Tips pengembara",
+      "ingredientsLabel": "Bahan utama"
+    },
+    "questions": [
+      {
+        "id": 1,
+        "literal": "Kaki Pistol",
+        "correct": "Paha ayam goreng besar",
+        "options": [
+          "Senjata maut",
+          "Paha ayam goreng besar",
+          "Kaki kuda",
+          "Peralatan polis"
+        ],
+        "ingredients": "Ayam, tepung, rempah",
+        "note": "Ia hanyalah paha ayam goreng besar yang berbentuk seperti pistol. Tak perlu lesen senjata!"
+      },
+      {
+        "id": 2,
+        "literal": "Kek Baba",
+        "correct": "Kek pulut kenyal",
+        "options": [
+          "Makanan bayi",
+          "Sesuatu dari tandas",
+          "Kek pulut kenyal",
+          "Hadiah ayah"
+        ],
+        "ingredients": "Tepung beras, gula, telur",
+        "note": "Namanya dari tekstur lembut (Baba), tapi bunyi 'bahaya' dalam bahasa lain!"
+      },
+      {
+        "id": 3,
+        "literal": "Keldai Dibakar Api",
+        "correct": "Roti isi daging keldai",
+        "options": [
+          "Roti isi daging keldai",
+          "Keldai dalam kebakaran",
+          "Keldai pedas",
+          "Survival kit"
+        ],
+        "ingredients": "Daging keldai, roti rangup",
+        "note": "Roti isi legenda di Utara China. Tiada keldai hidup dibakar!"
+      },
+      {
+        "id": 4,
+        "literal": "Ayam Garisan",
+        "correct": "Ayam kembiri (Capon)",
+        "options": [
+          "Ayam berkabel",
+          "Ayam kurus",
+          "Ayam kembiri (Capon)",
+          "Ayam elektronik"
+        ],
+        "ingredients": "Ayam kembiri, halia",
+        "note": "Dalam sesetengah dialek, 'Garisan' bunyi macam 'Kembiri'. Dagingnya sangat lembut."
+      },
+      {
+        "id": 5,
+        "literal": "Gandum Terbakar",
+        "correct": "Shaomai (Siew Mai)",
+        "options": [
+          "Ladang gandum terbakar",
+          "Roti hangus",
+          "Shaomai (Siew Mai)",
+          "Kemalangan ladang"
+        ],
+        "ingredients": "Babi, udang, kulit nipis",
+        "note": "Ini 'Shaomai'. Namanya bermaksud 'jual semasa panas'."
+      },
+      {
+        "id": 6,
+        "literal": "Rasa Udang",
+        "correct": "Lobster air tawar pedas",
+        "options": [
+          "Udang berjiwa",
+          "Lobster air tawar pedas",
+          "Udang sedap",
+          "Seafood falsafah"
+        ],
+        "ingredients": "Lobster air tawar, rempah, bawang putih, cili",
+        "note": "Bintang makanan jalanan. Namanya kerana perasa adalah watak utama."
+      },
+      {
+        "id": 7,
+        "literal": "Telinga Kucing",
+        "correct": "Pasta bentuk telinga",
+        "options": [
+          "Makanan kucing",
+          "Pasta bentuk telinga",
+          "Telinga kucing betul",
+          "Alat intip"
+        ],
+        "ingredients": "Tepung gandum, air",
+        "note": "Doh buatan tangan berbentuk telinga kucing kecil. Popular di Hangzhou!"
+      },
+      {
+        "id": 8,
+        "literal": "Kulit Kanji Bersandar Daging",
+        "correct": "Babi masak lembaran kanji",
+        "options": [
+          "Babi romantik",
+          "Babi masak lembaran kanji",
+          "Babi menyamar",
+          "Kemalangan melekit"
+        ],
+        "ingredients": "Samcan babi, lembaran kanji",
+        "note": "Perkataan 'Kao' (bersandar) merujuk teknik masak hingga sos melekat pada daging."
+      },
+      {
+        "id": 9,
+        "literal": "Perut Syiling Emas",
+        "correct": "Babat lembu masak kicap",
+        "options": [
+          "Dompet daging",
+          "Babat lembu masak kicap",
+          "Wang dalam perut",
+          "Samcan babi emas"
+        ],
+        "ingredients": "Babat lembu, kicap masin",
+        "note": "Corak babat menyerupai syiling emas China purba."
+      },
+      {
+        "id": 10,
+        "literal": "Telur Daun Pain",
+        "correct": "Telur Pitan (Telur Seribu Tahun)",
+        "options": [
+          "Telur dari pokok pain",
+          "Telur Pitan (Telur Seribu Tahun)",
+          "Bunga bentuk telur",
+          "Telur rasa kayu"
+        ],
+        "ingredients": "Telur itik, kapur, abu",
+        "note": "Dinamakan sempena corak dahan pain yang terbentuk secara semula jadi pada telur."
+      },
+      {
+        "id": 11,
+        "literal": "Semut Memanjat Pokok",
+        "correct": "Suhun tumis daging cincang",
+        "options": [
+          "Snek serangga",
+          "Suhun tumis daging cincang",
+          "Salad kulit kayu",
+          "Alat penyelamat"
+        ],
+        "ingredients": "Suhun, daging cincang",
+        "note": "Daging cincang pada suhun nampak seperti semut memanjat dahan."
+      },
+      {
+        "id": 12,
+        "literal": "Ikan Mandarin Tupai",
+        "correct": "Ikan Mandarin asam manis",
+        "options": [
+          "Hibrid tupai-ikan",
+          "Ikan Mandarin asam manis",
+          "Daging liar",
+          "Ikan dengan kacang"
+        ],
+        "ingredients": "Ikan mandarin, kacang pain",
+        "note": "Ikan dihiris supaya nampak macam ekor tupai dan 'berdesis' bila disiram sos panas!"
+      },
+      {
+        "id": 13,
+        "literal": "Kepala Singa",
+        "correct": "Bebola babi raksasa",
+        "options": [
+          "Daging safari",
+          "Bebola babi raksasa",
+          "Hati berani",
+          "Hidangan zodiak"
+        ],
+        "ingredients": "Daging babi giling, sawi putih",
+        "note": "Bebola menyerupai kepala dan sawi di kelilingnya macam bulu leher singa."
+      },
+      {
+        "id": 14,
+        "literal": "Cakar Phoenix",
+        "correct": "Kaki ayam kukus (Dim Sum)",
+        "options": [
+          "Bahagian burung mitos",
+          "Kaki ayam kukus (Dim Sum)",
+          "Sayap helang",
+          "Kaki cicak"
+        ],
+        "ingredients": "Kaki ayam, sos tausi",
+        "note": "Dalam masakan Cina, 'Phoenix' adalah nama elegan untuk ayam."
+      },
+      {
+        "id": 15,
+        "literal": "Udang Perigi Naga",
+        "correct": "Udang tumis teh Longjing",
+        "options": [
+          "Udang dari perigi",
+          "Udang tumis teh Longjing",
+          "Daging naga",
+          "Teh seafood"
+        ],
+        "ingredients": "Udang sungai, teh Longjing",
+        "note": "Keistimewaan Hangzhou menggunakan teh 'Perigi Naga' yang terkenal."
+      },
+      {
+        "id": 16,
+        "literal": "Kek Isteri",
+        "correct": "Pastri kundur (Winter melon)",
+        "options": [
+          "Hadiah isteri",
+          "Kek dari isteri",
+          "Pastri kundur (Winter melon)",
+          "Kek kahwin"
+        ],
+        "ingredients": "Kundur, tepung, gula",
+        "note": "Legenda kata seorang isteri buat kek ini untuk selamatkan mentua. Tiada isteri di dalam!"
+      },
+      {
+        "id": 17,
+        "literal": "Ayam Pengemis",
+        "correct": "Ayam bakar tanah liat",
+        "options": [
+          "Ayam bakar tanah liat",
+          "Sisa makanan",
+          "Sup gaya gelandangan",
+          "Kepak ayam murah"
+        ],
+        "ingredients": "Ayam utuh, daun teratai, tanah liat",
+        "note": "Asalnya dimasak dalam lumpur oleh pengemis, kini hidangan gourmet."
+      },
+      {
+        "id": 18,
+        "literal": "Keldai Berguling",
+        "correct": "Gulungan pulut tepung kacang",
+        "options": [
+          "Keldai dalam habuk",
+          "Keldai masak kicap",
+          "Gulungan pulut tepung kacang",
+          "Haiwan berguling"
+        ],
+        "ingredients": "Beras pulut, tepung kacang soya",
+        "note": "Dinamakan begitu kerana tepung kacang kuning nampak macam habuk bila keldai berguling."
+      },
+      {
+        "id": 19,
+        "literal": "Hirisan Paru Pasangan",
+        "correct": "Daging & babat sos pedas",
+        "options": [
+          "Sisa manusia",
+          "Daging & babat sos pedas",
+          "Makan malam romantik",
+          "Daging bentuk hati"
+        ],
+        "ingredients": "Hirisan daging, babat, minyak cili",
+        "note": "Dicipta pasangan terkenal. Tiada paru-paru di dalam!"
+      },
+      {
+        "id": 20,
+        "literal": "Ayam Dara",
+        "correct": "Ayam muda kukus",
+        "options": [
+          "Ayam suci",
+          "Ayam muda kukus",
+          "Burung pemalu",
+          "Daging terlarang"
+        ],
+        "ingredients": "Ayam muda, halia",
+        "note": "Terjemahan harfiah 'Tongzi Ji'. Merujuk daging lembut ayam jantan muda."
+      },
+      {
+        "id": 21,
+        "literal": "Ayam Meleleh Air Liur",
+        "correct": "Ayam sejuk sos cili",
+        "options": [
+          "Ayam selera",
+          "Ayam kotor",
+          "Air liur ayam",
+          "Sup pedas"
+        ],
+        "ingredients": "Ayam, minyak cili, bijan",
+        "note": "Hidangan ini sangat sedap hingga air liur meleleh serta-merta!"
+      },
+      {
+        "id": 22,
+        "literal": "Bebola Daging Kencing",
+        "correct": "Bebola daging berkuah",
+        "options": [
+          "Daging kotor",
+          "Bebola daging berkuah",
+          "Daging rasa kencing",
+          "Bebola marah"
+        ],
+        "ingredients": "Daging giling, sup di dalam",
+        "note": "Sangat popular di Hong Kong! Sup akan terpancut keluar bila digigit."
+      },
+      {
+        "id": 23,
+        "literal": "Tokong Melompat Tembok",
+        "correct": "Sup seafood premium",
+        "options": [
+          "Insiden agama",
+          "Sup seafood premium",
+          "Mimpi ngeri vegan",
+          "Kit baiki tembok"
+        ],
+        "ingredients": "Abalone, timun laut, kekapis",
+        "note": "Sangat wangi hingga sami vegetarian pun melompat tembok untuk rasa!"
+      },
+      {
+        "id": 24,
+        "literal": "Tahu Perempuan Tua Berparut",
+        "correct": "Mapo Tofu",
+        "options": [
+          "Tahu untuk kulit",
+          "Mapo Tofu",
+          "Rahsia perempuan tua",
+          "Muka nenek"
+        ],
+        "ingredients": "Tahu, minyak cili, daging cincang",
+        "note": "Nama sempena penciptanya, wanita dengan muka berparut (Mapo) pada abad ke-19."
+      },
+      {
+        "id": 25,
+        "literal": "Ikan Rebus Air",
+        "correct": "Ikan dalam minyak cili mendidih",
+        "options": [
+          "Ikan rebus sihat",
+          "Ikan dalam minyak cili mendidih",
+          "Sup ikan jernih",
+          "Seafood tawar"
+        ],
+        "ingredients": "Filet ikan, cili kering, minyak panas",
+        "note": "Nama yang menipu: ia dihidang dalam minyak cili yang sangat panas!"
+      },
+      {
+        "id": 26,
+        "literal": "Udang Mabuk",
+        "correct": "Udang hidup dalam arak",
+        "options": [
+          "Udang peminum",
+          "Udang hidup dalam arak",
+          "Salad beralkohol",
+          "Pesanan khas chef mabuk"
+        ],
+        "ingredients": "Udang hidup, arak Cina kuat",
+        "note": "Udang diperap hidup-hidup dalam arak. Mereka mabuk semasa anda makan."
+      },
+      {
+        "id": 27,
+        "literal": "Tahu Busuk",
+        "correct": "Tahu diperam goreng",
+        "options": [
+          "Sampah busuk",
+          "Tahu diperam goreng",
+          "Snek 'kaki busuk'",
+          "Keju tamat tempoh"
+        ],
+        "ingredients": "Tahu, air garam peraman",
+        "note": "Bau macam sampah, rasa macam syurga. Cabaran untuk yang berani."
+      },
+      {
+        "id": 28,
+        "literal": "Telinga Kayu",
+        "correct": "Kulat telinga kera (Black fungus)",
+        "options": [
+          "Telinga dari pokok",
+          "Kulat telinga kera (Black fungus)",
+          "Hutan pekak",
+          "Ukiran kayu"
+        ],
+        "ingredients": "Kulat hitam kering",
+        "note": "Kulat yang tumbuh pada batang pokok dan rupa macam telinga manusia."
+      },
+      {
+        "id": 29,
+        "literal": "Jarum Perak",
+        "correct": "Mi Beras Pendek",
+        "options": [
+          "Peralatan perubatan logam",
+          "Mi Beras Pendek",
+          "Sup berbahaya",
+          "Barang kemas berkilat"
+        ],
+        "ingredients": "Tepung beras",
+        "note": "Ini hanyalah mi beras yang pendek dan runcing. Tiada objek tajam digunakan dalam hidangan ini!"
+      },
+      {
+        "id": 30,
+        "literal": "Kulit Sejuk",
+        "correct": "Mi sejuk Liangpi",
+        "options": [
+          "Kulit manusia",
+          "Mi sejuk Liangpi",
+          "Snek kulit",
+          "Bahagian badan sejuk"
+        ],
+        "ingredients": "Tepung gandum, minyak cili",
+        "note": "Dikenali sebagai Liangpi. Hidangan menyegarkan, bukan kulit betul!"
+      }
+    ]
   },
   "reviews": {
     "enjoyExperience": "Suka pengalaman ini?",
@@ -258,64 +660,39 @@
     "badge": "Feed Pengembara",
     "title": "Baru dikenal pasti",
     "dishes": [
-      "Babi Rasa Ikan (鱼香肉丝)", "Mapo Tofu (麻婆豆腐)", "Itik Peking (北京烤鸭)", 
-      "Xiaolongbao (小笼包)", "Mala Xiangguo (麻辣香锅)", "Babi Masak Dua Kali (回锅肉)", 
-      "Shengjianbao (生煎包)", "Lobster Air Tawar Pedas (麻辣小龙虾)", "Mi Dandan (担担面)", 
-      "Lanzhou Ramen (兰州牛肉面)", "Lempeng Daun Bawang (葱油饼)", "Rusuk Masam Manis (糖醋排骨)",
-      "Babi ala Hunan (小炒肉)", "Kepala Ikan Cili (剁椒鱼头)", "Ikan Rebus Minyak Cili (水煮鱼)",
-      "Wan Tan (馄饨)", "Char Siu (叉烧)", "Nasi Ayam Hainan (海南鸡饭)",
-      "Zhajiangmian (炸酱面)", "Roujiamo (肉夹馍)", "Tahu Busuk (臭豆腐)",
-      "Mi Biangbiang (油泼扯面)", "Bebola Kepala Singa (狮子头)", "Babi Dongpo (东坡肉)",
-      "Mi Menyeberang Jambatan (过桥米线)", "Nasi Periuk Tanah (煲仔饭)", "Kway Teow Sapi Goreng (干炒牛河)",
-      "Ayam Gongbao (宫保鸡丁)", "Samcan Masak Kicap (红烧肉)", "Ayam Rebus (白切鸡)",
-      "Tumis Pucuk Kacang (清炒豆苗)", "Bubur Telur Pitan (皮蛋瘦肉粥)", "Malatang (麻辣烫)"
-    ]
-  },
-  "game": {
-    "title": "Menu Master Mind",
-    "status": {
-      "finish": "Selesai",
-      "next": "Lanjut",
-      "results": "Keputusan",
-      "score": "Skor: {{score}} / 5",
-      "perfect": "Sempurna!",
-      "wellDone": "Syabas!",
-      "reward": "+10 kredit diberikan",
-      "hint": "Dapatkan 5/5 untuk meraih kredit!",
-      "literalLabel": "Harfiah",
-      "insight": "Tips pengembara",
-      "ingredientsLabel": "Bahan utama"
-    },
-    "questions": [
-      { "id": 1, "literal": "Kaki Pistol", "correct": "Paha ayam goreng besar", "options": ["Senjata maut", "Paha ayam goreng besar", "Kaki kuda", "Peralatan polis"], "ingredients": "Ayam, tepung, rempah", "note": "Ia hanyalah paha ayam goreng besar yang berbentuk seperti pistol. Tak perlu lesen senjata!" },
-      { "id": 2, "literal": "Kek Baba", "correct": "Kek pulut kenyal", "options": ["Makanan bayi", "Sesuatu dari tandas", "Kek pulut kenyal", "Hadiah ayah"], "ingredients": "Tepung beras, gula, telur", "note": "Namanya dari tekstur lembut (Baba), tapi bunyi 'bahaya' dalam bahasa lain!" },
-      { "id": 3, "literal": "Keldai Dibakar Api", "correct": "Roti isi daging keldai", "options": ["Roti isi daging keldai", "Keldai dalam kebakaran", "Keldai pedas", "Survival kit"], "ingredients": "Daging keldai, roti rangup", "note": "Roti isi legenda di Utara China. Tiada keldai hidup dibakar!" },
-      { "id": 4, "literal": "Ayam Garisan", "correct": "Ayam kembiri (Capon)", "options": ["Ayam berkabel", "Ayam kurus", "Ayam kembiri (Capon)", "Ayam elektronik"], "ingredients": "Ayam kembiri, halia", "note": "Dalam sesetengah dialek, 'Garisan' bunyi macam 'Kembiri'. Dagingnya sangat lembut." },
-      { "id": 5, "literal": "Gandum Terbakar", "correct": "Shaomai (Siew Mai)", "options": ["Ladang gandum terbakar", "Roti hangus", "Shaomai (Siew Mai)", "Kemalangan ladang"], "ingredients": "Babi, udang, kulit nipis", "note": "Ini 'Shaomai'. Namanya bermaksud 'jual semasa panas'." },
-      { "id": 6, "literal": "Rasa Udang", "correct": "Lobster air tawar pedas", "options": ["Udang berjiwa", "Lobster air tawar pedas", "Udang sedap", "Seafood falsafah"], "ingredients": "Lobster air tawar, rempah, bawang putih, cili", "note": "Bintang makanan jalanan. Namanya kerana perasa adalah watak utama." },
-      { "id": 7, "literal": "Telinga Kucing", "correct": "Pasta bentuk telinga", "options": ["Makanan kucing", "Pasta bentuk telinga", "Telinga kucing betul", "Alat intip"], "ingredients": "Tepung gandum, air", "note": "Doh buatan tangan berbentuk telinga kucing kecil. Popular di Hangzhou!" },
-      { "id": 8, "literal": "Kulit Kanji Bersandar Daging", "correct": "Babi masak lembaran kanji", "options": ["Babi romantik", "Babi masak lembaran kanji", "Babi menyamar", "Kemalangan melekit"], "ingredients": "Samcan babi, lembaran kanji", "note": "Perkataan 'Kao' (bersandar) merujuk teknik masak hingga sos melekat pada daging." },
-      { "id": 9, "literal": "Perut Syiling Emas", "correct": "Babat lembu masak kicap", "options": ["Dompet daging", "Babat lembu masak kicap", "Wang dalam perut", "Samcan babi emas"], "ingredients": "Babat lembu, kicap masin", "note": "Corak babat menyerupai syiling emas China purba." },
-      { "id": 10, "literal": "Telur Daun Pain", "correct": "Telur Pitan (Telur Seribu Tahun)", "options": ["Telur dari pokok pain", "Telur Pitan (Telur Seribu Tahun)", "Bunga bentuk telur", "Telur rasa kayu"], "ingredients": "Telur itik, kapur, abu", "note": "Dinamakan sempena corak dahan pain yang terbentuk secara semula jadi pada telur." },
-      { "id": 11, "literal": "Semut Memanjat Pokok", "correct": "Suhun tumis daging cincang", "options": ["Snek serangga", "Suhun tumis daging cincang", "Salad kulit kayu", "Alat penyelamat"], "ingredients": "Suhun, daging cincang", "note": "Daging cincang pada suhun nampak seperti semut memanjat dahan." },
-      { "id": 12, "literal": "Ikan Mandarin Tupai", "correct": "Ikan Mandarin asam manis", "options": ["Hibrid tupai-ikan", "Ikan Mandarin asam manis", "Daging liar", "Ikan dengan kacang"], "ingredients": "Ikan mandarin, kacang pain", "note": "Ikan dihiris supaya nampak macam ekor tupai dan 'berdesis' bila disiram sos panas!" },
-      { "id": 13, "literal": "Kepala Singa", "correct": "Bebola babi raksasa", "options": ["Daging safari", "Bebola babi raksasa", "Hati berani", "Hidangan zodiak"], "ingredients": "Daging babi giling, sawi putih", "note": "Bebola menyerupai kepala dan sawi di kelilingnya macam bulu leher singa." },
-      { "id": 14, "literal": "Cakar Phoenix", "correct": "Kaki ayam kukus (Dim Sum)", "options": ["Bahagian burung mitos", "Kaki ayam kukus (Dim Sum)", "Sayap helang", "Kaki cicak"], "ingredients": "Kaki ayam, sos tausi", "note": "Dalam masakan Cina, 'Phoenix' adalah nama elegan untuk ayam." },
-      { "id": 15, "literal": "Udang Perigi Naga", "correct": "Udang tumis teh Longjing", "options": ["Udang dari perigi", "Udang tumis teh Longjing", "Daging naga", "Teh seafood"], "ingredients": "Udang sungai, teh Longjing", "note": "Keistimewaan Hangzhou menggunakan teh 'Perigi Naga' yang terkenal." },
-      { "id": 16, "literal": "Kek Isteri", "correct": "Pastri kundur (Winter melon)", "options": ["Hadiah isteri", "Kek dari isteri", "Pastri kundur (Winter melon)", "Kek kahwin"], "ingredients": "Kundur, tepung, gula", "note": "Legenda kata seorang isteri buat kek ini untuk selamatkan mentua. Tiada isteri di dalam!" },
-      { "id": 17, "literal": "Ayam Pengemis", "correct": "Ayam bakar tanah liat", "options": ["Ayam bakar tanah liat", "Sisa makanan", "Sup gaya gelandangan", "Kepak ayam murah"], "ingredients": "Ayam utuh, daun teratai, tanah liat", "note": "Asalnya dimasak dalam lumpur oleh pengemis, kini hidangan gourmet." },
-      { "id": 18, "literal": "Keldai Berguling", "correct": "Gulungan pulut tepung kacang", "options": ["Keldai dalam habuk", "Keldai masak kicap", "Gulungan pulut tepung kacang", "Haiwan berguling"], "ingredients": "Beras pulut, tepung kacang soya", "note": "Dinamakan begitu kerana tepung kacang kuning nampak macam habuk bila keldai berguling." },
-      { "id": 19, "literal": "Hirisan Paru Pasangan", "correct": "Daging & babat sos pedas", "options": ["Sisa manusia", "Daging & babat sos pedas", "Makan malam romantik", "Daging bentuk hati"], "ingredients": "Hirisan daging, babat, minyak cili", "note": "Dicipta pasangan terkenal. Tiada paru-paru di dalam!" },
-      { "id": 20, "literal": "Ayam Dara", "correct": "Ayam muda kukus", "options": ["Ayam suci", "Ayam muda kukus", "Burung pemalu", "Daging terlarang"], "ingredients": "Ayam muda, halia", "note": "Terjemahan harfiah 'Tongzi Ji'. Merujuk daging lembut ayam jantan muda." },
-      { "id": 21, "literal": "Ayam Meleleh Air Liur", "correct": "Ayam sejuk sos cili", "options": ["Ayam selera", "Ayam kotor", "Air liur ayam", "Sup pedas"], "ingredients": "Ayam, minyak cili, bijan", "note": "Hidangan ini sangat sedap hingga air liur meleleh serta-merta!" },
-      { "id": 22, "literal": "Bebola Daging Kencing", "correct": "Bebola daging berkuah", "options": ["Daging kotor", "Bebola daging berkuah", "Daging rasa kencing", "Bebola marah"], "ingredients": "Daging giling, sup di dalam", "note": "Sangat popular di Hong Kong! Sup akan terpancut keluar bila digigit." },
-      { "id": 23, "literal": "Tokong Melompat Tembok", "correct": "Sup seafood premium", "options": ["Insiden agama", "Sup seafood premium", "Mimpi ngeri vegan", "Kit baiki tembok"], "ingredients": "Abalone, timun laut, kekapis", "note": "Sangat wangi hingga sami vegetarian pun melompat tembok untuk rasa!" },
-      { "id": 24, "literal": "Tahu Perempuan Tua Berparut", "correct": "Mapo Tofu", "options": ["Tahu untuk kulit", "Mapo Tofu", "Rahsia perempuan tua", "Muka nenek"], "ingredients": "Tahu, minyak cili, daging cincang", "note": "Nama sempena penciptanya, wanita dengan muka berparut (Mapo) pada abad ke-19." },
-      { "id": 25, "literal": "Ikan Rebus Air", "correct": "Ikan dalam minyak cili mendidih", "options": ["Ikan rebus sihat", "Ikan dalam minyak cili mendidih", "Sup ikan jernih", "Seafood tawar"], "ingredients": "Filet ikan, cili kering, minyak panas", "note": "Nama yang menipu: ia dihidang dalam minyak cili yang sangat panas!" },
-      { "id": 26, "literal": "Udang Mabuk", "correct": "Udang hidup dalam arak", "options": ["Udang peminum", "Udang hidup dalam arak", "Salad beralkohol", "Pesanan khas chef mabuk"], "ingredients": "Udang hidup, arak Cina kuat", "note": "Udang diperap hidup-hidup dalam arak. Mereka mabuk semasa anda makan." },
-      { "id": 27, "literal": "Tahu Busuk", "correct": "Tahu diperam goreng", "options": ["Sampah busuk", "Tahu diperam goreng", "Snek 'kaki busuk'", "Keju tamat tempoh"], "ingredients": "Tahu, air garam peraman", "note": "Bau macam sampah, rasa macam syurga. Cabaran untuk yang berani." },
-      { "id": 28, "literal": "Telinga Kayu", "correct": "Kulat telinga kera (Black fungus)", "options": ["Telinga dari pokok", "Kulat telinga kera (Black fungus)", "Hutan pekak", "Ukiran kayu"], "ingredients": "Kulat hitam kering", "note": "Kulat yang tumbuh pada batang pokok dan rupa macam telinga manusia." },
-      { "id": 30, "literal": "Kulit Sejuk", "correct": "Mi sejuk Liangpi", "options": ["Kulit manusia", "Mi sejuk Liangpi", "Snek kulit", "Bahagian badan sejuk"], "ingredients": "Tepung gandum, minyak cili", "note": "Dikenali sebagai Liangpi. Hidangan menyegarkan, bukan kulit betul!" }
+      "Babi Rasa Ikan (鱼香肉丝)",
+      "Mapo Tofu (麻婆豆腐)",
+      "Itik Peking (北京烤鸭)",
+      "Xiaolongbao (小笼包)",
+      "Mala Xiangguo (麻辣香锅)",
+      "Babi Masak Dua Kali (回锅肉)",
+      "Shengjianbao (生煎包)",
+      "Lobster Air Tawar Pedas (麻辣小龙虾)",
+      "Mi Dandan (担担面)",
+      "Lanzhou Ramen (兰州牛肉面)",
+      "Lempeng Daun Bawang (葱油饼)",
+      "Rusuk Masam Manis (糖醋排骨)",
+      "Babi ala Hunan (小炒肉)",
+      "Kepala Ikan Cili (剁椒鱼头)",
+      "Ikan Rebus Minyak Cili (水煮鱼)",
+      "Wan Tan (馄饨)",
+      "Char Siu (叉烧)",
+      "Nasi Ayam Hainan (海南鸡饭)",
+      "Zhajiangmian (炸酱面)",
+      "Roujiamo (肉夹馍)",
+      "Tahu Busuk (臭豆腐)",
+      "Mi Biangbiang (油泼扯面)",
+      "Bebola Kepala Singa (狮子头)",
+      "Babi Dongpo (东坡肉)",
+      "Mi Menyeberang Jambatan (过桥米线)",
+      "Nasi Periuk Tanah (煲仔饭)",
+      "Kway Teow Sapi Goreng (干炒牛河)",
+      "Ayam Gongbao (宫保鸡丁)",
+      "Samcan Masak Kicap (红烧肉)",
+      "Ayam Rebus (白切鸡)",
+      "Tumis Pucuk Kacang (清炒豆苗)",
+      "Bubur Telur Pitan (皮蛋瘦肉粥)",
+      "Malatang (麻辣烫)"
     ]
   },
   "survival": {
@@ -478,48 +855,68 @@
     "boosted": "Ditingkatkan!",
     "masterMindBonus": "Bonus Master Mind"
   },
-"storeCard": {
-      "restaurantIdentified": "Restoran Dikenal Pasti",
-      "businessIdentified": "Perniagaan Dikenal Pasti",
-      "localShop": "Kedai Tempatan",
-      "establishment": "Premis",
-      "fairPrice": "Harga Berpatutan",
-      "expertInsight": "Wawasan Pakar",
-      "defaultDescription": "Premis tempatan terkemuka yang menawarkan perkhidmatan dan pengalaman asli.",
-      "houseSpecialties": "Keistimewaan Rumah",
-      "serviceContext": "Konteks Perkhidmatan",
-      "showToStaff": "Tunjukkan kepada Staf",
-      "askForTable": "(Tanya Meja)",
-      "askForAssistance": "(Minta Bantuan)"
+  "storeCard": {
+    "restaurantIdentified": "Restoran Dikenal Pasti",
+    "businessIdentified": "Perniagaan Dikenal Pasti",
+    "localShop": "Kedai Tempatan",
+    "establishment": "Premis",
+    "fairPrice": "Harga Berpatutan",
+    "expertInsight": "Wawasan Pakar",
+    "defaultDescription": "Premis tempatan terkemuka yang menawarkan perkhidmatan dan pengalaman asli.",
+    "houseSpecialties": "Keistimewaan Rumah",
+    "serviceContext": "Konteks Perkhidmatan",
+    "showToStaff": "Tunjukkan kepada Staf",
+    "askForTable": "(Tanya Meja)",
+    "askForAssistance": "(Minta Bantuan)"
+  },
+  "refund": {
+    "title": "Bayaran Balik Adil & Mudah",
+    "quote": "\"Kami mahu menjadi jambatan anda kepada rasa, bukan penghalang. Jika alat kami tidak membantu anda, kami tidak mahu wang anda.\"",
+    "windowTitle": "Tempoh 24 Jam",
+    "windowContent": "Minta bayaran balik dalam masa 24 jam selepas pembelian, dengan syarat anda telah menggunakan 3 atau kurang kredit.",
+    "techTitle": "Jaminan Teknikal",
+    "techContent": "Jika AI kami gagal sepenuhnya membaca foto menu yang jelas, anda berhak mendapat bayaran balik penuh 100%.",
+    "processTitle": "Proses Tanpa Kerumitan",
+    "processContent": "Hanya emel ID transaksi PayPal atau tangkapan skrin pembayaran anda ke ",
+    "processContentEnd": ". Tiada log masuk atau borang diperlukan.",
+    "understand": "Saya Faham"
+  },
+  "staffHelper": {
+    "headerLabel": "Terjemahan Bahasa Melayu",
+    "messageEn": "Saya ingin makan di sini. Adakah terdapat meja kosong?",
+    "playAudio": "Mainkan Audio",
+    "playAudioCn": "播放语音",
+    "footerHint": "Tunjukkan skrin ini kepada pelayan",
+    "footerHintCn": "请出示给服务员"
+  },
+  "creditUpdate": {
+    "title": "KREDIT DIKEMAS KINI",
+    "ok": "OK"
+  },
+  "legal": {
+    "privacyTitle": "Dasar Privasi",
+    "tosTitle": "Syarat Perkhidmatan",
+    "accept": "Saya Setuju",
+    "lastUpdated": "Kemas Kini Terakhir: Januari 2026",
+    "privacy": {
+      "collectTitle": "Maklumat yang Kami Kumpul",
+      "collectContent": "Kami tidak menyimpan foto asal anda dalam pelayan kami. Imej yang diproses oleh AI kami digunakan semata-mata untuk penukaran masa nyata menu dan premis. Setelah analisis selesai, imej akan dibuang.",
+      "usageTitle": "Penggunaan Data",
+      "usageContent": "Kami menggunakan storan tempatan untuk menjejak baki kredit dan ganjaran harian anda. Data ini berada pada peranti anda. Kami menggunakan perkhidmatan pihak ketiga seperti Google Gemini untuk pengecaman dan analisis teks.",
+      "cameraTitle": "Kebenaran Kamera",
+      "cameraContent": "Aplikasi meminta akses kamera untuk membolehkan anda mengambil foto menu. Kami tidak mengakses kamera anda tanpa tindakan eksplisit daripada anda (mengklik ikon kamera).",
+      "cookiesTitle": "Kuki",
+      "cookiesContent": "Kami menggunakan kuki penting dan storan tempatan untuk mengekalkan sesi pengguna dan baki kredit anda. Kami tidak menggunakan kuki penjejakan untuk pengiklanan."
     },
-    "refund": {
-      "title": "Bayaran Balik Adil & Mudah",
-      "quote": "\"Kami mahu menjadi jambatan anda kepada rasa, bukan penghalang. Jika alat kami tidak membantu anda, kami tidak mahu wang anda.\"",
-      "windowTitle": "Tempoh 24 Jam",
-      "windowContent": "Minta bayaran balik dalam masa 24 jam selepas pembelian, dengan syarat anda telah menggunakan 3 atau kurang kredit.",
-      "techTitle": "Jaminan Teknikal",
-      "techContent": "Jika AI kami gagal sepenuhnya membaca foto menu yang jelas, anda berhak mendapat bayaran balik penuh 100%.",
-      "processTitle": "Proses Tanpa Kerumitan",
-      "processContent": "Hanya emel ID transaksi PayPal atau tangkapan skrin pembayaran anda ke ",
-      "processContentEnd": ". Tiada log masuk atau borang diperlukan.",
-      "understand": "Saya Faham"
-    },
-    "staffHelper": {
-      "headerLabel": "Terjemahan Bahasa Melayu",
-      "messageEn": "Saya ingin makan di sini. Adakah terdapat meja kosong?",
-      "playAudio": "Mainkan Audio",
-      "playAudioCn": "播放语音",
-      "footerHint": "Tunjukkan skrin ini kepada pelayan",
-      "footerHintCn": "请出示给服务员"
-    },
-    "creditUpdate": {
-      "title": "KREDIT DIKEMAS KINI",
-      "ok": "OK"
-    },
-    "legal": {
-      "privacyTitle": "Dasar Privasi",
-      "tosTitle": "Syarat Perkhidmatan",
-      "accept": "Saya Terima",
-      "lastUpdated": "Terakhir Dikemas Kini: Januari 2026"
+    "tos": {
+      "agreementTitle": "Perjanjian Penggunaan",
+      "agreementContent": "Dengan menggunakan Read Chinese Menu, anda bersetuju untuk menggunakan alat ini untuk penerokaan peribadi dan bukan komersial. Anda bertanggungjawab ke atas sebarang keputusan makan yang dibuat berdasarkan terjemahan yang dihasilkan oleh AI.",
+      "accuracyTitle": "Penafian Ketepatan",
+      "accuracyContent": "Terjemahan dan analisis AI tidak 100% tepat. Kami tidak dapat menjamin bahawa semua bahan, alergen, atau harga dikenal pasti dengan betul. Sentiasa sahkan dengan kakitangan restoran sebelum mengambil sebarang makanan jika anda mempunyai alahan yang teruk.",
+      "paymentTitle": "Pembayaran & Kredit",
+      "paymentContent": "Kredit yang dibeli tidak boleh dipindahkan. Langganan tamat mengikut tempoh masa yang dipilih. Dasar bayaran balik diperinci dalam bahagian Dasar Bayaran Balik dalam modul Harga.",
+      "abuseTitle": "Penyalahgunaan Perkhidmatan",
+      "abuseContent": "Kami berhak menyekat pengguna yang cuba memintas had kredit, mengikis data, atau menggunakan perkhidmatan untuk pemprosesan berskala besar secara automatik."
     }
+  }
 }

@@ -27,7 +27,7 @@ export const SupportSection: React.FC<{
   const middleCardRef = useRef<HTMLDivElement>(null);
 
   // TIERS 数据完全从 JSON 中获取文案
-  // 注意：这里的 credits 字段我们保留数字部分，单位通过 t('common.credits') 统一处理
+  // 注意：这里的 credits 字段我们保留数字部分，单位统一处理
   const TIERS: SupportTier[] = [
     { 
       id: 'soda', 

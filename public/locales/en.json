@@ -80,7 +80,12 @@
     "freeCredits": "Free Credits",
     "left": "left",
     "currency": "Yuan",
-    "unknownDish": "Unknown Dish"
+    "unknownDish": "Unknown Dish",
+    "errorNoDishes": "No dishes found in this image. Please try a clearer photo.",
+    "errorNoShop": "Could not identify the restaurant or shop. Please try again.",
+    "errorUnexpected": "An unexpected error occurred. Please try again later.",
+    "purchaseSuccessPremium": "Premium Pass activated! Enjoy unlimited exploration.",
+    "purchaseSuccessCredits": "Credits added successfully to your balance!"
   },
   "home": {
     "pageTitle": "Read Chinese Menu",
@@ -157,19 +162,7 @@
     "noFussProcess": "No-Fuss Process",
     "refundProcess": "Simply email your PayPal transaction ID or a screenshot of your payment to support@readchinesemenu.com. No login or forms required."
   },
-  "game": {
-    "perfectScore": "Perfect Score!",
-    "wellDone": "Well Done!",
-    "score": "Score: {{score}} / 5",
-    "plus10Rewarded": "+10 Credits Rewarded",
-    "getFiveFive": "Get 5/5 to earn credits reward!",
-    "finishGame": "Finish Game",
-    "literalTranslation": "Literal Translation",
-    "travelerInsight": "Traveler Insight",
-    "coreIngredients": "Core Ingredients",
-    "nextDish": "Next Dish",
-    "seeResults": "See Results"
-  },
+
   "reviews": {
     "enjoyExperience": "Enjoying the Experience?",
     "leaveFeedback": "Leave your feedback or share your story",

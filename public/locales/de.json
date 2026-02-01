@@ -1,5 +1,7 @@
 {
-    "site": { "title": "Chinesische Speisekarten lesen | KI-Visual-Translator für Reisen und Essen in China" },
+  "site": {
+    "title": "Chinesische Speisekarten lesen | KI-Visual-Translator für Reisen und Essen in China"
+  },
   "common": {
     "appError": "App-Fehler",
     "appInitError": "Fehler bei der Initialisierung. Bitte Seite neu laden.",
@@ -80,7 +82,12 @@
     "freeCredits": "Gratis Guthaben",
     "left": "verbleibend",
     "currency": "Yuan",
-    "unknownDish": "Unbekanntes Gericht"
+    "unknownDish": "Unbekanntes Gericht",
+    "errorNoDishes": "Keine Gerichte auf diesem Bild gefunden. Bitte versuchen Sie es mit einem klareren Foto.",
+    "errorNoShop": "Restaurant oder Geschäft konnte nicht identifiziert werden. Bitte versuchen Sie es erneut.",
+    "errorUnexpected": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.",
+    "purchaseSuccessPremium": "Premium-Pass aktiviert! Viel Spaß beim unbegrenzten Erkunden.",
+    "purchaseSuccessCredits": "Credits erfolgreich zu Ihrem Guthaben hinzugefügt!"
   },
   "home": {
     "pageTitle": "Chinesische Menüs lesen",
@@ -158,17 +165,412 @@
     "refundProcess": "Sende einfach die PayPal-Transaktions-ID an support@readchinesemenu.com. Keine Formulare nötig."
   },
   "game": {
-    "perfectScore": "Perfekt!",
-    "wellDone": "Gut gemacht!",
-    "score": "Ergebnis: {{score}} / 5",
-    "plus10Rewarded": "+10 Guthaben erhalten",
-    "getFiveFive": "Erreiche 5/5 für extra Guthaben!",
-    "finishGame": "Spiel beenden",
-    "literalTranslation": "Wörtliche Übersetzung",
-    "travelerInsight": "Reisenden-Info",
-    "coreIngredients": "Kernzutaten",
-    "nextDish": "Nächstes Gericht",
-    "seeResults": "Ergebnisse sehen"
+    "title": "Menu Master Mind",
+    "status": {
+      "finish": "Beenden",
+      "next": "Weiter",
+      "results": "Ergebnisse",
+      "score": "Punkte: {{score}} / 5",
+      "perfect": "Perfekt!",
+      "wellDone": "Gut gemacht!",
+      "reward": "+10 Guthaben erhalten",
+      "hint": "Erreiche 5/5 für extra Guthaben!",
+      "literalLabel": "Wörtlich",
+      "insight": "Reisenden-Info",
+      "ingredientsLabel": "Kernzutaten"
+    },
+    "questions": [
+      {
+        "id": 1,
+        "literal": "Pistolenbein",
+        "correct": "Frittierte Hähnchenkeule",
+        "options": [
+          "Tödliche Waffe",
+          "Frittierte Hähnchenkeule",
+          "Pferdebein",
+          "Polizeiausrüstung"
+        ],
+        "ingredients": "Hähnchen, Mehl, Gewürze",
+        "note": "Es ist nur eine große Hähnchenkeule in Pistolenform. Kein Waffenschein nötig!"
+      },
+      {
+        "id": 2,
+        "literal": "Baba-Kuchen",
+        "correct": "Klebreiskuchen",
+        "options": [
+          "Babynahrung",
+          "Klo-Zubehör",
+          "Klebreiskuchen",
+          "Geschenk vom Papa"
+        ],
+        "ingredients": "Reismehl, Zucker, Ei",
+        "note": "Der Name kommt von der weichen Textur (Baba), klingt aber in anderen Sprachen 'gefährlich'!"
+      },
+      {
+        "id": 3,
+        "literal": "Feuergebrannter Esel",
+        "correct": "Eselfleisch-Sandwich",
+        "options": [
+          "Eselfleisch-Sandwich",
+          "Esel im Feuer",
+          "Scharfer Esel",
+          "Survival-Kit"
+        ],
+        "ingredients": "Eselfleisch, knuspriges Gebäck",
+        "note": "Ein legendäres Sandwich aus Nordchina. Kein lebender Esel wurde verbrannt!"
+      },
+      {
+        "id": 4,
+        "literal": "Linien-Huhn",
+        "correct": "Kapaun (kastrierter Hahn)",
+        "options": [
+          "Huhn mit Kabeln",
+          "Dünnes Huhn",
+          "Kapaun (kastrierter Hahn)",
+          "Elektronik-Huhn"
+        ],
+        "ingredients": "Kapaun, Ingwer",
+        "note": "In manchen Dialekten klingt 'Linie' wie 'Kastrieren'. Berühmt für zartes Fleisch."
+      },
+      {
+        "id": 5,
+        "literal": "Verbrannter Weizen",
+        "correct": "Shaomai (Teigtaschen)",
+        "options": [
+          "Brennendes Weizenfeld",
+          "Angebranntes Brot",
+          "Shaomai (Teigtaschen)",
+          "Farm-Unfall"
+        ],
+        "ingredients": "Schweinefleisch, Garnelen, dünner Teig",
+        "note": "Das ist 'Shaomai'. Der Name bedeutet wörtlich 'Verkaufe es solange es heiß ist'."
+      },
+      {
+        "id": 6,
+        "literal": "Die Garnele kosten",
+        "correct": "Scharfe Flusskrebse",
+        "options": [
+          "Garnele mit Seele",
+          "Scharfe Flusskrebse",
+          "Aromatische Garnele",
+          "Philosophisches Meeresfrüchte-Gericht"
+        ],
+        "ingredients": "Flusskrebse, Gewürze, Knoblauch, Chili",
+        "note": "Der Star des Streetfoods. Heißt so, weil die Würze hier der Hauptdarsteller ist."
+      },
+      {
+        "id": 7,
+        "literal": "Katzenohren",
+        "correct": "Pasta in Ohrenform",
+        "options": [
+          "Katzenfutter",
+          "Pasta in Ohrenform",
+          "Echte Katzenohren",
+          "Abhörgerät"
+        ],
+        "ingredients": "Weizenmehl, Wasser",
+        "note": "Handgeformter Teig in Form von kleinen Katzenohren. Sehr beliebt in Hangzhou!"
+      },
+      {
+        "id": 8,
+        "literal": "Stärkehaut am Fleisch",
+        "correct": "Schweinefleisch mit Stärkeblättern",
+        "options": [
+          "Romantisches Schwein",
+          "Schweinefleisch mit Stärkeblättern",
+          "Undercover-Schwein",
+          "Klebriger Unfall"
+        ],
+        "ingredients": "Schweinebauch, Stärkeblätter",
+        "note": "Das Wort 'Kao' (anlehnen) beschreibt die Technik, bei der die Sauce am Fleisch haftet."
+      },
+      {
+        "id": 9,
+        "literal": "Goldmünzen-Magen",
+        "correct": "Geschmorter Rindermagen",
+        "options": [
+          "Fleisch-Geldbeutel",
+          "Geschmorter Rindermagen",
+          "Geld im Magen",
+          "Goldener Schweinebauch"
+        ],
+        "ingredients": "Rindermagen, Sojasauce",
+        "note": "Das Wabenmuster des Magens erinnert an alte chinesische Goldmünzen."
+      },
+      {
+        "id": 10,
+        "literal": "Kiefernnadel-Ei",
+        "correct": "Tausendjähriges Ei (Pidan)",
+        "options": [
+          "Ei von der Kiefer",
+          "Tausendjähriges Ei (Pidan)",
+          "Blumen-Ei",
+          "Holz-Ei"
+        ],
+        "ingredients": "Entenei, Kalk, Asche",
+        "note": "Benannt nach den kiefernzweig-ähnlichen Mustern, die natürlich auf dem Ei entstehen."
+      },
+      {
+        "id": 11,
+        "literal": "Ameisen klettern auf Bäume",
+        "correct": "Glasnudeln mit Hackfleisch",
+        "options": [
+          "Insekten-Snack",
+          "Glasnudeln mit Hackfleisch",
+          "Baumrinden-Salat",
+          "Notfall-Set"
+        ],
+        "ingredients": "Glasnudeln, Hackfleisch",
+        "note": "Die Hackfleischstücke an den Nudeln sehen aus wie Ameisen, die einen Ast hochklettern."
+      },
+      {
+        "id": 12,
+        "literal": "Eichhörnchen-Mandarin-Fisch",
+        "correct": "Süß-saurer Mandarin-Fisch",
+        "options": [
+          "Eichhörnchen-Fisch-Hybrid",
+          "Süß-saurer Mandarin-Fisch",
+          "Wildfleisch",
+          "Fisch mit Nüssen"
+        ],
+        "ingredients": "Mandarin-Fisch, Pinienkerne",
+        "note": "Der Fisch wird so geschnitzt, dass er wie ein Eichhörnchenschwanz aussieht und beim Übergießen mit Sauce 'zischt'!"
+      },
+      {
+        "id": 13,
+        "literal": "Löwenkopf",
+        "correct": "Riesige Fleischbällchen",
+        "options": [
+          "Safari-Fleisch",
+          "Riesige Fleischbällchen",
+          "Mutiges Herz",
+          "Sternzeichen-Gericht"
+        ],
+        "ingredients": "Schweinehack, Kohl",
+        "note": "Das Fleischbällchen sieht aus wie der Kopf, der Kohl darum wie die Mähne eines Löwen."
+      },
+      {
+        "id": 14,
+        "literal": "Phönix-Krallen",
+        "correct": "Gedämpfte Hühnerfüße (Dim Sum)",
+        "options": [
+          "Teile eines Fabelwesens",
+          "Gedämpfte Hühnerfüße (Dim Sum)",
+          "Adlerflügel",
+          "Eidechsenbeine"
+        ],
+        "ingredients": "Hühnerfüße, Schwarzbohnensauce",
+        "note": "In der chinesischen Küche ist 'Phönix' der elegante Name für Huhn."
+      },
+      {
+        "id": 15,
+        "literal": "Drachenbrunnen-Garnelen",
+        "correct": "Garnelen mit Longjing-Tee",
+        "options": [
+          "Garnelen aus dem Brunnen",
+          "Garnelen mit Longjing-Tee",
+          "Drachenfleisch",
+          "Meeresfrüchte-Tee"
+        ],
+        "ingredients": "Flussgarnelen, Longjing-Tee",
+        "note": "Spezialität aus Hangzhou, die den berühmten 'Drachenbrunnen'-Tee verwendet."
+      },
+      {
+        "id": 16,
+        "literal": "Ehefrauen-Kuchen",
+        "correct": "Wintermelonen-Gebäck",
+        "options": [
+          "Geschenk für Frauen",
+          "Kuchen aus Ehefrauen",
+          "Wintermelonen-Gebäck",
+          "Hochzeitskuchen"
+        ],
+        "ingredients": "Wintermelone, Mehl, Zucker",
+        "note": "Die Legende sagt, eine Frau erfand ihn, um ihren Schwiegervater zu retten. Keine Ehefrau im Kuchen!"
+      },
+      {
+        "id": 17,
+        "literal": "Bettler-Huhn",
+        "correct": "Im Tonmantel gegartes Huhn",
+        "options": [
+          "Im Tonmantel gegartes Huhn",
+          "Essensreste",
+          "Obdachlosen-Suppe",
+          "Günstige Chicken Wings"
+        ],
+        "ingredients": "Ganzes Huhn, Lotusblätter, Ton",
+        "note": "Ursprünglich von einem Bettler im Schlamm gegart, heute ein Gourmet-Gericht."
+      },
+      {
+        "id": 18,
+        "literal": "Rollender Esel",
+        "correct": "Klebreisrollen mit Sojamehl",
+        "options": [
+          "Esel im Staub",
+          "Geschmorter Esel",
+          "Klebreisrollen mit Sojamehl",
+          "Rollendes Tier"
+        ],
+        "ingredients": "Klebreis, Sojamehl",
+        "note": "Heißt so, weil das gelbe Sojamehl wie der Staub aussieht, den ein rollender Esel aufwirbelt."
+      },
+      {
+        "id": 19,
+        "literal": "Lungenstücke des Ehepaars",
+        "correct": "Rind & Kutteln in scharfer Sauce",
+        "options": [
+          "Menschliche Überreste",
+          "Rind & Kutteln in scharfer Sauce",
+          "Romantisches Dinner",
+          "Herzförmiges Fleisch"
+        ],
+        "ingredients": "Rindfleischscheiben, Kutteln, Chiliöl",
+        "note": "Von einem berühmten Ehepaar kreiert. Es ist keine Lunge enthalten!"
+      },
+      {
+        "id": 20,
+        "literal": "Jungfern-Huhn",
+        "correct": "Gedämpftes junges Huhn",
+        "options": [
+          "Reines Huhn",
+          "Gedämpftes junges Huhn",
+          "Schüchterner Vogel",
+          "Verbotenes Fleisch"
+        ],
+        "ingredients": "Junges Huhn, Ingwer",
+        "note": "Wörtliche Übersetzung von 'Tongzi Ji'. Bezeichnet einfach zartes Fleisch eines jungen Hähnchens."
+      },
+      {
+        "id": 21,
+        "literal": "Speichel-Huhn",
+        "correct": "Kaltes Huhn in Chilisauce",
+        "options": [
+          "Huhn, das Appetit macht",
+          "Unsauberes Huhn",
+          "Hühnerspucke",
+          "Scharfe Suppe"
+        ],
+        "ingredients": "Huhn, Chiliöl, Sesam",
+        "note": "Das Gericht ist so lecker, dass einem sofort das Wasser im Mund zusammenläuft."
+      },
+      {
+        "id": 22,
+        "literal": "Pinkelnde Rinderbällchen",
+        "correct": "Saftige Rindfleischbällchen",
+        "options": [
+          "Schmutziges Rind",
+          "Saftige Rindfleischbällchen",
+          "Fleisch mit Urin-Geschmack",
+          "Wütende Bällchen"
+        ],
+        "ingredients": "Rinderhack, Brühe innen",
+        "note": "Berühmt in Hongkong! Die Brühe spritzt beim Draufbeißen heraus."
+      },
+      {
+        "id": 23,
+        "literal": "Buddha springt über die Mauer",
+        "correct": "Premium Meeresfrüchte-Suppe",
+        "options": [
+          "Religiöser Vorfall",
+          "Premium Meeresfrüchte-Suppe",
+          "Veganer-Albtraum",
+          "Mauer-Reparatur-Set"
+        ],
+        "ingredients": "Abalone, Seegurke, Jakobsmuscheln",
+        "note": "Duftet so gut, dass selbst ein vegetarischer Mönch über die Mauer springen würde, um zu probieren!"
+      },
+      {
+        "id": 24,
+        "literal": "Tofu der pockennarbigen Alten",
+        "correct": "Mapo Tofu",
+        "options": [
+          "Tofu für die Haut",
+          "Mapo Tofu",
+          "Geheimnis der Alten",
+          "Gesicht der Oma"
+        ],
+        "ingredients": "Tofu, Chiliöl, Hackfleisch",
+        "note": "Benannt nach der Erfinderin, einer Frau mit Pockennarben (Mapo) im 19. Jahrhundert."
+      },
+      {
+        "id": 25,
+        "literal": "In Wasser gekochter Fisch",
+        "correct": "Fisch in kochendem Chiliöl",
+        "options": [
+          "Gesunder gekochter Fisch",
+          "Fisch in kochendem Chiliöl",
+          "Klare Fischsuppe",
+          "Ungewürzte Meeresfrüchte"
+        ],
+        "ingredients": "Fischfilet, getrockneter Chili, heißes Öl",
+        "note": "Irreführender Name: Er wird in einem Bad aus glühend heißem Chiliöl serviert!"
+      },
+      {
+        "id": 26,
+        "literal": "Betrunkene Garnelen",
+        "correct": "Lebende Garnelen in Schnaps",
+        "options": [
+          "Trinkende Garnele",
+          "Lebende Garnelen in Schnaps",
+          "Alkoholischer Salat",
+          "Sonderbestellung betrunkener Chef"
+        ],
+        "ingredients": "Lebende Garnelen, starker Chinaschnaps",
+        "note": "Garnelen werden lebendig in Schnaps mariniert. Sie sind buchstäblich betrunken beim Essen."
+      },
+      {
+        "id": 27,
+        "literal": "Stinkender Tofu",
+        "correct": "Frittierter fermentierter Tofu",
+        "options": [
+          "Verfaulter Müll",
+          "Frittierter fermentierter Tofu",
+          "Schmutzfuß-Snack",
+          "Abgelaufener Käse"
+        ],
+        "ingredients": "Tofu, fermentierte Lake",
+        "note": "Riecht wie Müll, schmeckt wie der Himmel. Eine Herausforderung für Mutige."
+      },
+      {
+        "id": 28,
+        "literal": "Holzohren",
+        "correct": "Mu-Err Pilze (Judasohr)",
+        "options": [
+          "Ohren vom Baum",
+          "Mu-Err Pilze (Judasohr)",
+          "Tauber Wald",
+          "Holzskulptur"
+        ],
+        "ingredients": "Getrocknete Mu-Err Pilze",
+        "note": "Ein Pilz, der an Baumstämmen wächst und exakt wie ein menschliches Ohr aussieht."
+      },
+      {
+        "id": 29,
+        "literal": "Silbernadeln",
+        "correct": "Kurze Reisnudeln",
+        "options": [
+          "Medizinisches Besteck",
+          "Kurze Reisnudeln",
+          "Gefährliche Suppe",
+          "Glänzender Schmuck"
+        ],
+        "ingredients": "Reismehl",
+        "note": "Das sind nur kurze, an den Enden spitze Nudeln. Nichts Scharfes!"
+      },
+      {
+        "id": 30,
+        "literal": "Kalte Haut",
+        "correct": "Liangpi Kalte Nudeln",
+        "options": [
+          "Menschenhaut",
+          "Liangpi Kalte Nudeln",
+          "Haut-Snack",
+          "Kalter Körperteil"
+        ],
+        "ingredients": "Weizenmehl, Chiliöl",
+        "note": "Heißt Liangpi. Ein sehr erfrischendes Gericht, keine echte Haut!"
+      }
+    ]
   },
   "reviews": {
     "enjoyExperience": "Gefällt dir die App?",
@@ -258,65 +660,39 @@
     "badge": "Reisenden-Feed",
     "title": "Zuletzt identifiziert",
     "dishes": [
-      "Fischduft-Schweinefleisch (鱼香肉丝)", "Mapo Tofu (麻婆豆腐)", "Peking-Ente (北京烤鸭)", 
-      "Xiaolongbao (小笼包)", "Mala Xiangguo (麻辣香锅)", "Zweifach gekochtes Schweinefleisch (回锅肉)", 
-      "Shengjianbao (生煎包)", "Scharfe Flusskrebse (麻辣小龙虾)", "Dandan Nudeln (担担面)", 
-      "Lanzhou Ramen (兰州牛肉面)", "Fladenbrot mit Frühlingszwiebeln (葱油饼)", "Süß-saure Rippchen (糖醋排骨)",
-      "Hunan-style Schweinefleisch (小炒肉)", "Fischkopf mit Chili (剁椒鱼头)", "Fisch in scharfem Öl (水煮鱼)",
-      "Wonton-Suppe (馄饨)", "Char Siu (叉烧)", "Hainan Hähnchen-Reis (海南鸡饭)",
-      "Zhajiangmian (炸酱面)", "Roujiamo (肉夹馍)", "Stinkender Tofu (臭豆腐)",
-      "Biangbiang Nudeln (油泼扯面)", "Löwenkopf-Fleischbällchen (狮子头)", "Dongpo Schweinefleisch (东坡肉)",
-      "Über-die-Brücke-Nudeln (过桥米线)", "Reis im Tontopf (煲仔饭)", "Gebratene Reisnudeln mit Rind (干炒牛河)",
-      "Gongbao Hähnchen (宫保鸡丁)", "Geschmorter Schweinebauch (红烧肉)", "Gekochtes Hähnchen (白切鸡)",
-      "Gebratene Erbsensprossen (清炒豆苗)", "Reisbrei mit Tausendjährigem Ei (皮蛋瘦肉粥)", "Malatang (麻辣烫)"
-    ]
-  },
-  "game": {
-    "title": "Menu Master Mind",
-    "status": {
-      "finish": "Beenden",
-      "next": "Weiter",
-      "results": "Ergebnisse",
-      "score": "Punkte: {{score}} / 5",
-      "perfect": "Perfekt!",
-      "wellDone": "Gut gemacht!",
-      "reward": "+10 Guthaben erhalten",
-      "hint": "Erreiche 5/5 für extra Guthaben!",
-      "literalLabel": "Wörtlich",
-      "insight": "Reisenden-Info",
-      "ingredientsLabel": "Kernzutaten"
-    },
-    "questions": [
-      { "id": 1, "literal": "Pistolenbein", "correct": "Frittierte Hähnchenkeule", "options": ["Tödliche Waffe", "Frittierte Hähnchenkeule", "Pferdebein", "Polizeiausrüstung"], "ingredients": "Hähnchen, Mehl, Gewürze", "note": "Es ist nur eine große Hähnchenkeule in Pistolenform. Kein Waffenschein nötig!" },
-      { "id": 2, "literal": "Baba-Kuchen", "correct": "Klebreiskuchen", "options": ["Babynahrung", "Klo-Zubehör", "Klebreiskuchen", "Geschenk vom Papa"], "ingredients": "Reismehl, Zucker, Ei", "note": "Der Name kommt von der weichen Textur (Baba), klingt aber in anderen Sprachen 'gefährlich'!" },
-      { "id": 3, "literal": "Feuergebrannter Esel", "correct": "Eselfleisch-Sandwich", "options": ["Eselfleisch-Sandwich", "Esel im Feuer", "Scharfer Esel", "Survival-Kit"], "ingredients": "Eselfleisch, knuspriges Gebäck", "note": "Ein legendäres Sandwich aus Nordchina. Kein lebender Esel wurde verbrannt!" },
-      { "id": 4, "literal": "Linien-Huhn", "correct": "Kapaun (kastrierter Hahn)", "options": ["Huhn mit Kabeln", "Dünnes Huhn", "Kapaun (kastrierter Hahn)", "Elektronik-Huhn"], "ingredients": "Kapaun, Ingwer", "note": "In manchen Dialekten klingt 'Linie' wie 'Kastrieren'. Berühmt für zartes Fleisch." },
-      { "id": 5, "literal": "Verbrannter Weizen", "correct": "Shaomai (Teigtaschen)", "options": ["Brennendes Weizenfeld", "Angebranntes Brot", "Shaomai (Teigtaschen)", "Farm-Unfall"], "ingredients": "Schweinefleisch, Garnelen, dünner Teig", "note": "Das ist 'Shaomai'. Der Name bedeutet wörtlich 'Verkaufe es solange es heiß ist'." },
-      { "id": 6, "literal": "Die Garnele kosten", "correct": "Scharfe Flusskrebse", "options": ["Garnele mit Seele", "Scharfe Flusskrebse", "Aromatische Garnele", "Philosophisches Meeresfrüchte-Gericht"], "ingredients": "Flusskrebse, Gewürze, Knoblauch, Chili", "note": "Der Star des Streetfoods. Heißt so, weil die Würze hier der Hauptdarsteller ist." },
-      { "id": 7, "literal": "Katzenohren", "correct": "Pasta in Ohrenform", "options": ["Katzenfutter", "Pasta in Ohrenform", "Echte Katzenohren", "Abhörgerät"], "ingredients": "Weizenmehl, Wasser", "note": "Handgeformter Teig in Form von kleinen Katzenohren. Sehr beliebt in Hangzhou!" },
-      { "id": 8, "literal": "Stärkehaut am Fleisch", "correct": "Schweinefleisch mit Stärkeblättern", "options": ["Romantisches Schwein", "Schweinefleisch mit Stärkeblättern", "Undercover-Schwein", "Klebriger Unfall"], "ingredients": "Schweinebauch, Stärkeblätter", "note": "Das Wort 'Kao' (anlehnen) beschreibt die Technik, bei der die Sauce am Fleisch haftet." },
-      { "id": 9, "literal": "Goldmünzen-Magen", "correct": "Geschmorter Rindermagen", "options": ["Fleisch-Geldbeutel", "Geschmorter Rindermagen", "Geld im Magen", "Goldener Schweinebauch"], "ingredients": "Rindermagen, Sojasauce", "note": "Das Wabenmuster des Magens erinnert an alte chinesische Goldmünzen." },
-      { "id": 10, "literal": "Kiefernnadel-Ei", "correct": "Tausendjähriges Ei (Pidan)", "options": ["Ei von der Kiefer", "Tausendjähriges Ei (Pidan)", "Blumen-Ei", "Holz-Ei"], "ingredients": "Entenei, Kalk, Asche", "note": "Benannt nach den kiefernzweig-ähnlichen Mustern, die natürlich auf dem Ei entstehen." },
-      { "id": 11, "literal": "Ameisen klettern auf Bäume", "correct": "Glasnudeln mit Hackfleisch", "options": ["Insekten-Snack", "Glasnudeln mit Hackfleisch", "Baumrinden-Salat", "Notfall-Set"], "ingredients": "Glasnudeln, Hackfleisch", "note": "Die Hackfleischstücke an den Nudeln sehen aus wie Ameisen, die einen Ast hochklettern." },
-      { "id": 12, "literal": "Eichhörnchen-Mandarin-Fisch", "correct": "Süß-saurer Mandarin-Fisch", "options": ["Eichhörnchen-Fisch-Hybrid", "Süß-saurer Mandarin-Fisch", "Wildfleisch", "Fisch mit Nüssen"], "ingredients": "Mandarin-Fisch, Pinienkerne", "note": "Der Fisch wird so geschnitzt, dass er wie ein Eichhörnchenschwanz aussieht und beim Übergießen mit Sauce 'zischt'!" },
-      { "id": 13, "literal": "Löwenkopf", "correct": "Riesige Fleischbällchen", "options": ["Safari-Fleisch", "Riesige Fleischbällchen", "Mutiges Herz", "Sternzeichen-Gericht"], "ingredients": "Schweinehack, Kohl", "note": "Das Fleischbällchen sieht aus wie der Kopf, der Kohl darum wie die Mähne eines Löwen." },
-      { "id": 14, "literal": "Phönix-Krallen", "correct": "Gedämpfte Hühnerfüße (Dim Sum)", "options": ["Teile eines Fabelwesens", "Gedämpfte Hühnerfüße (Dim Sum)", "Adlerflügel", "Eidechsenbeine"], "ingredients": "Hühnerfüße, Schwarzbohnensauce", "note": "In der chinesischen Küche ist 'Phönix' der elegante Name für Huhn." },
-      { "id": 15, "literal": "Drachenbrunnen-Garnelen", "correct": "Garnelen mit Longjing-Tee", "options": ["Garnelen aus dem Brunnen", "Garnelen mit Longjing-Tee", "Drachenfleisch", "Meeresfrüchte-Tee"], "ingredients": "Flussgarnelen, Longjing-Tee", "note": "Spezialität aus Hangzhou, die den berühmten 'Drachenbrunnen'-Tee verwendet." },
-      { "id": 16, "literal": "Ehefrauen-Kuchen", "correct": "Wintermelonen-Gebäck", "options": ["Geschenk für Frauen", "Kuchen aus Ehefrauen", "Wintermelonen-Gebäck", "Hochzeitskuchen"], "ingredients": "Wintermelone, Mehl, Zucker", "note": "Die Legende sagt, eine Frau erfand ihn, um ihren Schwiegervater zu retten. Keine Ehefrau im Kuchen!" },
-      { "id": 17, "literal": "Bettler-Huhn", "correct": "Im Tonmantel gegartes Huhn", "options": ["Im Tonmantel gegartes Huhn", "Essensreste", "Obdachlosen-Suppe", "Günstige Chicken Wings"], "ingredients": "Ganzes Huhn, Lotusblätter, Ton", "note": "Ursprünglich von einem Bettler im Schlamm gegart, heute ein Gourmet-Gericht." },
-      { "id": 18, "literal": "Rollender Esel", "correct": "Klebreisrollen mit Sojamehl", "options": ["Esel im Staub", "Geschmorter Esel", "Klebreisrollen mit Sojamehl", "Rollendes Tier"], "ingredients": "Klebreis, Sojamehl", "note": "Heißt so, weil das gelbe Sojamehl wie der Staub aussieht, den ein rollender Esel aufwirbelt." },
-      { "id": 19, "literal": "Lungenstücke des Ehepaars", "correct": "Rind & Kutteln in scharfer Sauce", "options": ["Menschliche Überreste", "Rind & Kutteln in scharfer Sauce", "Romantisches Dinner", "Herzförmiges Fleisch"], "ingredients": "Rindfleischscheiben, Kutteln, Chiliöl", "note": "Von einem berühmten Ehepaar kreiert. Es ist keine Lunge enthalten!" },
-      { "id": 20, "literal": "Jungfern-Huhn", "correct": "Gedämpftes junges Huhn", "options": ["Reines Huhn", "Gedämpftes junges Huhn", "Schüchterner Vogel", "Verbotenes Fleisch"], "ingredients": "Junges Huhn, Ingwer", "note": "Wörtliche Übersetzung von 'Tongzi Ji'. Bezeichnet einfach zartes Fleisch eines jungen Hähnchens." },
-      { "id": 21, "literal": "Speichel-Huhn", "correct": "Kaltes Huhn in Chilisauce", "options": ["Huhn, das Appetit macht", "Unsauberes Huhn", "Hühnerspucke", "Scharfe Suppe"], "ingredients": "Huhn, Chiliöl, Sesam", "note": "Das Gericht ist so lecker, dass einem sofort das Wasser im Mund zusammenläuft." },
-      { "id": 22, "literal": "Pinkelnde Rinderbällchen", "correct": "Saftige Rindfleischbällchen", "options": ["Schmutziges Rind", "Saftige Rindfleischbällchen", "Fleisch mit Urin-Geschmack", "Wütende Bällchen"], "ingredients": "Rinderhack, Brühe innen", "note": "Berühmt in Hongkong! Die Brühe spritzt beim Draufbeißen heraus." },
-      { "id": 23, "literal": "Buddha springt über die Mauer", "correct": "Premium Meeresfrüchte-Suppe", "options": ["Religiöser Vorfall", "Premium Meeresfrüchte-Suppe", "Veganer-Albtraum", "Mauer-Reparatur-Set"], "ingredients": "Abalone, Seegurke, Jakobsmuscheln", "note": "Duftet so gut, dass selbst ein vegetarischer Mönch über die Mauer springen würde, um zu probieren!" },
-      { "id": 24, "literal": "Tofu der pockennarbigen Alten", "correct": "Mapo Tofu", "options": ["Tofu für die Haut", "Mapo Tofu", "Geheimnis der Alten", "Gesicht der Oma"], "ingredients": "Tofu, Chiliöl, Hackfleisch", "note": "Benannt nach der Erfinderin, einer Frau mit Pockennarben (Mapo) im 19. Jahrhundert." },
-      { "id": 25, "literal": "In Wasser gekochter Fisch", "correct": "Fisch in kochendem Chiliöl", "options": ["Gesunder gekochter Fisch", "Fisch in kochendem Chiliöl", "Klare Fischsuppe", "Ungewürzte Meeresfrüchte"], "ingredients": "Fischfilet, getrockneter Chili, heißes Öl", "note": "Irreführender Name: Er wird in einem Bad aus glühend heißem Chiliöl serviert!" },
-      { "id": 26, "literal": "Betrunkene Garnelen", "correct": "Lebende Garnelen in Schnaps", "options": ["Trinkende Garnele", "Lebende Garnelen in Schnaps", "Alkoholischer Salat", "Sonderbestellung betrunkener Chef"], "ingredients": "Lebende Garnelen, starker Chinaschnaps", "note": "Garnelen werden lebendig in Schnaps mariniert. Sie sind buchstäblich betrunken beim Essen." },
-      { "id": 27, "literal": "Stinkender Tofu", "correct": "Frittierter fermentierter Tofu", "options": ["Verfaulter Müll", "Frittierter fermentierter Tofu", "Schmutzfuß-Snack", "Abgelaufener Käse"], "ingredients": "Tofu, fermentierte Lake", "note": "Riecht wie Müll, schmeckt wie der Himmel. Eine Herausforderung für Mutige." },
-      { "id": 28, "literal": "Holzohren", "correct": "Mu-Err Pilze (Judasohr)", "options": ["Ohren vom Baum", "Mu-Err Pilze (Judasohr)", "Tauber Wald", "Holzskulptur"], "ingredients": "Getrocknete Mu-Err Pilze", "note": "Ein Pilz, der an Baumstämmen wächst und exakt wie ein menschliches Ohr aussieht." },
-      { "id": 29, "literal": "Silbernadeln", "correct": "Kurze Reisnudeln", "options": ["Medizinisches Besteck", "Kurze Reisnudeln", "Gefährliche Suppe", "Glänzender Schmuck"], "ingredients": "Reismehl", "note": "Das sind nur kurze, an den Enden spitze Nudeln. Nichts Scharfes!" },
-      { "id": 30, "literal": "Kalte Haut", "correct": "Liangpi Kalte Nudeln", "options": ["Menschenhaut", "Liangpi Kalte Nudeln", "Haut-Snack", "Kalter Körperteil"], "ingredients": "Weizenmehl, Chiliöl", "note": "Heißt Liangpi. Ein sehr erfrischendes Gericht, keine echte Haut!" }
+      "Fischduft-Schweinefleisch (鱼香肉丝)",
+      "Mapo Tofu (麻婆豆腐)",
+      "Peking-Ente (北京烤鸭)",
+      "Xiaolongbao (小笼包)",
+      "Mala Xiangguo (麻辣香锅)",
+      "Zweifach gekochtes Schweinefleisch (回锅肉)",
+      "Shengjianbao (生煎包)",
+      "Scharfe Flusskrebse (麻辣小龙虾)",
+      "Dandan Nudeln (担担面)",
+      "Lanzhou Ramen (兰州牛肉面)",
+      "Fladenbrot mit Frühlingszwiebeln (葱油饼)",
+      "Süß-saure Rippchen (糖醋排骨)",
+      "Hunan-style Schweinefleisch (小炒肉)",
+      "Fischkopf mit Chili (剁椒鱼头)",
+      "Fisch in scharfem Öl (水煮鱼)",
+      "Wonton-Suppe (馄饨)",
+      "Char Siu (叉烧)",
+      "Hainan Hähnchen-Reis (海南鸡饭)",
+      "Zhajiangmian (炸酱面)",
+      "Roujiamo (肉夹馍)",
+      "Stinkender Tofu (臭豆腐)",
+      "Biangbiang Nudeln (油泼扯面)",
+      "Löwenkopf-Fleischbällchen (狮子头)",
+      "Dongpo Schweinefleisch (东坡肉)",
+      "Über-die-Brücke-Nudeln (过桥米线)",
+      "Reis im Tontopf (煲仔饭)",
+      "Gebratene Reisnudeln mit Rind (干炒牛河)",
+      "Gongbao Hähnchen (宫保鸡丁)",
+      "Geschmorter Schweinebauch (红烧肉)",
+      "Gekochtes Hähnchen (白切鸡)",
+      "Gebratene Erbsensprossen (清炒豆苗)",
+      "Reisbrei mit Tausendjährigem Ei (皮蛋瘦肉粥)",
+      "Malatang (麻辣烫)"
     ]
   },
   "survival": {
@@ -480,47 +856,67 @@
     "masterMindBonus": "Master Mind Bonus"
   },
   "storeCard": {
-      "restaurantIdentified": "Restaurant Identifiziert",
-      "businessIdentified": "Unternehmen Identifiziert",
-      "localShop": "Lokales Geschäft",
-      "establishment": "Einrichtung",
-      "fairPrice": "Fairer Preis",
-      "expertInsight": "Experten-Einblick",
-      "defaultDescription": "Eine bemerkenswerte lokale Einrichtung, die authentische Dienstleistungen bietet.",
-      "houseSpecialties": "Spezialitäten des Hauses",
-      "serviceContext": "Service-Kontext",
-      "showToStaff": "Dem Personal zeigen",
-      "askForTable": "(Nach Tisch fragen)",
-      "askForAssistance": "(Um Hilfe bitten)"
+    "restaurantIdentified": "Restaurant Identifiziert",
+    "businessIdentified": "Unternehmen Identifiziert",
+    "localShop": "Lokales Geschäft",
+    "establishment": "Einrichtung",
+    "fairPrice": "Fairer Preis",
+    "expertInsight": "Experten-Einblick",
+    "defaultDescription": "Eine bemerkenswerte lokale Einrichtung, die authentische Dienstleistungen bietet.",
+    "houseSpecialties": "Spezialitäten des Hauses",
+    "serviceContext": "Service-Kontext",
+    "showToStaff": "Dem Personal zeigen",
+    "askForTable": "(Nach Tisch fragen)",
+    "askForAssistance": "(Um Hilfe bitten)"
+  },
+  "refund": {
+    "title": "Faire & Einfache Rückerstattung",
+    "quote": "\"Wir möchten Ihre Brücke zu neuen Aromen sein, kein Hindernis. Wenn unser Tool Ihnen nicht hilft, möchten wir Ihr Geld nicht.\"",
+    "windowTitle": "24-Stunden-Fenster",
+    "windowContent": "Rückerstattung innerhalb von 24h anfordern, sofern max. 3 Credits verbraucht wurden.",
+    "techTitle": "Technische Garantie",
+    "techContent": "Wenn unsere KI ein klares Foto nicht lesen kann, haben Sie Anspruch auf 100% Rückerstattung.",
+    "processTitle": "Unkomplizierter Prozess",
+    "processContent": "Senden Sie einfach Ihre PayPal-Transaktions-ID an ",
+    "processContentEnd": ". Keine Formulare erforderlich.",
+    "understand": "Ich verstehe"
+  },
+  "staffHelper": {
+    "headerLabel": "Deutsche Übersetzung",
+    "messageEn": "Ich möchte hier essen. Haben Sie einen Tisch frei?",
+    "playAudio": "Audio abspielen",
+    "playAudioCn": "播放语音",
+    "footerHint": "Zeigen Sie diesen Bildschirm dem Kellner",
+    "footerHintCn": "请出示给服务员"
+  },
+  "creditUpdate": {
+    "title": "CREDITS AKTUALISIERT",
+    "ok": "OK"
+  },
+  "legal": {
+    "privacyTitle": "Datenschutzerklärung",
+    "tosTitle": "Nutzungsbedingungen",
+    "accept": "Ich akzeptiere",
+    "lastUpdated": "Zuletzt aktualisiert: Januar 2026",
+    "privacy": {
+      "collectTitle": "Erhobene Informationen",
+      "collectContent": "Wir speichern Ihre Originalfotos nicht auf unseren Servern. Von unserer KI verarbeitete Bilder werden ausschließlich für die Echtzeit-Konvertierung von Menüs und Ladenfronten verwendet. Sobald die Analyse abgeschlossen ist, werden die Bilder verworfen.",
+      "usageTitle": "Datennutzung",
+      "usageContent": "Wir nutzen den lokalen Speicher, um Ihre verbleibenden Credits und täglichen Belohnungen zu verfolgen. Diese Daten verbleiben auf Ihrem Gerät. Wir nutzen Dienste von Drittanbietern wie Google Gemini für die Texterkennung und -analyse.",
+      "cameraTitle": "Kameraberechtigungen",
+      "cameraContent": "Die App fordert Kamerazugriff an, damit Sie Fotos von Menüs machen können. Wir greifen nicht ohne Ihre ausdrückliche Handlung (Klick auf das Kamerasymbol) auf Ihre Kamera zu.",
+      "cookiesTitle": "Cookies",
+      "cookiesContent": "Wir verwenden notwendige Cookies und lokalen Speicher, um Ihre Benutzersitzung und Ihr Credit-Guthaben aufrechtzuerhalten. Wir verwenden keine Tracking-Cookies für Werbezwecke."
     },
-    "refund": {
-      "title": "Faire & Einfache Rückerstattung",
-      "quote": "\"Wir möchten Ihre Brücke zu neuen Aromen sein, kein Hindernis. Wenn unser Tool Ihnen nicht hilft, möchten wir Ihr Geld nicht.\"",
-      "windowTitle": "24-Stunden-Fenster",
-      "windowContent": "Rückerstattung innerhalb von 24h anfordern, sofern max. 3 Credits verbraucht wurden.",
-      "techTitle": "Technische Garantie",
-      "techContent": "Wenn unsere KI ein klares Foto nicht lesen kann, haben Sie Anspruch auf 100% Rückerstattung.",
-      "processTitle": "Unkomplizierter Prozess",
-      "processContent": "Senden Sie einfach Ihre PayPal-Transaktions-ID an ",
-      "processContentEnd": ". Keine Formulare erforderlich.",
-      "understand": "Ich verstehe"
-    },
-    "staffHelper": {
-      "headerLabel": "Deutsche Übersetzung",
-      "messageEn": "Ich möchte hier essen. Haben Sie einen Tisch frei?",
-      "playAudio": "Audio abspielen",
-      "playAudioCn": "播放语音",
-      "footerHint": "Zeigen Sie diesen Bildschirm dem Kellner",
-      "footerHintCn": "请出示给服务员"
-    },
-    "creditUpdate": {
-      "title": "CREDITS AKTUALISIERT",
-      "ok": "OK"
-    },
-    "legal": {
-      "privacyTitle": "Datenschutzerklärung",
-      "tosTitle": "Nutzungsbedingungen",
-      "accept": "Akzeptieren",
-      "lastUpdated": "Zuletzt aktualisiert: Januar 2026"
+    "tos": {
+      "agreementTitle": "Nutzungsvereinbarung",
+      "agreementContent": "Durch die Nutzung von Read Chinese Menu erklären Sie sich damit einverstanden, das Tool für die persönliche, nicht-kommerzielle Erkundung zu nutzen. Sie sind für alle Entscheidungen verantwortlich, die auf der Grundlage von KI-generierten Übersetzungen getroffen werden.",
+      "accuracyTitle": "Haftungsausschluss für Genauigkeit",
+      "accuracyContent": "KI-Übersetzung und -Analyse sind nicht zu 100 % genau. Wir können nicht garantieren, dass alle Zutaten, Allergene oder Preise korrekt identifiziert werden. Bestätigen Sie bei schweren Allergien vor dem Verzehr von Speisen immer alles mit dem Restaurantpersonal.",
+      "paymentTitle": "Zahlungen & Credits",
+      "paymentContent": "Gekaufte Credits sind nicht übertragbar. Abonnements laufen gemäß dem gewählten Zeitraum ab. Rückerstattungsrichtlinien sind im spezifischen Abschnitt im Preismodul aufgeführt.",
+      "abuseTitle": "Missbrauch des Dienstes",
+      "abuseContent": "Wir behalten uns das Recht vor, Benutzer zu sperren, die versuchen, Credit-Limits zu umgehen, Daten zu extrahieren oder den Dienst für automatisierte großflächige Verarbeitungen zu nutzen."
     }
+  }
 }
