@@ -65,7 +65,6 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
   const nameCN = dish.name_cn || "未知菜品";
   const nameDisplay = dish.displayName;
   const pinyin = formatChinesePhonetic(dish.pinyin || dish.pinyin_name || "");
-  const pronunciation = formatChinesePhonetic(dish.pronunciation || dish.sounds_like || "");
 
   const speakDishName = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -117,14 +116,9 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
               </div>
             </div>
 
-            {(pinyin || pronunciation) && (
+            {pinyin && (
               <div className="flex flex-col gap-1.5 pt-2 mt-1 border-t border-white/10 w-fit">
-                {pinyin && <p className="text-sm font-medium text-yellow-300 lowercase italic leading-none">{pinyin}</p>}
-                {pronunciation && (
-                  <p className="text-[11px] font-medium text-white/80 italic flex items-center gap-2">
-                    <span className="opacity-50 not-italic font-normal">{t('dishDetail.approx')}:</span> "{pronunciation}"
-                  </p>
-                )}
+                <p className="text-sm font-medium text-yellow-300 lowercase italic leading-none">{pinyin}</p>
               </div>
             )}
           </div>
@@ -136,7 +130,7 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
                  {dish.displayPrice}
                </span>
              ) : <div />}
-             <button onClick={() => window.open(`https://www.bing.com/images/search?q=${encodeURIComponent(`${dish.name_en} ${nameCN} food`)}`, '_blank')} className="bg-white text-slate-700 px-4 py-2.5 rounded-2xl font-black text-[10px] shadow-xl flex items-center gap-2 active:scale-95 border border-slate-100 uppercase tracking-widest">
+             <button onClick={() => window.open(`https://www.bing.com/images/search?q=${encodeURIComponent(`${dish.name_en || nameDisplay} ${nameCN} food`)}`, '_blank')} className="bg-white text-slate-700 px-4 py-2.5 rounded-2xl font-black text-[10px] shadow-xl flex items-center gap-2 active:scale-95 border border-slate-100 uppercase tracking-widest">
                🔍 {t('dishDetail.searchPhotos')}
              </button>
           </div>
@@ -170,23 +164,31 @@ export const DishDetailModal: React.FC<DishDetailModalProps> = ({
             <div className="grid grid-cols-2 gap-4">
               {isLoadingDetail ? (
                 [1, 2, 3, 4].map(i => <div key={i} className="h-28 bg-slate-50 animate-pulse rounded-[1.8rem]" />)
-              ) : dish.displayIngredients?.map((ing: any, i: number) => (
-                <button 
-                  key={i} 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onIngredientClick({ name_en: ing.name_en || ing.displayName || "", name_cn: ing.name_cn || "" });
-                  }} 
-                  className="p-5 bg-white hover:bg-slate-50 rounded-[1.8rem] text-left border border-slate-200 transition-all active:scale-95 flex flex-col justify-center min-h-[100px] shadow-sm group"
-                >
-                  <span className="text-[15px] font-black text-slate-800 leading-tight mb-1 line-clamp-2 uppercase tracking-tight group-hover:text-red-600">
-                    {ing.displayName}
-                  </span>
-                  {!i18n.language.startsWith('zh') && ing.name_cn && (
-                    <span className="text-xs font-bold text-slate-400 tracking-wide">{ing.name_cn}</span>
-                  )}
-                </button>
-              ))}
+              ) : (dish.classic_ingredients || dish.displayIngredients)?.map((ing: any, i: number) => {
+                const displayName = ing.name_translated || ing.displayName || ing.name_en;
+                const chineseName = ing.name_cn;
+
+                return (
+                  <button 
+                    key={i} 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onIngredientClick({ 
+                        name_en: ing.name_en || displayName, 
+                        name_cn: chineseName || "" 
+                      });
+                    }} 
+                    className="p-5 bg-white hover:bg-slate-50 rounded-[1.8rem] text-left border border-slate-200 transition-all active:scale-95 flex flex-col justify-center min-h-[100px] shadow-sm group"
+                  >
+                    <span className="text-[15px] font-black text-slate-800 leading-tight mb-1 line-clamp-2 uppercase tracking-tight group-hover:text-red-600">
+                      {displayName}
+                    </span>
+                    {!i18n.language.startsWith('zh') && chineseName && chineseName !== displayName && (
+                      <span className="text-xs font-bold text-slate-400 tracking-wide">{chineseName}</span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </section>
 

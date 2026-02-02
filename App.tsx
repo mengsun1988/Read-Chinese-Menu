@@ -105,6 +105,21 @@ const App: React.FC = () => {
     if (element) element.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
+  // --- 购买成功处理逻辑 ---
+  const onPurchaseSuccess = (newUserData: any) => {
+    syncWithBackend(newUserData);
+    setShowPricing(false);
+
+    // 判断是订阅还是买点数
+    const isPremium = newUserData.passExpiryDate && new Date(newUserData.passExpiryDate) > new Date();
+    const msg = isPremium 
+      ? t('common.purchaseSuccessPremium') 
+      : t('common.purchaseSuccessCredits');
+
+    setCreditUpdateMessage(msg);
+    setTimeout(() => setCreditUpdateMessage(null), 4000);
+  };
+
   const lastLangRef = useRef(i18n.language);
 
   useEffect(() => {
@@ -152,9 +167,6 @@ const App: React.FC = () => {
     });
   };
 
-// ... 前面 import 保持不变
-
-  // --- 修改 handleFileChange 逻辑 ---
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -168,7 +180,6 @@ const App: React.FC = () => {
       const currentLang = i18n.language; 
 
       if (mode === RecognitionMode.MENU) {
-        // --- 菜单模式：执行扣费逻辑 (后端已扣除 50 点) ---
         const result = await processMenuImage(base64, currentLang);
 
         if (result && result.error === "OUT_OF_CREDITS") {
@@ -180,30 +191,20 @@ const App: React.FC = () => {
 
         if (result && Array.isArray(result.dishes) && result.dishes.length > 0) {
           setDishes(result.dishes);
-          
-          // 【核心修改】菜单识别成功，立即同步点数
           if (result.usage) {
             syncWithBackend(result.usage);
-            
-            // 【新增】扣费通知：显示 3 秒后自动消失
-            setCreditUpdateMessage(t('common.deductNote', { amount: 50 })); // 建议在 i18n 添加此词条，或直接用字符串
+            // 提示扣费及余额，复用 creditsLeft key
+            setCreditUpdateMessage(`-50 ${t('common.creditsLeft')}: ${result.usage.credits}`);
             setTimeout(() => setCreditUpdateMessage(null), 3000);
           }
-          
           setStatus(AppStatus.SUCCESS);
         } else { 
           throw new Error(t('common.errorNoDishes')); 
         }
-} else {
-        // --- 店面模式：不扣费 ---
+      } else {
         const rawResult = await processStorefrontImage(base64, currentLang);
-        
         if (rawResult) {
-          // 1. 同步点数 (此时 usage 已经有了，所以没红线)
           if (rawResult.usage) syncWithBackend(rawResult.usage);
-
-          // 2. 修正逻辑：根据 StoreResult 的定义 (store_name) 来匹配
-          // 这里的逻辑是：如果后端返回了完整的 store 对象就用它，否则用 rawResult 自身，最后是保底
           const finalStoreData = (rawResult as any).store || 
                                  (rawResult.store_name ? rawResult : null) || 
                                  { 
@@ -213,7 +214,6 @@ const App: React.FC = () => {
                                    specialty_dishes: [],
                                    average_price_range: ""
                                  };
-
           setStoreResult(finalStoreData); 
           setStatus(AppStatus.SUCCESS);
         } else { 
@@ -226,36 +226,20 @@ const App: React.FC = () => {
     }
   };
 
-  // --- 修改 handleDishClick 逻辑 ---
   const handleDishClick = async (dish: any) => {
-    // 1. 已分析过则直接展示
     if (dish.isFullyAnalyzed) {
       setSelectedDish(dish);
       return;
     }
-
     setSelectedDish(dish);
     setLoadingDetail(true);
-
     try {
-      // 2. 获取详情 (后端此时应返回不扣费的 usage)
       const result = await getDishDeepDetail(dish.name_cn, dish.name_en, i18n.language);
-      
       if (result) {
-        // 保持点数同步
         if (result.usage) syncWithBackend(result.usage);
-
-        const updatedDish = { 
-          ...dish, 
-          ...result, 
-          isFullyAnalyzed: true 
-        };
-        
+        const updatedDish = { ...dish, ...result, isFullyAnalyzed: true };
         setSelectedDish(updatedDish);
-        // 更新主列表中的快照，防止重复点击触发分析
-        setDishes(prev => prev.map(d => 
-          (d.name_cn === dish.name_cn || d.id === dish.id) ? updatedDish : d
-        ));
+        setDishes(prev => prev.map(d => (d.name_cn === dish.name_cn || d.id === dish.id) ? updatedDish : d));
       }
     } catch (e) { 
       console.error("Deep Analysis Failed:", e);
@@ -265,12 +249,10 @@ const App: React.FC = () => {
     }
   };
 
-// ... 后面 Return 逻辑保持不变
   const currentLangObj = SUPPORTED_LANGS.find(l => i18n.language.startsWith(l.code)) || SUPPORTED_LANGS[0];
 
-return (
+  return (
     <div className="min-h-screen pb-0 bg-[#fafafa] font-sans w-full overflow-x-hidden">
-      {/* 红色悬浮条逻辑：仅在 IDLE (首页) 状态下显示 */}
       {status === AppStatus.IDLE && (
         <div className="fixed top-4 left-0 right-0 z-[5000] px-4 pointer-events-none">
           <header className="max-w-4xl mx-auto h-14 bg-rose-600 rounded-full shadow-[0_10px_30px_rgba(244,63,94,0.4)] flex items-center justify-between px-6 pointer-events-auto">
@@ -366,7 +348,15 @@ return (
       {waiterContext && <WaiterCard {...waiterContext} onClose={() => setWaiterContext(null)} />}
       {showStaffHelper && <StaffHelperModal onClose={() => setShowStaffHelper(false)} />}
       {legalView && <LegalModal type={legalView} onClose={() => setLegalView(null)} />}
-      {creditUpdateMessage && <CreditUpdateCard message={creditUpdateMessage} onClose={() => setCreditUpdateMessage(null)} />}
+      
+      {/* 提示卡片：固定在顶部 24 像素处，确保层级最高 */}
+      {creditUpdateMessage && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[10000] w-full max-w-xs px-4 pointer-events-none">
+          <div className="pointer-events-auto">
+            <CreditUpdateCard message={creditUpdateMessage} onClose={() => setCreditUpdateMessage(null)} />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
