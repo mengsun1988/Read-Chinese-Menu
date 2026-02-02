@@ -116,7 +116,7 @@ export default {
         const isDevMode = env.ENABLE_DEV_MODE === "true";
         const isUnlimited = isDevMode || (userData.passExpiryDate && new Date(userData.passExpiryDate).getTime() > Date.now());
 
-        // 仅在 menu 模式下预检查
+        // 仅在 menu 模式下预检查余额
         if (type === "menu" && !isUnlimited && (Number(userData.credits) || 0) < 50) {
           return new Response(JSON.stringify({ error: "OUT_OF_CREDITS", credits: userData.credits }), {
             status: 403, headers: corsHeaders
@@ -125,53 +125,27 @@ export default {
 
         const controller = new AbortController();
 
-        // --- 完整 Prompts (找回了所有的过敏原逻辑) ---
+        // --- Prompts ---
         const getDetailPrompt = () => `Analyze dish "${name_cn}" and return JSON. Target language: ${lang}.
           CRITICAL: You are a food safety expert. You MUST identify hidden allergens. 
           1. Scan for Crustaceans (Crab/Shrimp) and Mollusks (Snails/Clams/Cockles/Abalone).
           2. Check for Gluten: MUST include "Gluten" if dish contains Wheat, Flour, Noodles, or Soy Sauce.
           3. Check for Soy: Include if Tofu, Bean Paste, or Soy Sauce is used.
           4. Check for Nuts: Peanuts (including Peanut Oil), Tree nuts (Walnuts/Cashews).
-          5. Others: Milk, Egg, Fish, Sesame, Mustard.
-
           Return JSON: { 
             "name_translated": "name in ${lang}", 
             "classic_ingredients": [{"name_cn": "...", "name_en": "...", "name_translated": "..."}], 
             "potential_ingredients": [{"name_cn": "...", "name_en": "...", "name_translated": "..."}], 
             "spiciness_level": 0-5, "pinyin": "", "pronunciation": "", 
-            "allergens": ["List all, e.g., 'Gluten', 'Soy', 'Crustaceans', 'Mollusks', 'Peanuts'"], 
+            "allergens": ["List all"], 
             "description": "briefly in ${lang}", "has_animal_fats": true/false 
           }.`;
 
         const getMenuPrompt = () => `Identify all dishes from menu and return JSON. Target language: ${lang}.
-          For EACH dish, analyze ingredients deeply for safety:
-          - MUST identify Mollusks (mud snails, clams) and Crustaceans (crabs/shrimp).
-          - Identify "Gluten" if wheat-based (Noodles, Buns) or if Soy Sauce is present.
-          - Identify "Soy" for any bean products (Tofu, Yuba).
-          - Identify "Peanuts" if sauces or frying oils are used.
-          
-          For EACH dish, return: { 
-            "name_cn": "Simplified Mandarin Chinese (Not Japanese Kanji)", 
-            "name_translated": "name in ${lang}", 
-            "price": "...", "description": "...", 
-            "ingredients": [{ "name_cn": "...", "name_en": "...", "name_translated": "..." }], 
-            "allergens": ["..."],
-            "pinyin": "...", "spiciness_level": 0-5 
-          }. Return: { "dishes": [] }.`;
+          For EACH dish, analyze ingredients deeply for safety. Return: { "dishes": [{ "name_cn": "...", "name_translated": "...", "price": "...", "ingredients": [...], "allergens": [...], "pinyin": "...", "spiciness_level": 0-5 }] }.`;
 
         const getStorePrompt = () => `Identify this restaurant storefront and return JSON. Target language: ${lang}.
-          CRITICAL: If the sign mentions "Seafood", "Crab", "Fish", or "Sashimi", highlight it.
-          Return: {
-            "store": {
-              "name": "Restaurant Name",
-              "cuisine": "Type of food",
-              "description": "Brief bio in ${lang}",
-              "specialty_dishes": ["Dish 1", "Dish 2"],
-              "average_price_range": "$$",
-              "allergy_warning": "High risk for [e.g. Seafood/Peanuts] based on sign",
-              "is_seafood_specialty": true/false
-            }
-          }.`;
+          Return: { "store": { "name": "...", "cuisine": "...", "description": "...", "specialty_dishes": [], "average_price_range": "$$", "allergy_warning": "...", "is_seafood_specialty": true/false } }.`;
 
         const taskQwen = async () => {
           let promptText = type === "dish_detail" ? getDetailPrompt() : (type === "store" ? getStorePrompt() : getMenuPrompt());
@@ -214,7 +188,7 @@ export default {
         
         const parsedData = JSON.parse(winner.content.replace(/```json|```/g, ""));
         
-        // --- 核心判定（结果导向） ---
+        // --- 判定结果 ---
         const isMenuActuallyFound = Array.isArray(parsedData.dishes) && 
                                     parsedData.dishes.length > 0 && 
                                     (parsedData.dishes[0].name_cn || parsedData.dishes[0].name_translated);
@@ -223,29 +197,29 @@ export default {
         const isDetailFound = !!(parsedData.classic_ingredients || parsedData.description);
 
         let achievementTriggered = null;
-
-        // 重新获取最新数据以防并发
         let latestUserData = await getUserData(userId);
         const isUnlimitedNow = (env.ENABLE_DEV_MODE === "true") || 
                                (latestUserData.passExpiryDate && new Date(latestUserData.passExpiryDate).getTime() > Date.now());
 
+        // --- 核心逻辑：只有菜单识别扣点和计次 ---
         if (isMenuActuallyFound || isStoreFound || isDetailFound) {
           latestUserData.lastUsed = new Date().toISOString();
 
-          // 核心扣费逻辑：只要出了菜品，就扣费
           if (isMenuActuallyFound) {
+            // 只有识别出菜单，才增加 scanCount
             latestUserData.scanCount = (latestUserData.scanCount || 0) + 1;
             
             if (!isUnlimitedNow) {
+              // 只有识别出菜单，才扣 50 点
               latestUserData.credits = Math.max(0, (Number(latestUserData.credits) || 0) - 50);
-              console.log(`[DEDUCT] User ${userId}: -50 credits. Remaining: ${latestUserData.credits}`);
-
+              
               if ([4, 10, 20].includes(latestUserData.scanCount)) {
                 latestUserData.credits += 50;
                 achievementTriggered = `milestone_${latestUserData.scanCount}`;
               }
             }
           }
+          // Store 和 Detail 识别成功也会运行到这里保存 lastUsed，但不会进上面的 isMenuActuallyFound 逻辑
           await env.USER_USAGE.put(userId, JSON.stringify(latestUserData));
           userData = latestUserData; 
         }
@@ -260,7 +234,7 @@ export default {
       }
     }
 
-    // --- API: Payment Verification (保留原样) ---
+    // --- API: Payment Verification ---
     if (request.method === 'POST' && (url.pathname === '/api/verify-payment' || url.pathname === '/api/verify_order')) {
       try {
         const { orderId, planId, userId } = await request.json();
