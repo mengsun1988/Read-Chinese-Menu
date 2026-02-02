@@ -196,28 +196,34 @@ const App: React.FC = () => {
   };
 
 const handleDishClick = async (dish: any) => {
-    // 1. 如果已经分析过了，直接打开 Modal，不走逻辑也不扣费
+    // 【调试】将同步函数临时挂载到全局，方便你在控制台测试
+    (window as any).syncWithBackend = syncWithBackend;
+
     if (dish.isFullyAnalyzed) {
+      console.log("ℹ️ Dish already analyzed, opening modal directly.");
       setSelectedDish(dish);
       return;
     }
 
-    // 2. 只有未分析的菜品才进入加载状态
     setSelectedDish(dish);
     setLoadingDetail(true);
 
     try {
-      // 这里的 result 预期结构: { ...dishDetails, usage: { credits: 199, ... } }
+      console.log("🚀 Starting deep analysis for:", dish.name_cn);
       const result = await getDishDeepDetail(dish.name_cn, dish.name_en, i18n.language);
       
+      console.log("📦 Raw result from worker:", result);
+
       if (result) {
-        // --- 核心修改：点数同步 ---
-        // 确保我们将最新的 usage 对象传给 Hook 进行状态更新
-        if (result.usage) {
-          syncWithBackend(result.usage);
-        } else if (result.userData) {
-          // 兼容性处理：防止后端返回的是 userData 而不是 usage
-          syncWithBackend(result.userData);
+        // --- 核心调试逻辑 ---
+        const usageData = result.usage || result.userData;
+        
+        if (usageData) {
+          console.log("💰 Credits received from backend:", usageData.credits);
+          syncWithBackend(usageData);
+          console.log("✅ syncWithBackend called successfully.");
+        } else {
+          console.warn("⚠️ No usage/userData found in the response. Check Worker output!");
         }
 
         const updatedDish = { 
@@ -226,21 +232,18 @@ const handleDishClick = async (dish: any) => {
           isFullyAnalyzed: true 
         };
         
-        // 3. 同时更新当前选中的菜品和列表中的菜品快照
         setSelectedDish(updatedDish);
         setDishes(prev => prev.map(d => 
           (d.name_cn === dish.name_cn || d.id === dish.id) ? updatedDish : d
         ));
       }
     } catch (e) { 
-      console.error("Deep Analysis Failed:", e);
-      // 如果失败了，关闭 Modal 防止界面卡死在 Loading
+      console.error("❌ Deep Analysis Failed:", e);
       setSelectedDish(null);
     } finally { 
       setLoadingDetail(false); 
     }
   };
-
   const currentLangObj = SUPPORTED_LANGS.find(l => i18n.language.startsWith(l.code)) || SUPPORTED_LANGS[0];
 
 return (
