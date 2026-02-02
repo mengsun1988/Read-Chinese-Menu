@@ -87,7 +87,8 @@
     "errorNoShop": "Impossibile identificare il ristorante o il negozio. Per favore, riprova.",
     "errorUnexpected": "Si è verificato un errore imprevisto. Per favore, riprova più tardi.",
     "purchaseSuccessPremium": "Pass Premium attivato! Goditi un'esplorazione illimitata.",
-    "purchaseSuccessCredits": "Crediti aggiunti con successo al tuo saldo!"
+    "purchaseSuccessCredits": "Crediti aggiunti con successo al tuo saldo!",
+    "deductNote": "Menù analizzato. \n50 crediti detratti dal tuo conto."
   },
   "home": {
     "pageTitle": "Leggi il Menu Cinese",

@@ -87,7 +87,8 @@
     "errorNoShop": "Impossible d'identifier le restaurant ou la boutique. Veuillez réessayer.",
     "errorUnexpected": "Une erreur inattendue s'est produite. Veuillez réessayer plus tard.",
     "purchaseSuccessPremium": "Pass Premium activé ! Profitez d'une exploration illimitée.",
-    "purchaseSuccessCredits": "Crédits ajoutés avec succès à votre solde !"
+    "purchaseSuccessCredits": "Crédits ajoutés avec succès à votre solde !",
+    "deductNote": "Menu analysé. \n50 crédits déduits de votre compte."
   },
   "home": {
     "pageTitle": "Lire Menu Chinois",
@@ -893,7 +894,7 @@
     "title": "CRÉDITS MIS À JOUR",
     "ok": "OK"
   },
-"legal": {
+  "legal": {
     "privacyTitle": "Politique de Confidentialité",
     "tosTitle": "Conditions d'Utilisation",
     "accept": "J'accepte",

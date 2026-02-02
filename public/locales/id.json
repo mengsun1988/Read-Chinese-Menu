@@ -87,7 +87,8 @@
     "errorNoShop": "Tidak dapat mengidentifikasi restoran atau toko. Silakan coba lagi.",
     "errorUnexpected": "Terjadi kesalahan yang tidak terduga. Silakan coba lagi nanti.",
     "purchaseSuccessPremium": "Pass Premium diaktifkan! Nikmati penjelajahan tanpa batas.",
-    "purchaseSuccessCredits": "Kredit berhasil ditambahkan ke saldo Anda!"
+    "purchaseSuccessCredits": "Kredit berhasil ditambahkan ke saldo Anda!",
+    "deductNote": "Menu dianalisis. \n50 kredit dipotong dari akun Anda."
   },
   "home": {
     "pageTitle": "Baca Menu Tiongkok",

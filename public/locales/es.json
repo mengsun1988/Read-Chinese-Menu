@@ -87,7 +87,8 @@
     "errorNoShop": "No se pudo identificar el restaurante o la tienda. Por favor, intente de nuevo.",
     "errorUnexpected": "Ocurrió un error inesperado. Por favor, inténtelo de nuevo más tarde.",
     "purchaseSuccessPremium": "¡Pase Premium activado! Disfrute de una exploración ilimitada.",
-    "purchaseSuccessCredits": "¡Créditos añadidos con éxito a su saldo!"
+    "purchaseSuccessCredits": "¡Créditos añadidos con éxito a su saldo!",
+    "deductNote": "Menú analizado. \n50 créditos deducidos de tu cuenta."
   },
   "home": {
     "pageTitle": "Leer Menú Chino",

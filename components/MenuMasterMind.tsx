@@ -63,7 +63,7 @@ export default function MenuMasterMind({ onFinish, onAwardPoints }: MenuMasterMi
   if (isFinished) {
     const isPerfect = score === 5;
     return (
-      <div className="bg-emerald-900 rounded-[2.5rem] p-10 text-center shadow-2xl animate-in zoom-in duration-500 relative">
+      <div className="bg-emerald-900 rounded-[2rem] p-6 md:p-10 text-center shadow-2xl animate-in zoom-in duration-500 relative max-w-sm mx-auto w-full">
         <div className="text-6xl mb-4">{isPerfect ? "🏆" : "🎊"}</div>
         <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">
           {isPerfect ? t('game.status.perfect') : t('game.status.wellDone')}
@@ -100,7 +100,7 @@ export default function MenuMasterMind({ onFinish, onAwardPoints }: MenuMasterMi
   if (!current) return null;
 
   return (
-    <div className="bg-white rounded-[2.5rem] p-6 shadow-xl border border-emerald-100 relative overflow-hidden transition-all duration-500">
+    <div className="bg-white rounded-[2rem] p-5 md:p-6 shadow-xl border border-emerald-100 relative overflow-hidden transition-all duration-500 max-w-sm mx-auto w-full">
       {/* 顶部关闭 */}
       <button 
         onClick={onFinish}
@@ -127,7 +127,7 @@ export default function MenuMasterMind({ onFinish, onAwardPoints }: MenuMasterMi
         <p className="text-slate-400 text-[9px] uppercase font-black tracking-widest mb-3">
           {t('game.status.literalLabel')}
         </p>
-        <h4 className="text-3xl md:text-4xl font-black text-slate-900 italic leading-none tracking-tighter">
+        <h4 className="text-2xl md:text-3xl font-black text-slate-900 italic leading-tight tracking-tighter">
           "{current.literal}"
         </h4>
       </div>

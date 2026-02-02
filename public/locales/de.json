@@ -87,7 +87,8 @@
     "errorNoShop": "Restaurant oder Geschäft konnte nicht identifiziert werden. Bitte versuchen Sie es erneut.",
     "errorUnexpected": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.",
     "purchaseSuccessPremium": "Premium-Pass aktiviert! Viel Spaß beim unbegrenzten Erkunden.",
-    "purchaseSuccessCredits": "Credits erfolgreich zu Ihrem Guthaben hinzugefügt!"
+    "purchaseSuccessCredits": "Credits erfolgreich zu Ihrem Guthaben hinzugefügt!",
+    "deductNote": "Menü analysiert. \n50 Credits werden von Ihrem Konto abgebucht."
   },
   "home": {
     "pageTitle": "Chinesische Menüs lesen",

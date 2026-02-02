@@ -85,7 +85,8 @@
     "errorNoShop": "Could not identify the restaurant or shop. Please try again.",
     "errorUnexpected": "An unexpected error occurred. Please try again later.",
     "purchaseSuccessPremium": "Premium Pass activated! Enjoy unlimited exploration.",
-    "purchaseSuccessCredits": "Credits added successfully to your balance!"
+    "purchaseSuccessCredits": "Credits added successfully to your balance!",
+    "deductNote": "Menu analyzed. 50 credits deducted from your account."
   },
   "home": {
     "pageTitle": "Read Chinese Menu",

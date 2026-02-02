@@ -152,36 +152,73 @@ const App: React.FC = () => {
     });
   };
 
+// ... 前面 import 保持不变
+
+  // --- 修改 handleFileChange 逻辑 ---
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
     setStatus(AppStatus.LOADING);
     setPreviewUrl(URL.createObjectURL(file));
     setError(null);
+
     try {
       const base64 = await getCompressedBase64(file);
       const currentLang = i18n.language; 
+
       if (mode === RecognitionMode.MENU) {
+        // --- 菜单模式：执行扣费逻辑 (后端已扣除 50 点) ---
         const result = await processMenuImage(base64, currentLang);
+
         if (result && result.error === "OUT_OF_CREDITS") {
           reset();
           setShowPricing(true);
           setTimeout(scrollToPricing, 300);
           return;
         }
+
         if (result && Array.isArray(result.dishes) && result.dishes.length > 0) {
           setDishes(result.dishes);
-          if (result.usage) syncWithBackend(result.usage);
+          
+          // 【核心修改】菜单识别成功，立即同步点数
+          if (result.usage) {
+            syncWithBackend(result.usage);
+            
+            // 【新增】扣费通知：显示 3 秒后自动消失
+            setCreditUpdateMessage(t('common.deductNote', { amount: 50 })); // 建议在 i18n 添加此词条，或直接用字符串
+            setTimeout(() => setCreditUpdateMessage(null), 3000);
+          }
+          
           setStatus(AppStatus.SUCCESS);
-        } else { throw new Error(t('common.errorNoDishes')); }
-      } else {
+        } else { 
+          throw new Error(t('common.errorNoDishes')); 
+        }
+} else {
+        // --- 店面模式：不扣费 ---
         const rawResult = await processStorefrontImage(base64, currentLang);
+        
         if (rawResult) {
+          // 1. 同步点数 (此时 usage 已经有了，所以没红线)
           if (rawResult.usage) syncWithBackend(rawResult.usage);
-          const finalStoreData = rawResult.store || (rawResult.name ? rawResult : null) || { name: t('storeCard.localShop'), description: t('storeCard.defaultDescription') };
+
+          // 2. 修正逻辑：根据 StoreResult 的定义 (store_name) 来匹配
+          // 这里的逻辑是：如果后端返回了完整的 store 对象就用它，否则用 rawResult 自身，最后是保底
+          const finalStoreData = (rawResult as any).store || 
+                                 (rawResult.store_name ? rawResult : null) || 
+                                 { 
+                                   store_name: t('storeCard.localShop'), 
+                                   description: t('storeCard.defaultDescription'),
+                                   cuisine_type: "",
+                                   specialty_dishes: [],
+                                   average_price_range: ""
+                                 };
+
           setStoreResult(finalStoreData); 
           setStatus(AppStatus.SUCCESS);
-        } else { throw new Error(t('common.errorNoShop')); }
+        } else { 
+          throw new Error(t('common.errorNoShop')); 
+        }
       }
     } catch (err: any) {
       setError(err.message || t('common.errorUnexpected'));
@@ -189,18 +226,10 @@ const App: React.FC = () => {
     }
   };
 
-  const onPurchaseSuccess = (updatedUserData: any) => {
-    syncWithBackend(updatedUserData);
-    setShowPricing(false);
-    setCreditUpdateMessage(updatedUserData.passExpiryDate ? t('common.purchaseSuccessPremium') : t('common.purchaseSuccessCredits'));
-  };
-
-const handleDishClick = async (dish: any) => {
-    // 【调试】将同步函数临时挂载到全局，方便你在控制台测试
-    (window as any).syncWithBackend = syncWithBackend;
-
+  // --- 修改 handleDishClick 逻辑 ---
+  const handleDishClick = async (dish: any) => {
+    // 1. 已分析过则直接展示
     if (dish.isFullyAnalyzed) {
-      console.log("ℹ️ Dish already analyzed, opening modal directly.");
       setSelectedDish(dish);
       return;
     }
@@ -209,22 +238,12 @@ const handleDishClick = async (dish: any) => {
     setLoadingDetail(true);
 
     try {
-      console.log("🚀 Starting deep analysis for:", dish.name_cn);
+      // 2. 获取详情 (后端此时应返回不扣费的 usage)
       const result = await getDishDeepDetail(dish.name_cn, dish.name_en, i18n.language);
       
-      console.log("📦 Raw result from worker:", result);
-
       if (result) {
-        // --- 核心调试逻辑 ---
-        const usageData = result.usage || result.userData;
-        
-        if (usageData) {
-          console.log("💰 Credits received from backend:", usageData.credits);
-          syncWithBackend(usageData);
-          console.log("✅ syncWithBackend called successfully.");
-        } else {
-          console.warn("⚠️ No usage/userData found in the response. Check Worker output!");
-        }
+        // 保持点数同步
+        if (result.usage) syncWithBackend(result.usage);
 
         const updatedDish = { 
           ...dish, 
@@ -233,17 +252,20 @@ const handleDishClick = async (dish: any) => {
         };
         
         setSelectedDish(updatedDish);
+        // 更新主列表中的快照，防止重复点击触发分析
         setDishes(prev => prev.map(d => 
           (d.name_cn === dish.name_cn || d.id === dish.id) ? updatedDish : d
         ));
       }
     } catch (e) { 
-      console.error("❌ Deep Analysis Failed:", e);
+      console.error("Deep Analysis Failed:", e);
       setSelectedDish(null);
     } finally { 
       setLoadingDetail(false); 
     }
   };
+
+// ... 后面 Return 逻辑保持不变
   const currentLangObj = SUPPORTED_LANGS.find(l => i18n.language.startsWith(l.code)) || SUPPORTED_LANGS[0];
 
 return (

@@ -43,22 +43,22 @@ async function fetchWithRetry(url: string, options: any, retries = 2): Promise<R
  */
 export async function getDishDeepDetail(name_cn: string, name_en: string, lang: string = 'en'): Promise<any> {
   const userId = getOrCreateUserId();
-  
   try {
     const response = await fetchWithRetry(`${WORKER_URL}/api/scan`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         type: "dish_detail",
         name_cn,
         name_en,
         userId,
-        lang 
+        lang,
+        image: "" // 🆕 修复点：传入空字符串，满足后端的 "Missing image" 校验
       }),
     });
 
     if (!response.ok) throw new Error("Deep analysis failed");
-    
+
     const data = await response.json();
 
     if (data.error) {
@@ -69,7 +69,7 @@ export async function getDishDeepDetail(name_cn: string, name_en: string, lang: 
     // 统一提取结果层级
     const result = data.result || data.dish || data;
     const deepIngs = result.deep_ingredients || {};
-    
+
     // 映射函数：确保食材对象结构完整
     const mapIngredient = (ing: any) => ({
       name_cn: typeof ing === 'string' ? ing : (ing.name_cn || "未知"),
@@ -91,18 +91,18 @@ export async function getDishDeepDetail(name_cn: string, name_en: string, lang: 
       health_note: result.health_note || "",
 
       // 深度食材解析
-      classic_ingredients: (Array.isArray(deepIngs.classic) ? deepIngs.classic : 
-                            (Array.isArray(result.classic_ingredients) ? result.classic_ingredients : []))
-                            .map(mapIngredient),
-      
-      potential_ingredients: (Array.isArray(deepIngs.potential) ? deepIngs.potential : 
-                              (Array.isArray(result.potential_ingredients) ? result.potential_ingredients : []))
-                              .map(mapIngredient),
-      
-      ingredients: (Array.isArray(result.ingredients) ? result.ingredients : 
-                    (Array.isArray(deepIngs.classic) ? deepIngs.classic : []))
-                    .map(mapIngredient),
-      
+      classic_ingredients: (Array.isArray(deepIngs.classic) ? deepIngs.classic :
+        (Array.isArray(result.classic_ingredients) ? result.classic_ingredients : []))
+        .map(mapIngredient),
+
+      potential_ingredients: (Array.isArray(deepIngs.potential) ? deepIngs.potential :
+        (Array.isArray(result.potential_ingredients) ? result.potential_ingredients : []))
+        .map(mapIngredient),
+
+      ingredients: (Array.isArray(result.ingredients) ? result.ingredients :
+        (Array.isArray(deepIngs.classic) ? deepIngs.classic : []))
+        .map(mapIngredient),
+
       // 【关键：点数同步点】
       usage: data.userData || data.usage || result.usage || null,
 
@@ -122,7 +122,7 @@ export async function getDishDeepDetail(name_cn: string, name_en: string, lang: 
 export async function processMenuImage(base64Image: string, lang: string = 'en'): Promise<any> {
   const cleanedBase64 = cleanBase64(base64Image);
   const userId = getOrCreateUserId();
-  
+
   try {
     const response = await fetchWithRetry(`${WORKER_URL}/api/scan`, {
       method: "POST",
@@ -134,12 +134,12 @@ export async function processMenuImage(base64Image: string, lang: string = 'en')
       const errorData = await response.json();
       throw new Error(errorData.error || "OUT_OF_CREDITS");
     }
-    
+
     const result = await response.json();
     if (result.error) throw new Error(result.error);
 
     let rawArray: any[] = result.dishes || (Array.isArray(result) ? result : []);
-    
+
     const formattedDishes = rawArray.map((item: any, index: number) => {
       const hasChinese = (text: string) => /[\u4e00-\u9fa5]/.test(text || "");
       return {
@@ -152,7 +152,7 @@ export async function processMenuImage(base64Image: string, lang: string = 'en')
         price: item.price || "",
         ingredients: Array.isArray(item.ingredients) ? item.ingredients : [],
         description: item.description || "",
-        isFullyAnalyzed: !!item.isFullyAnalyzed, 
+        isFullyAnalyzed: !!item.isFullyAnalyzed,
         spiciness_level: item.spiciness_level || item.spiciness || 0,
         allergens: item.allergens || [],
         has_animal_fats: !!item.has_animal_fats
@@ -176,7 +176,7 @@ export async function processStorefrontImage(base64Image: string, lang: string =
   const cleanedBase64 = cleanBase64(base64Image);
   const userId = getOrCreateUserId();
   const fallback: any = { name: "", rating: 0, cuisine: "", description: "", tags: [], highlights: [] };
-  
+
   try {
     const response = await fetchWithRetry(`${WORKER_URL}/api/scan`, {
       method: "POST",
@@ -185,10 +185,10 @@ export async function processStorefrontImage(base64Image: string, lang: string =
     });
 
     const result = await response.json();
-    return { 
-      ...fallback, 
-      ...result, 
-      usage: result.usage || result.userData || null 
+    return {
+      ...fallback,
+      ...result,
+      usage: result.usage || result.userData || null
     } as StoreResult;
   } catch (err: any) {
     console.error("Storefront Analysis Error:", err);
