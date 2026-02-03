@@ -38,7 +38,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
 
   <script>
-    // 屏蔽本地开发环境统计
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     if (isLocalhost) {
       window['ga-disable-G-YWYL2JQ1SD'] = true;
@@ -46,22 +45,25 @@
     }
   </script>
 
-  <script defer src="https://www.googletagmanager.com/gtag/js?id=G-YWYL2JQ1SD"></script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-YWYL2JQ1SD"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
     gtag('config', 'G-YWYL2JQ1SD', {
       'send_page_view': true,
-      'page_title': document.title
+      'page_title': document.title,
+      'transport_type': 'beacon' // 优化 2：即使连接断开也能发送统计数据
     });
   </script>
 
   <script
+    async
     defer
     src="https://cloud.umami.is/script.js"
     data-website-id="3357350e-4390-496e-92ce-6e1d43fab83c"
   ></script>
+
   <script type="importmap">
   {
     "imports": {

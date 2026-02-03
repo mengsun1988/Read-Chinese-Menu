@@ -15,7 +15,7 @@ import { StoreCard } from './components/StoreCard';
 import { StaffHelperModal } from './components/StaffHelperModal';
 import { Footer } from './components/Footer';
 import { LegalModal } from './components/LegalModals';
-import { SurvivalCardView } from './components/SurvivalCardView'; 
+import { SurvivalCardView } from './components/SurvivalCardView';
 import { CreditUpdateCard } from './components/CreditUpdateCard';
 
 // 逻辑、视图与动画
@@ -75,17 +75,18 @@ const App: React.FC = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [showPricing, setShowPricing] = useState(false);
   const [showStaffHelper, setShowStaffHelper] = useState(false);
-  const [showSurvival, setShowSurvival] = useState(false); 
+  const [showGame, setShowGame] = useState(false); // 新增这一行
+  const [showSurvival, setShowSurvival] = useState(false);
   const [legalView, setLegalView] = useState<'privacy' | 'tos' | null>(null);
   const [selectedDish, setSelectedDish] = useState<any | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [waiterContext, setWaiterContext] = useState<{ type: 'ingredient' | 'spiciness'; content_en: string; content_cn: string } | null>(null);
   const [creditUpdateMessage, setCreditUpdateMessage] = useState<string | null>(null);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const triggerUpload = () => fileInputRef.current?.click();
   const handleModeChange = (newMode: RecognitionMode) => { setMode(newMode); reset(); };
-  
+
   const reset = () => {
     setStatus(AppStatus.IDLE);
     setDishes([]);
@@ -112,8 +113,8 @@ const App: React.FC = () => {
 
     // 判断是订阅还是买点数
     const isPremium = newUserData.passExpiryDate && new Date(newUserData.passExpiryDate) > new Date();
-    const msg = isPremium 
-      ? t('common.purchaseSuccessPremium') 
+    const msg = isPremium
+      ? t('common.purchaseSuccessPremium')
       : t('common.purchaseSuccessCredits');
 
     setCreditUpdateMessage(msg);
@@ -127,7 +128,7 @@ const App: React.FC = () => {
       lastLangRef.current = i18n.language;
       return;
     }
-    let ignore = false; 
+    let ignore = false;
     lastLangRef.current = i18n.language;
     const refreshDetail = async () => {
       try {
@@ -139,7 +140,7 @@ const App: React.FC = () => {
       } catch (e) { console.error("Language sync failed", e); }
     };
     refreshDetail();
-    return () => { ignore = true; }; 
+    return () => { ignore = true; };
   }, [i18n.language, status]);
 
   const getCompressedBase64 = (file: File): Promise<string> => {
@@ -177,7 +178,7 @@ const App: React.FC = () => {
 
     try {
       const base64 = await getCompressedBase64(file);
-      const currentLang = i18n.language; 
+      const currentLang = i18n.language;
 
       if (mode === RecognitionMode.MENU) {
         const result = await processMenuImage(base64, currentLang);
@@ -198,26 +199,26 @@ const App: React.FC = () => {
             setTimeout(() => setCreditUpdateMessage(null), 3000);
           }
           setStatus(AppStatus.SUCCESS);
-        } else { 
-          throw new Error(t('common.errorNoDishes')); 
+        } else {
+          throw new Error(t('common.errorNoDishes'));
         }
       } else {
         const rawResult = await processStorefrontImage(base64, currentLang);
         if (rawResult) {
           if (rawResult.usage) syncWithBackend(rawResult.usage);
-          const finalStoreData = (rawResult as any).store || 
-                                 (rawResult.store_name ? rawResult : null) || 
-                                 { 
-                                   store_name: t('storeCard.localShop'), 
-                                   description: t('storeCard.defaultDescription'),
-                                   cuisine_type: "",
-                                   specialty_dishes: [],
-                                   average_price_range: ""
-                                 };
-          setStoreResult(finalStoreData); 
+          const finalStoreData = (rawResult as any).store ||
+            (rawResult.store_name ? rawResult : null) ||
+          {
+            store_name: t('storeCard.localShop'),
+            description: t('storeCard.defaultDescription'),
+            cuisine_type: "",
+            specialty_dishes: [],
+            average_price_range: ""
+          };
+          setStoreResult(finalStoreData);
           setStatus(AppStatus.SUCCESS);
-        } else { 
-          throw new Error(t('common.errorNoShop')); 
+        } else {
+          throw new Error(t('common.errorNoShop'));
         }
       }
     } catch (err: any) {
@@ -241,11 +242,11 @@ const App: React.FC = () => {
         setSelectedDish(updatedDish);
         setDishes(prev => prev.map(d => (d.name_cn === dish.name_cn || d.id === dish.id) ? updatedDish : d));
       }
-    } catch (e) { 
+    } catch (e) {
       console.error("Deep Analysis Failed:", e);
       setSelectedDish(null);
-    } finally { 
-      setLoadingDetail(false); 
+    } finally {
+      setLoadingDetail(false);
     }
   };
 
@@ -253,7 +254,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen pb-0 bg-[#fafafa] font-sans w-full overflow-x-hidden">
-      {status === AppStatus.IDLE && (
+      {status === AppStatus.IDLE && !showPricing && !showSurvival && !selectedDish && !showStaffHelper && !legalView && !showGame && (
         <div className="fixed top-4 left-0 right-0 z-[5000] px-4 pointer-events-none">
           <header className="max-w-4xl mx-auto h-14 bg-rose-600 rounded-full shadow-[0_10px_30px_rgba(244,63,94,0.4)] flex items-center justify-between px-6 pointer-events-auto">
             <div className="flex items-center">
@@ -284,11 +285,24 @@ const App: React.FC = () => {
 
       <EffectLayer trigger={usage.achievementTriggered} onComplete={clearAchievement} />
       <A2HSManager />
-      
+
       <main className="w-full relative pt-20">
         <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
         {status === AppStatus.IDLE && (
-          <HomeIdleView mode={mode} onModeChange={handleModeChange} onTriggerUpload={triggerUpload} onOpenSurvival={() => setShowSurvival(true)} onPurchase={() => setShowPricing(true)} onHandleDailyShare={() => handleDailyShare(getOrCreateUserId())} usage={usage} onShowDishDetail={handleDishClick} onGameWin={() => handleGameWin(getOrCreateUserId())} />
+          <HomeIdleView
+            mode={mode}
+            onModeChange={handleModeChange}
+            onTriggerUpload={triggerUpload}
+            onOpenSurvival={() => setShowSurvival(true)}
+            onPurchase={() => setShowPricing(true)}
+            onHandleDailyShare={() => handleDailyShare(getOrCreateUserId())}
+            usage={usage}
+            onShowDishDetail={handleDishClick}
+            onGameWin={() => handleGameWin(getOrCreateUserId())}
+            showGame={showGame}            // 传状态
+            onOpenGame={() => setShowGame(true)}   // 传开启方法
+            onCloseGame={() => setShowGame(false)} // 传关闭方法
+          />
         )}
         <div className="max-w-5xl mx-auto px-6">
           {status === AppStatus.LOADING && <div className="py-20 animate-in fade-in duration-500"><LoadingScreen /></div>}
@@ -330,15 +344,15 @@ const App: React.FC = () => {
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setShowPricing(false)} />
           <div className="relative w-full max-w-5xl animate-in fade-in zoom-in duration-300">
             <div className="bg-white rounded-[3rem] overflow-hidden shadow-2xl relative">
-                <PricingModule onPurchase={onPurchaseSuccess} onLater={() => setShowPricing(false)} />
-                <button onClick={() => setShowPricing(false)} className="absolute top-6 right-8 text-slate-400 hover:text-slate-900 font-black text-2xl z-50">✕</button>
+              <PricingModule onPurchase={onPurchaseSuccess} onLater={() => setShowPricing(false)} />
+              <button onClick={() => setShowPricing(false)} className="absolute top-6 right-8 text-slate-400 hover:text-slate-900 font-black text-2xl z-50">✕</button>
             </div>
           </div>
         </div>
       )}
 
       {selectedDish && (
-        <DishDetailModal 
+        <DishDetailModal
           dish={selectedDish} onClose={() => setSelectedDish(null)} isLoadingDetail={loadingDetail}
           onIngredientClick={(ing: Ingredient) => setWaiterContext({ type: 'ingredient', content_en: ing.name_en, content_cn: ing.name_cn })}
           onSpicyClick={() => setWaiterContext({ type: 'spiciness', content_en: 'spiciness', content_cn: '辣度' })}
@@ -348,7 +362,7 @@ const App: React.FC = () => {
       {waiterContext && <WaiterCard {...waiterContext} onClose={() => setWaiterContext(null)} />}
       {showStaffHelper && <StaffHelperModal onClose={() => setShowStaffHelper(false)} />}
       {legalView && <LegalModal type={legalView} onClose={() => setLegalView(null)} />}
-      
+
       {/* 提示卡片：固定在顶部 24 像素处，确保层级最高 */}
       {creditUpdateMessage && (
         <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[10000] w-full max-w-xs px-4 pointer-events-none">

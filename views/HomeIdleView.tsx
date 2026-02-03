@@ -22,7 +22,11 @@ interface Props {
   onHandleDailyShare: () => void;
   usage: UserUsage;
   onShowDishDetail: (dish: any) => void;
-  onGameWin: () => void; 
+  onGameWin: () => void;
+  onOpenGame: () => void;  // 替换内部的 setShowGame(true)
+  showGame: boolean;       // 接收来自父组件的状态
+  // 如果你的游戏有关闭按钮，通常也需要：
+  onCloseGame?: () => void;
 }
 
 export const HomeIdleView: React.FC<Props> = ({
@@ -34,13 +38,15 @@ export const HomeIdleView: React.FC<Props> = ({
   onHandleDailyShare,
   usage,
   onShowDishDetail,
-  onGameWin 
+  onGameWin,
+  onOpenGame,    // <-- 必须加上这一行
+  showGame,      // <-- 必须加上这一行
+  onCloseGame    // <-- 必须加上这一行
 }) => {
   const { t } = useTranslation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [showPricingModal, setShowPricingModal] = useState(false);
-  const [showGame, setShowGame] = useState(false); 
-  
+
   const totalCredits = usage.credits ?? 0;
   const isUnlimited = usage.passExpiryDate ? new Date(usage.passExpiryDate).getTime() > Date.now() : false;
 
@@ -104,7 +110,7 @@ export const HomeIdleView: React.FC<Props> = ({
             <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse" />
             <span className="text-[9px] font-bold text-rose-600 uppercase tracking-widest">{t('home.chinaTravelMate')}</span>
           </div>
-          
+
           {/* 【LCP 核心】大小写已恢复，类名对齐 index.html 的静态渲染 */}
           <h1 className="lcp-title text-4xl md:text-6xl font-black text-slate-800 tracking-tighter leading-[1.1]">
             Read <span className="text-rose-600">Chinese Menu</span>
@@ -115,7 +121,7 @@ export const HomeIdleView: React.FC<Props> = ({
           <div className="text-slate-500 font-medium text-sm md:text-base leading-relaxed max-w-md mx-auto">
             {t('home.understandMenus')} {t('home.menuDetails')}
           </div>
-          
+
           <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 px-4 max-w-2xl mx-auto">
             {[t('common.noAds'), t('common.noSignup'), t('common.paypalSecurity'), t('common.privacyFirst')].map((tag) => (
               <div key={tag} className="px-3 py-1.5 bg-white border border-slate-200/60 rounded-full flex items-center gap-2 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:scale-105 transition-transform">
@@ -145,13 +151,13 @@ export const HomeIdleView: React.FC<Props> = ({
         )}
 
         <div className="bg-slate-200/40 p-1.5 rounded-[2rem] flex gap-1 border border-slate-200/50 w-full relative">
-          <button 
-            onClick={() => onModeChange(RecognitionMode.MENU)} 
+          <button
+            onClick={() => onModeChange(RecognitionMode.MENU)}
             className={`relative flex-1 h-[54px] flex items-center justify-center rounded-[1.4rem] text-[10px] font-black uppercase tracking-widest transition-all ${mode === RecognitionMode.MENU ? 'bg-white text-rose-600 shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-slate-100' : 'text-slate-400 hover:text-slate-500'}`}
           >
             {t('home.orderFood')}
-            <span 
-              onClick={(e) => { e.stopPropagation(); setShowPricingModal(true); }} 
+            <span
+              onClick={(e) => { e.stopPropagation(); setShowPricingModal(true); }}
               className={`absolute -top-2 -right-1 px-2 py-0.5 rounded-md font-black shadow-sm border border-white transition-all text-[8px] h-[18px] flex items-center gap-1 whitespace-nowrap ${totalCredits > 0 || isUnlimited ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white animate-bounce'}`}
             >
               {isUnlimited ? '∞' : `${totalCredits}`}
@@ -168,17 +174,17 @@ export const HomeIdleView: React.FC<Props> = ({
 
         <div className="bg-white border border-slate-200/60 p-10 text-center flex flex-col items-center shadow-[0_15px_40px_rgba(0,0,0,0.03)] rounded-[3.5rem] relative overflow-hidden group hover:shadow-[0_20px_50px_rgba(225,29,72,0.08)] hover:border-rose-100 hover:-translate-y-1.5 transition-all duration-700">
           <div className={`absolute -top-24 -right-24 w-48 h-48 blur-3xl opacity-[0.06] rounded-full transition-colors duration-1000 ${mode === RecognitionMode.MENU ? 'bg-rose-500' : 'bg-slate-900'}`} />
-          
+
           <button onClick={(e) => handleMainAction(e)} className={`w-24 h-24 rounded-[2.5rem] flex items-center justify-center shadow-2xl transition-all active:scale-90 group-hover:rotate-3 relative z-10 animate-pulse-slow mb-8 ${mode === RecognitionMode.MENU ? 'bg-rose-600 shadow-rose-200' : 'bg-slate-900 shadow-slate-300'}`}>
             <CameraIcon className="w-10 h-10 text-white" />
           </button>
-          
+
           <h2 className="text-3xl font-black text-slate-800 mb-6 tracking-tighter">{mode === RecognitionMode.MENU ? t('common.scanMenu') : t('common.exploreSigns')}</h2>
-          
+
           <button onClick={(e) => handleMainAction(e)} className="w-full bg-slate-900 text-white font-black py-5 rounded-full shadow-xl shadow-slate-200 hover:bg-slate-800 hover:-translate-y-0.5 active:translate-y-0 transition-all uppercase tracking-[0.2em] text-xs">
             {t('common.uploadImage')}
           </button>
-          
+
           <div className="mt-8 flex flex-col items-center gap-2">
             <span className="text-[11px] font-medium text-slate-400 text-center leading-tight px-2">
               {mode === RecognitionMode.MENU ? t('home.uploadMenu') : t('home.uploadSigns')}
@@ -190,8 +196,8 @@ export const HomeIdleView: React.FC<Props> = ({
           </div>
         </div>
 
-        <button 
-          onClick={() => setShowGame(true)}
+        <button
+          onClick={onOpenGame} // 这里改为调用父级传来的函数
           className="w-full bg-emerald-600 border border-emerald-500/50 p-8 rounded-[3rem] flex items-center gap-6 shadow-xl shadow-emerald-100 active:scale-[0.98] hover:shadow-2xl hover:shadow-emerald-200/50 hover:-translate-y-1 transition-all group"
         >
           <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center text-white shrink-0 group-hover:rotate-12 transition-transform duration-300">
@@ -232,7 +238,7 @@ export const HomeIdleView: React.FC<Props> = ({
           <div className="max-w-4xl mx-auto px-4">
             <AboutUs />
           </div>
-          
+
           <div className="space-y-8 w-full">
             <h3 className="text-center text-3xl font-black text-slate-800 uppercase tracking-tighter">{t('home.gourmetFeed')}</h3>
             <div className="flex overflow-x-auto gap-6 pb-4 snap-x snap-mandatory no-scrollbar px-[5vw]">
@@ -244,8 +250,8 @@ export const HomeIdleView: React.FC<Props> = ({
             <h3 className="text-center text-3xl font-black text-slate-800 uppercase tracking-tighter">{t('home.commonQuestions')}</h3>
             <div className="flex overflow-x-auto gap-4 pb-6 snap-x snap-mandatory no-scrollbar px-[5vw]">
               {faqItems.map((item, idx) => (
-                <div 
-                  key={idx} 
+                <div
+                  key={idx}
                   className="min-w-[320px] md:min-w-[400px] bg-white p-8 rounded-[3.5rem] snap-center flex flex-col border border-slate-100 shadow-[0_10px_30px_rgba(0,0,0,0.02)]"
                 >
                   <p className="text-slate-800 font-black text-xl leading-tight mb-3">{item.q}</p>
@@ -257,7 +263,7 @@ export const HomeIdleView: React.FC<Props> = ({
           </div>
 
           <div className="text-center pt-4">
-            <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em]">© 2026<br/>Read Chinese Menu</p>
+            <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em]">© 2026<br />Read Chinese Menu</p>
             <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.4em] mt-1">{t('common.allRightsReserved')}</p>
           </div>
         </div>
@@ -269,33 +275,33 @@ export const HomeIdleView: React.FC<Props> = ({
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-500" onClick={() => setShowPricingModal(false)} />
           <div className="relative w-full max-w-5xl animate-in fade-in zoom-in-95 slide-in-from-bottom-8 duration-500 ease-out">
             <div className="bg-white rounded-[3.5rem] overflow-hidden shadow-2xl relative border border-white/20">
-                <Suspense fallback={<div className="h-[60vh] flex items-center justify-center">Loading...</div>}>
-                  <PricingModule onPurchase={(p) => { onPurchase(p); setShowPricingModal(false); }} />
-                </Suspense>
-                <button 
-                  onClick={() => setShowPricingModal(false)}
-                  className="absolute top-6 right-8 text-slate-300 hover:text-slate-800 font-light text-3xl z-50 transition-colors"
-                >✕</button>
+              <Suspense fallback={<div className="h-[60vh] flex items-center justify-center">Loading...</div>}>
+                <PricingModule onPurchase={(p) => { onPurchase(p); setShowPricingModal(false); }} />
+              </Suspense>
+              <button
+                onClick={() => setShowPricingModal(false)}
+                className="absolute top-6 right-8 text-slate-300 hover:text-slate-800 font-light text-3xl z-50 transition-colors"
+              >✕</button>
             </div>
           </div>
         </div>
       )}
 
-      {showGame && (
+      {showGame && ( // 1. 使用父组件传入的 showGame 状态
         <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-xl animate-in fade-in duration-500" onClick={() => setShowGame(false)} />
+          <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-xl animate-in fade-in duration-500" onClick={onCloseGame} /> {/* 3. 使用父组件传入的 onCloseGame */}
           <div className="relative w-full max-w-lg animate-in fade-in zoom-in-90 slide-in-from-bottom-12 duration-500 ease-out-expo">
             <Suspense fallback={null}>
-              <MenuMasterMind 
-                onFinish={() => setShowGame(false)} 
-                onAwardPoints={onGameWin} 
+              <MenuMasterMind
+                onFinish={onCloseGame} // 6. 游戏结束时通知父组件关闭
+                onAwardPoints={onGameWin}
               />
             </Suspense>
           </div>
         </div>
       )}
-
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .snap-mandatory { scroll-snap-type: x mandatory; scroll-behavior: smooth; }
