@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PayPalButton } from './PayPalButton';
+// 修改：将 PayPalButton 改为延迟加载，确保首屏不解析它
+const PayPalButton = lazy(() => import('./PayPalButton').then(module => ({ default: module.PayPalButton })));
 import { WORKER_URL, getOrCreateUserId } from '../services/geminiService';
 
 interface SupportTier {
@@ -26,8 +27,6 @@ export const SupportSection: React.FC<{
   const scrollRef = useRef<HTMLDivElement>(null);
   const middleCardRef = useRef<HTMLDivElement>(null);
 
-  // TIERS 数据完全从 JSON 中获取文案
-  // 注意：这里的 credits 字段我们保留数字部分，单位统一处理
   const TIERS: SupportTier[] = [
     { 
       id: 'soda', 
@@ -61,7 +60,7 @@ export const SupportSection: React.FC<{
     }
   ];
 
-  // 1. 实现滚动检测
+  // 1. 实现滚动检测 (主要针对移动端)
   useEffect(() => {
     const observerOptions = {
       root: scrollRef.current,
@@ -70,12 +69,15 @@ export const SupportSection: React.FC<{
     };
 
     const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          const id = entry.target.getAttribute('data-id');
-          setActiveId(id);
-        }
-      });
+      // 仅在小屏幕开启滚动观察逻辑，防止干扰 PC 端 hover
+      if (window.innerWidth < 768) {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const id = entry.target.getAttribute('data-id');
+            setActiveId(id);
+          }
+        });
+      }
     }, observerOptions);
 
     const cards = document.querySelectorAll('.support-card');
@@ -98,9 +100,6 @@ export const SupportSection: React.FC<{
     return () => clearTimeout(timer);
   }, [credits]);
 
-  /**
-   * 关键闭环逻辑：支付成功后通知后端增加点数
-   */
   const handleSuccess = async (tier: SupportTier, orderDetails: any) => {
     setIsVerifying(true);
     try {
@@ -116,9 +115,7 @@ export const SupportSection: React.FC<{
       });
 
       if (!response.ok) throw new Error('Credit update failed');
-      
       const result = await response.json();
-      
       if (result.success && result.usage) {
         onPurchase(result.usage);
       }
@@ -157,10 +154,14 @@ export const SupportSection: React.FC<{
                 key={tier.id} 
                 data-id={tier.id}
                 ref={tier.id === 'coffee' ? middleCardRef : null}
-                className={`support-card snap-center shrink-0 w-[220px] md:w-full bg-white/95 backdrop-blur-md p-6 rounded-[2.5rem] border transition-all duration-500 ease-out flex flex-col items-center group relative ${
+                onMouseEnter={() => {
+                  // PC 端悬停激活
+                  if (window.innerWidth >= 768) setActiveId(tier.id);
+                }}
+                className={`support-card snap-center shrink-0 w-[220px] md:w-full bg-white/95 backdrop-blur-md p-6 rounded-[2.5rem] border transition-all duration-500 ease-out flex flex-col items-center group relative cursor-pointer ${
                   isCenter 
                     ? 'border-orange-400 z-10 shadow-xl scale-110 opacity-100' 
-                    : 'border-orange-100 shadow-sm opacity-50 scale-90'
+                    : 'border-orange-100 shadow-sm opacity-50 scale-90 hover:opacity-80'
                 } ${isSelected ? 'ring-[6px] ring-orange-100' : ''}`}
               >
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20">
@@ -202,14 +203,19 @@ export const SupportSection: React.FC<{
                       ) : (
                         <>
                           <div className="w-full max-w-[300px] mx-auto">
-                            <PayPalButton 
-                              amount={tier.amount.toString()} 
-                              planName={tier.name} 
-                              onSuccess={(details) => handleSuccess(tier, details)} 
-                            />
+                            <Suspense fallback={<div className="h-20 w-full bg-slate-50 animate-pulse rounded-xl" />}>
+                              <PayPalButton 
+                                amount={tier.amount.toString()} 
+                                planName={tier.name} 
+                                onSuccess={(details) => handleSuccess(tier, details)} 
+                              />
+                            </Suspense>
                           </div>
                           <button 
-                            onClick={() => setSelectedId(null)} 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedId(null);
+                            }} 
                             className="mt-2 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] hover:text-orange-600 transition-colors py-2"
                           >
                             ← {t('common.back')}
@@ -219,9 +225,20 @@ export const SupportSection: React.FC<{
                     </div>
                   ) : (
                     <button 
-                      onClick={() => setSelectedId(tier.id)}
-                      className="w-full py-4 bg-slate-900 text-white rounded-full font-black text-[9px] uppercase tracking-[0.2em] shadow-lg hover:bg-orange-600 transition-all active:scale-95 disabled:opacity-30"
-                      disabled={!isCenter && window.innerWidth < 768}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!isCenter && window.innerWidth < 768) {
+                          e.currentTarget.closest('.support-card')?.scrollIntoView({ 
+                            behavior: 'smooth', 
+                            inline: 'center',
+                            block: 'nearest'
+                          });
+                        } else {
+                          setSelectedId(tier.id);
+                          setActiveId(tier.id); // 确保点击时立即放大
+                        }
+                      }}
+                      className="w-full py-4 bg-slate-900 text-white rounded-full font-black text-[9px] uppercase tracking-[0.2em] shadow-lg hover:bg-orange-600 transition-all active:scale-95"
                     >
                       {t('common.sendSupport')}
                     </button>

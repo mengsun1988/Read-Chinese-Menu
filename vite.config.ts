@@ -1,4 +1,5 @@
 import path from 'path';
+import { resolve } from 'path'; // 新增 resolve 引入
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { visualizer } from 'rollup-plugin-visualizer';
@@ -16,7 +17,6 @@ export default defineConfig(({ mode }) => {
       },
       plugins: [
         react(),
-        // 自动开启可视化分析，打包完成后在浏览器打开 stats.html
         visualizer({
           open: true,
           filename: 'stats.html',
@@ -36,8 +36,12 @@ export default defineConfig(({ mode }) => {
       },
       build: {
         rollupOptions: {
+          // 【核心修改】：配置多页面入口
+          input: {
+            main: resolve(__dirname, 'index.html'),
+            intro: resolve(__dirname, 'intro.html'),
+          },
           output: {
-            // [核心优化]：将体积巨大的第三方库拆分成独立文件
             manualChunks: {
               'vendor-ai': ['@google/genai'],
               'vendor-paypal': ['@paypal/react-paypal-js'],
@@ -45,7 +49,6 @@ export default defineConfig(({ mode }) => {
             }
           }
         },
-        // 提高超大块警告阈值到 1000kb，因为我们已经手动拆分了
         chunkSizeWarningLimit: 1000,
       }
     };

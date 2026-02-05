@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { RefundModal } from './RefundModal';
-import { PayPalButton } from './PayPalButton';
+// 修改：将 PayPalButton 改为延迟加载
+const PayPalButton = lazy(() => import('./PayPalButton').then(module => ({ default: module.PayPalButton })));
 import { WORKER_URL, getOrCreateUserId } from '../services/geminiService';
 import { useTranslation } from 'react-i18next';
 
@@ -24,7 +25,6 @@ export const PricingModule: React.FC<{ onPurchase: (updatedUsage: any) => void; 
   const scrollRef = useRef<HTMLDivElement>(null);
   const middleCardRef = useRef<HTMLDivElement>(null);
 
-  // 这里的 Key 路径完全匹配你最新的 JSON 结构
   const PLANS: Plan[] = [
     { id: '3-day', nameKey: 'pricing.threeDayPass.name', price: '$3.99', amount: 3.99, descriptionKey: 'pricing.threeDayPass.description' },
     { id: '7-day', nameKey: 'pricing.sevenDayPass.name', price: '$7.99', amount: 7.99, descriptionKey: 'pricing.sevenDayPass.description', highlight: true },
@@ -157,7 +157,10 @@ export const PricingModule: React.FC<{ onPurchase: (updatedUsage: any) => void; 
                             </div>
                           ) : (
                             <>
-                              <PayPalButton amount={plan.amount.toString()} planName={t(plan.nameKey)} onSuccess={(details) => handlePaymentSuccess(plan, details)} />
+                              {/* 使用 Suspense 包裹 lazy 加载的组件 */}
+                              <Suspense fallback={<div className="h-24 w-full bg-slate-50/10 animate-pulse rounded-2xl" />}>
+                                <PayPalButton amount={plan.amount.toString()} planName={t(plan.nameKey)} onSuccess={(details) => handlePaymentSuccess(plan, details)} />
+                              </Suspense>
                               <button onClick={() => setSelectedPlanId(null)} className={`w-full mt-4 text-[9px] font-black uppercase tracking-widest underline underline-offset-4 ${plan.highlight ? 'text-white/60 hover:text-white' : 'text-slate-400 hover:text-rose-600'}`}>
                                 {t('common.cancelSelection')}
                               </button>

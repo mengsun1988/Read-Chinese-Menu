@@ -151,8 +151,20 @@ export default {
           - Identify "Peanuts" if sauces or frying oils are used.
           Return: { "dishes": [{ "name_cn": "...", "name_translated": "...", "price": "...", "ingredients": [], "allergens": [], "pinyin": "...", "spiciness_level": 0-5 }] }.`;
 
-        const getStorePrompt = () => `Identify restaurant storefront and return JSON. Target language: ${lang}.
-          Return: { "store": { "name": "...", "cuisine": "...", "description": "...", "specialty_dishes": [], "average_price_range": "$$", "allergy_warning": "...", "is_seafood_specialty": true/false } }.`;
+const getStorePrompt = () => `Identify restaurant storefront and return JSON. 
+          CRITICAL: All fields MUST be in the target language: ${lang}. 
+          If the sign is in Chinese, translate the name and description into ${lang}.
+          Return: { 
+            "store": { 
+              "name": "Store name in ${lang}", 
+              "cuisine": "Cuisine type in ${lang}", 
+              "description": "Short description in ${lang}", 
+              "specialty_dishes": ["Dish 1 in ${lang}", "Dish 2 in ${lang}"], 
+              "average_price_range": "$$", 
+              "allergy_warning": "Warning in ${lang}", 
+              "is_seafood_specialty": true/false 
+            } 
+          }.`;
 
         const taskQwen = async () => {
           let promptText = type === "dish_detail" ? getDetailPrompt() : (type === "store" ? getStorePrompt() : getMenuPrompt());

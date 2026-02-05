@@ -43,6 +43,44 @@ const App: React.FC = () => {
   const { t, i18n } = useTranslation();
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
 
+  // --- 新增：统计脚本动态注入逻辑 ---
+  useEffect(() => {
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (isLocal) return;
+
+    // 延迟 3 秒加载，提升 Safari 兼容性，避开 ITP 拦截
+    const timer = setTimeout(() => {
+      // 1. Google Analytics (gtag.js)
+      const gaScript = document.createElement('script');
+      gaScript.src = "https://www.googletagmanager.com/gtag/js?id=G-YWYL2JQ1SD";
+      gaScript.async = true;
+      document.head.appendChild(gaScript);
+
+      gaScript.onload = () => {
+        // @ts-ignore
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { (window as any).dataLayer.push(arguments); }
+        // @ts-ignore
+        gtag('js', new Date());
+        // @ts-ignore
+        gtag('config', 'G-YWYL2JQ1SD', { 
+          transport_type: 'beacon',
+          page_path: window.location.pathname 
+        });
+      };
+
+      // 2. Umami Analytics
+      const umamiScript = document.createElement('script');
+      umamiScript.src = "https://cloud.umami.is/script.js";
+      umamiScript.async = true;
+      umamiScript.defer = true;
+      umamiScript.setAttribute('data-website-id', '3357350e-4390-496e-92ce-6e1d43fab83c');
+      document.head.appendChild(umamiScript);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   // 语言切换核心：i18n + RTL 方向 + URL 参数持久化
   const changeLanguage = (lng: string) => {
     i18n.changeLanguage(lng);
@@ -75,13 +113,14 @@ const App: React.FC = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [showPricing, setShowPricing] = useState(false);
   const [showStaffHelper, setShowStaffHelper] = useState(false);
-  const [showGame, setShowGame] = useState(false); // 新增这一行
+  const [showGame, setShowGame] = useState(false);
   const [showSurvival, setShowSurvival] = useState(false);
   const [legalView, setLegalView] = useState<'privacy' | 'tos' | null>(null);
   const [selectedDish, setSelectedDish] = useState<any | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [waiterContext, setWaiterContext] = useState<{ type: 'ingredient' | 'spiciness'; content_en: string; content_cn: string } | null>(null);
   const [creditUpdateMessage, setCreditUpdateMessage] = useState<string | null>(null);
+  const [showIntroOverlay, setShowIntroOverlay] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const triggerUpload = () => fileInputRef.current?.click();
@@ -106,12 +145,10 @@ const App: React.FC = () => {
     if (element) element.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
-  // --- 购买成功处理逻辑 ---
   const onPurchaseSuccess = (newUserData: any) => {
     syncWithBackend(newUserData);
     setShowPricing(false);
 
-    // 判断是订阅还是买点数
     const isPremium = newUserData.passExpiryDate && new Date(newUserData.passExpiryDate) > new Date();
     const msg = isPremium
       ? t('common.purchaseSuccessPremium')
@@ -124,21 +161,53 @@ const App: React.FC = () => {
   const lastLangRef = useRef(i18n.language);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get('action');
+    const reward = params.get('reward');
+
+    if (reward === '50') {
+      const GIFT_FLAG = 'app_intro_gift_v1';
+      if (!localStorage.getItem(GIFT_FLAG) && usage && usage.credits !== undefined) {
+        const newCredits = (usage.credits || 0) + 50;
+        syncWithBackend({ ...usage, credits: newCredits });
+        localStorage.setItem(GIFT_FLAG, 'true');
+        setCreditUpdateMessage(`+50 Bonus Credits Received! 🎁`);
+        setTimeout(() => setCreditUpdateMessage(null), 4000);
+      }
+    }
+
+    if (action === 'upload' || action === 'store') {
+      if (action === 'store') setMode(RecognitionMode.STREET);
+      setShowIntroOverlay(true);
+      const newUrl = window.location.origin + window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [usage]);
+
+  useEffect(() => {
+    const rawLang = i18n.language.split('-')[0];
+    const safeLang = SUPPORTED_LANGS.some(l => l.code === rawLang) ? rawLang : 'en';
+
     if (status !== AppStatus.SUCCESS || !selectedDish || i18n.language === lastLangRef.current) {
       lastLangRef.current = i18n.language;
       return;
     }
+
     let ignore = false;
     lastLangRef.current = i18n.language;
+
     const refreshDetail = async () => {
       try {
-        const res = await getDishDeepDetail(selectedDish.name_cn, selectedDish.name_en, i18n.language);
+        const res = await getDishDeepDetail(selectedDish.name_cn, selectedDish.name_en, safeLang);
         if (!ignore && res) {
           setSelectedDish(prev => (prev ? { ...prev, ...res } : null));
           setDishes(prev => prev.map(d => (d.name_cn === selectedDish.name_cn ? { ...d, ...res } : d)));
         }
-      } catch (e) { console.error("Language sync failed", e); }
+      } catch (e) {
+        console.error("Language sync failed", e);
+      }
     };
+
     refreshDetail();
     return () => { ignore = true; };
   }, [i18n.language, status]);
@@ -194,7 +263,6 @@ const App: React.FC = () => {
           setDishes(result.dishes);
           if (result.usage) {
             syncWithBackend(result.usage);
-            // 提示扣费及余额，复用 creditsLeft key
             setCreditUpdateMessage(`-50 ${t('common.creditsLeft')}: ${result.usage.credits}`);
             setTimeout(() => setCreditUpdateMessage(null), 3000);
           }
@@ -208,13 +276,13 @@ const App: React.FC = () => {
           if (rawResult.usage) syncWithBackend(rawResult.usage);
           const finalStoreData = (rawResult as any).store ||
             (rawResult.store_name ? rawResult : null) ||
-          {
-            store_name: t('storeCard.localShop'),
-            description: t('storeCard.defaultDescription'),
-            cuisine_type: "",
-            specialty_dishes: [],
-            average_price_range: ""
-          };
+            {
+              store_name: t('storeCard.localShop'),
+              description: t('storeCard.defaultDescription'),
+              cuisine_type: "",
+              specialty_dishes: [],
+              average_price_range: ""
+            };
           setStoreResult(finalStoreData);
           setStatus(AppStatus.SUCCESS);
         } else {
@@ -299,9 +367,9 @@ const App: React.FC = () => {
             usage={usage}
             onShowDishDetail={handleDishClick}
             onGameWin={() => handleGameWin(getOrCreateUserId())}
-            showGame={showGame}            // 传状态
-            onOpenGame={() => setShowGame(true)}   // 传开启方法
-            onCloseGame={() => setShowGame(false)} // 传关闭方法
+            showGame={showGame}
+            onOpenGame={() => setShowGame(true)}
+            onCloseGame={() => setShowGame(false)}
           />
         )}
         <div className="max-w-5xl mx-auto px-6">
@@ -363,7 +431,23 @@ const App: React.FC = () => {
       {showStaffHelper && <StaffHelperModal onClose={() => setShowStaffHelper(false)} />}
       {legalView && <LegalModal type={legalView} onClose={() => setLegalView(null)} />}
 
-      {/* 提示卡片：固定在顶部 24 像素处，确保层级最高 */}
+      {showIntroOverlay && (
+        <div className="fixed inset-0 z-[11000] bg-slate-900/90 backdrop-blur-xl flex flex-col items-center justify-center p-8 animate-in fade-in duration-300">
+          <button
+            onClick={() => { setShowIntroOverlay(false); triggerUpload(); }}
+            className="group flex flex-col items-center gap-6 active:scale-95 transition-all"
+          >
+            <div className="w-28 h-28 bg-rose-600 rounded-full flex items-center justify-center shadow-[0_0_60px_rgba(225,29,72,0.5)] group-hover:bg-rose-500">
+              <svg className="w-14 h-14 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <span className="text-white/40 text-[10px] font-black uppercase tracking-[0.3em]">Tap to Start</span>
+          </button>
+        </div>
+      )}
+
       {creditUpdateMessage && (
         <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[10000] w-full max-w-xs px-4 pointer-events-none">
           <div className="pointer-events-auto">
