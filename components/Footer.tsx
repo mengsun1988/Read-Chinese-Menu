@@ -45,7 +45,7 @@ export const Footer: React.FC<FooterProps> = ({
                 onClick={() => window.location.href = '/intro.html'} 
                 className="text-left text-sm font-semibold text-slate-300 hover:text-rose-500 transition-colors"
               >
-                {t('common.howToUse') || 'How to Use'}
+                {t('common.howItWorks') || 'How to Use'}
               </button>
               
               <button onClick={onMenuScan} className="text-left text-sm font-semibold text-slate-300 hover:text-rose-500 transition-colors">
