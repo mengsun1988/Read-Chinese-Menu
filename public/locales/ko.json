@@ -88,7 +88,8 @@
     "errorUnexpected": "예기치 않은 오류가 발생했습니다. 나중에 다시 시도해 주세요.",
     "purchaseSuccessPremium": "프리미엄 패스가 활성화되었습니다! 제한 없는 탐색을 즐겨보세요.",
     "purchaseSuccessCredits": "크레딧이 성공적으로 충전되었습니다!",
-    "deductNote": "50학점이 차감되었습니다."
+    "deductNote": "50학점이 차감되었습니다.",
+    "howItWorks": "사용 가이드 보기"
   },
   "home": {
     "pageTitle": "Read Chinese Menu",

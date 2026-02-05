@@ -88,7 +88,8 @@
     "errorUnexpected": "予期せぬエラーが発生しました。後でもう一度お試しください。",
     "purchaseSuccessPremium": "プレミアムパスが有効になりました！無制限の探索をお楽しみください。",
     "purchaseSuccessCredits": "クレジットが正常にチャージされました！",
-    "deductNote": "50 クレジットが差し引かれます。"
+    "deductNote": "50 クレジットが差し引かれます。",
+    "howItWorks": "使い方を見る"
   },
   "home": {
     "pageTitle": "Read Chinese Menu",

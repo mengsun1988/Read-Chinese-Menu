@@ -88,7 +88,8 @@
     "errorUnexpected": "Si è verificato un errore imprevisto. Per favore, riprova più tardi.",
     "purchaseSuccessPremium": "Pass Premium attivato! Goditi un'esplorazione illimitata.",
     "purchaseSuccessCredits": "Crediti aggiunti con successo al tuo saldo!",
-    "deductNote": "50 crediti detratti."
+    "deductNote": "50 crediti detratti.",
+    "howItWorks": "Guarda come funziona"
   },
   "home": {
     "pageTitle": "Leggi il Menu Cinese",

@@ -40,6 +40,14 @@ export const Footer: React.FC<FooterProps> = ({
           <div className="space-y-6">
             <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500">{t('common.menuScanner')}</h4>
             <nav className="flex flex-col gap-3">
+              {/* 🆕 新增：How to Use 链接 */}
+              <button 
+                onClick={() => window.location.href = '/intro.html'} 
+                className="text-left text-sm font-semibold text-slate-300 hover:text-rose-500 transition-colors"
+              >
+                {t('common.howToUse') || 'How to Use'}
+              </button>
+              
               <button onClick={onMenuScan} className="text-left text-sm font-semibold text-slate-300 hover:text-rose-500 transition-colors">
                 {t('common.menuScanner')}
               </button>

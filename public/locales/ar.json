@@ -88,7 +88,8 @@
     "errorUnexpected": "حدث خطأ غير متوقع. يرجى المحاولة لاحقاً.",
     "purchaseSuccessPremium": "تم تفعيل الاشتراك المميز! استمتع باستكشاف غير محدود.",
     "purchaseSuccessCredits": "تم إضافة الرصيد بنجاح إلى حسابك!",
-    "deductNote": "تم خصم 50 نقطة."
+    "deductNote": "تم خصم 50 نقطة.",
+    "howItWorks": "انظر كيف يعمل"
   },
   "home": {
     "pageTitle": "قراءة قائمة الطعام الصينية",

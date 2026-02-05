@@ -88,7 +88,8 @@
     "errorUnexpected": "Une erreur inattendue s'est produite. Veuillez réessayer plus tard.",
     "purchaseSuccessPremium": "Pass Premium activé ! Profitez d'une exploration illimitée.",
     "purchaseSuccessCredits": "Crédits ajoutés avec succès à votre solde !",
-    "deductNote": "50 crédits déduits."
+    "deductNote": "50 crédits déduits.",
+    "howItWorks": "Voir comment ça marche"
   },
   "home": {
     "pageTitle": "Lire Menu Chinois",

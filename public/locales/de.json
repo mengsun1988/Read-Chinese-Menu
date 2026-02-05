@@ -88,7 +88,8 @@
     "errorUnexpected": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.",
     "purchaseSuccessPremium": "Premium-Pass aktiviert! Viel Spaß beim unbegrenzten Erkunden.",
     "purchaseSuccessCredits": "Credits erfolgreich zu Ihrem Guthaben hinzugefügt!",
-    "deductNote": "50 Credits abgezogen."
+    "deductNote": "50 Credits abgezogen.",
+    "howItWorks": "Sehen Sie, wie es funktioniert"
   },
   "home": {
     "pageTitle": "Chinesische Menüs lesen",

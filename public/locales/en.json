@@ -86,7 +86,8 @@
     "errorUnexpected": "An unexpected error occurred. Please try again later.",
     "purchaseSuccessPremium": "Premium Pass activated! Enjoy unlimited exploration.",
     "purchaseSuccessCredits": "Credits added successfully to your balance!",
-    "deductNote": "50 credits deducted."
+    "deductNote": "50 credits deducted.",
+    "howItWorks": "See How It Works"
   },
   "home": {
     "pageTitle": "Read Chinese Menu",
