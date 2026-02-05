@@ -4,6 +4,11 @@
         "source": "readchinesemenu.com",
         "destination": "https://www.readchinesemenu.com",
         "statusCode": 301
+      },
+      {
+        "source": "www.readchinesemenu.com",
+        "destination": "https://www.readchinesemenu.com",
+        "statusCode": 301
       }
     ]
 }
