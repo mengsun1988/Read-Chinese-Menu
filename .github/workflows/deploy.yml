@@ -3,9 +3,12 @@ name: Build and Deploy Blog
 on:
   push:
     branches:
-      - main  # 如果你的主分支叫 master，请修改为 master
+      - main
     paths:
-      - 'src/data/posts.json' # 只有当这个 JSON 变动时才触发，节省资源
+      - 'src/data/posts.json'
+      - '.github/workflows/deploy.yml'
+  # 添加下面这两行，你就能看到 Run workflow 按钮了
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -18,7 +21,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Node
-        uses: actions/checkout@v4
+        uses: actions/setup-node@v4 # 修正了之前的 actions/checkout 错误
         with:
           node-version: 18
           cache: 'npm'
@@ -31,5 +34,5 @@ jobs:
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: dist # Vite 默认打包后的文件夹是 dist
-          branch: gh-pages # 将打包后的文件推送到 gh-pages 分支
+          folder: dist
+          branch: gh-pages
