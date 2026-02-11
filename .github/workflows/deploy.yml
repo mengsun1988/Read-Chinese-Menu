@@ -1,0 +1,35 @@
+name: Build and Deploy Blog
+
+on:
+  push:
+    branches:
+      - main  # 如果你的主分支叫 master，请修改为 master
+    paths:
+      - 'src/data/posts.json' # 只有当这个 JSON 变动时才触发，节省资源
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/checkout@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: Install and Build
+        run: |
+          npm install
+          npm run build
+
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: dist # Vite 默认打包后的文件夹是 dist
+          branch: gh-pages # 将打包后的文件推送到 gh-pages 分支
