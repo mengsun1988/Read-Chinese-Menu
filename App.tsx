@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useParams, useSearchParams } from 'react-router-dom';
+import ScrollToTop from './components/ScrollToTop'; // 引入组件
 import { AppStatus, RecognitionMode, Ingredient, StoreResult } from './types';
 import { processMenuImage, processStorefrontImage, getDishDeepDetail, WORKER_URL, getOrCreateUserId } from './services/geminiService';
 import { useTranslation } from 'react-i18next';
@@ -24,7 +25,7 @@ import { useUserUsage } from './hooks/useUserUsage';
 import { HomeIdleView } from './views/HomeIdleView';
 import { EffectLayer } from './components/EffectLayer';
 
-// 博客组件 (根据你之前创建的文件引入)
+// 博客组件
 import { BlogList } from './src/pages/Blog';
 import BlogDetail from './src/pages/BlogDetail';
 
@@ -312,7 +313,6 @@ const MainLayout: React.FC = () => {
 
   return (
     <div className="min-h-screen pb-0 bg-[#fafafa] font-sans w-full overflow-x-hidden">
-      {/* Header 仅在非博客页显示，或者根据需要全局显示 */}
       <div className="fixed top-4 left-0 right-0 z-[5000] px-4 pointer-events-none">
         <header className="max-w-4xl mx-auto h-14 bg-rose-600 rounded-full shadow-[0_10px_30px_rgba(244,63,94,0.4)] flex items-center justify-between px-6 pointer-events-auto">
           <div className="flex items-center" onClick={() => window.location.href='/'} style={{cursor: 'pointer'}}>
@@ -344,8 +344,10 @@ const MainLayout: React.FC = () => {
       <A2HSManager />
 
       <main className="w-full relative pt-20">
+        {/* 这里加入了置顶逻辑 */}
+        <ScrollToTop /> 
+
         <Routes>
-          {/* 主应用路由 */}
           <Route path="/" element={
             <>
               <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
@@ -392,7 +394,7 @@ const MainLayout: React.FC = () => {
             </>
           } />
 
-          {/* 博客模块路由 */}
+          {/* 博客路由 */}
           <Route path="/blog" element={<BlogList />} />
           <Route path="/blog/:postId" element={<BlogDetail />} />
         </Routes>
@@ -407,7 +409,7 @@ const MainLayout: React.FC = () => {
         onTos={() => setLegalView('tos')} 
       />
 
-      {/* 弹窗组件保持不变 */}
+      {/* 弹窗组件 */}
       <SurvivalCardView isOpen={showSurvival} onClose={() => setShowSurvival(false)} />
       {showPricing && (
         <div className="fixed inset-0 z-[6000] flex items-center justify-center p-4">

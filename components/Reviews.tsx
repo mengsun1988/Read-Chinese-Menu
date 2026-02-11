@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { FeedbackType } from '../types';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
-// 修正路径
+// 确保路径在 Vite 环境下正确，如果还是报错，可以尝试使用相对路径如 '../../data/posts.json'
 import posts from '../src/data/posts.json'; 
 
 const SendIcon = () => (
@@ -19,11 +19,15 @@ export const Reviews: React.FC = () => {
   const [comment, setComment] = useState("");
   const [feedbackType, setFeedbackType] = useState<FeedbackType>('EXPERIENCE');
 
-  const featuredPost = posts && posts.length > 0 ? posts[0] : null;
+  // 获取最新的一篇文章作为封面展示
+  const allPosts = Array.isArray(posts) ? posts.flat(Infinity) : [];
+  const featuredPost = allPosts.length > 0 ? allPosts[0] : null;
 
+  // 统一跳转逻辑：不传 ID 则进入列表页
   const handleGoToBlog = (postId?: string) => {
     const params = new URLSearchParams(location.search);
     const lang = params.get('lang');
+    // 如果没有 postId，直接进入 /blog 列表页
     const path = postId ? `/blog/${postId}` : '/blog';
     navigate(lang ? `${path}?lang=${lang}` : path);
   };
@@ -47,12 +51,12 @@ export const Reviews: React.FC = () => {
   return (
     <div className="w-full max-w-full overflow-hidden flex flex-col gap-24">
       
-      {/* 1. Review 滑动区域 (保持顶部) */}
+      {/* 1. Review 滑动区域 */}
       <section className="relative w-full">
         <div className="flex flex-row overflow-x-auto gap-4 no-scrollbar snap-x snap-mandatory px-12 -mx-8 py-10 -my-10">
           <div className="shrink-0 w-1 md:hidden" />
           {REVIEWS.map((rev: any, i) => (
-            <div key={i} className="w-[280px] md:w-[360px] bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] shrink-0 snap-center flex flex-col justify-between transition-all duration-500 hover:scale-[1.02] hover:shadow-xl hover:border-rose-100 group">
+            <div key={i} className="w-[280px] md:w-[360px] bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] shrink-0 snap-center flex flex-col justify-between transition-all duration-500 hover:scale-[1.02] hover:shadow-xl hover:border-emerald-100 group">
               <div>
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-lg transition-transform group-hover:rotate-12">{rev.avatar}</div>
@@ -61,7 +65,7 @@ export const Reviews: React.FC = () => {
                     <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">{rev.role}</p>
                   </div>
                 </div>
-                <div className="h-px w-8 bg-rose-100 mb-6 transition-all group-hover:w-12" />
+                <div className="h-px w-8 bg-emerald-100 mb-6 transition-all group-hover:w-12" />
                 <p className="text-slate-600 text-sm font-medium leading-relaxed mb-6 italic">"{rev.text}"</p>
               </div>
               <div className="flex gap-1">
@@ -75,52 +79,55 @@ export const Reviews: React.FC = () => {
         </div>
       </section>
 
-      {/* 2. 博客独立板块 (位于 Review 和 Feedback 之间) */}
+      {/* 2. 博客独立板块 (修正跳转逻辑) */}
       <section className="px-4">
         <div className="max-w-6xl mx-auto bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col md:flex-row items-stretch transition-all hover:shadow-md">
-          {/* 左侧：封面图 */}
+          {/* 左侧：封面图 - 换成一张有质感的蒸饺/传统点心图 */}
           <div className="w-full md:w-5/12 h-64 md:h-auto relative overflow-hidden bg-slate-100">
             <img 
-              src={featuredPost?.image || "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&q=80"} 
-              alt="Dish Story" 
+              src="https://images.unsplash.com/photo-1496116218417-1a781b1c416c?auto=format&fit=crop&q=80" 
+              alt="Authentic Chinese Dish" 
               className="w-full h-full object-cover transition-transform duration-700 hover:scale-110"
             />
-            <div className="absolute top-6 left-6 bg-rose-600 text-white px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-lg">
-              New Story
+            <div className="absolute top-6 left-6 bg-emerald-600 text-white px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-lg">
+              Culinary Story
             </div>
           </div>
 
           {/* 右侧：内容区 */}
           <div className="w-full md:w-7/12 p-10 md:p-14 flex flex-col justify-center text-left space-y-6">
             <div className="space-y-3">
-              <span className="text-rose-500 font-bold text-[10px] uppercase tracking-[0.3em]">Foodie Blog</span>
+              <span className="text-emerald-600 font-bold text-[10px] uppercase tracking-[0.3em]">Foodie Blog</span>
               <h2 className="text-2xl md:text-4xl font-bold text-slate-900 leading-[1.15]">
                 {featuredPost?.title || "Unlock the Secrets of Chinese Dishes"}
               </h2>
               <p className="text-slate-500 text-sm md:text-base leading-relaxed line-clamp-2">
-                {featuredPost?.excerpt || "Ever wondered about the history of Kung Pao Chicken? Discover authentic stories and tips for your next meal."}
+                {featuredPost?.excerpt || "Discover the authentic history and preparation methods of your favorite Chinese specialties."}
               </p>
             </div>
             
             <div className="flex items-center gap-6 pt-2">
+              {/* 主按钮改为进入 Blog 列表页 */}
+              <button 
+                onClick={() => handleGoToBlog()} 
+                className="bg-slate-900 hover:bg-emerald-600 text-white font-bold py-4 px-10 rounded-2xl transition-all active:scale-95 text-[11px] uppercase tracking-widest shadow-xl shadow-slate-900/10"
+              >
+                EXPLORE ALL
+              </button>
+              
+              {/* 副链接可以带 ID 进去看最新一篇 */}
               <button 
                 onClick={() => handleGoToBlog(featuredPost?.id)}
-                className="bg-slate-900 hover:bg-rose-600 text-white font-bold py-4 px-10 rounded-2xl transition-all active:scale-95 text-[11px] uppercase tracking-widest shadow-xl shadow-slate-900/10"
-              >
-                Start Reading
-              </button>
-              <button 
-                onClick={() => handleGoToBlog()}
                 className="group flex items-center gap-2 text-slate-400 hover:text-slate-900 font-bold text-[11px] uppercase tracking-widest transition-colors"
               >
-                All Articles <span className="transition-transform group-hover:translate-x-1">→</span>
+                LATEST STORY <span className="transition-transform group-hover:translate-x-1">→</span>
               </button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 3. Feedback Card (底部) */}
+      {/* 3. Feedback Card */}
       <section className="w-full bg-slate-900 p-10 md:p-16 rounded-[3rem] text-center space-y-8 border border-white/10 relative overflow-hidden">
         <div className="space-y-2 relative z-10">
           <h3 className="text-2xl md:text-3xl font-semibold text-white tracking-tight">{t('reviews.enjoyExperience')}</h3>
@@ -130,15 +137,15 @@ export const Reviews: React.FC = () => {
         <div className="max-w-xl mx-auto space-y-6 relative z-10">
           <div className="flex flex-wrap justify-center gap-2">
             {[{ id: 'EXPERIENCE', label: t('reviews.review') }, { id: 'IMPROVEMENT', label: t('reviews.suggestions') }, { id: 'STORY', label: t('reviews.story') }].map((cat) => (
-              <button key={cat.id} onClick={() => setFeedbackType(cat.id as FeedbackType)} className={`px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${feedbackType === cat.id ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/20' : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white'}`}>
+              <button key={cat.id} onClick={() => setFeedbackType(cat.id as FeedbackType)} className={`px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${feedbackType === cat.id ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'bg-white/5 text-white/40 hover:bg-white/10 hover:text-white'}`}>
                 {cat.label}
               </button>
             ))}
           </div>
 
-          <textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder={t('reviews.tellUs')} className="w-full bg-white/5 border border-white/10 rounded-[2rem] p-6 text-white placeholder:text-white/20 focus:outline-none focus:border-rose-500/50 transition-all min-h-[140px] resize-none font-medium text-sm" />
+          <textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder={t('reviews.tellUs')} className="w-full bg-white/5 border border-white/10 rounded-[2rem] p-6 text-white placeholder:text-white/20 focus:outline-none focus:border-emerald-500/50 transition-all min-h-[140px] resize-none font-medium text-sm" />
 
-          <button onClick={handleSendEmail} disabled={!comment.trim()} className="group bg-rose-600 hover:bg-rose-500 disabled:opacity-50 disabled:hover:bg-rose-600 text-white font-bold py-4 px-10 rounded-2xl transition-all active:scale-95 text-base flex items-center justify-center gap-3 mx-auto shadow-xl shadow-rose-600/20">
+          <button onClick={handleSendEmail} disabled={!comment.trim()} className="group bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:hover:bg-emerald-600 text-white font-bold py-4 px-10 rounded-2xl transition-all active:scale-95 text-base flex items-center justify-center gap-3 mx-auto shadow-xl shadow-emerald-600/20">
             <span>{t('reviews.sendEmail')}</span>
             <div className="transition-transform group-hover:translate-x-1 group-hover:-translate-y-1"><SendIcon /></div>
           </button>
