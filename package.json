@@ -18,7 +18,9 @@
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-i18next": "^16.5.4",
-    "react-router-dom": "^7.13.0"
+    "react-markdown": "^10.1.0",
+    "react-router-dom": "^7.13.0",
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
