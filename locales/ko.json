@@ -1,0 +1,924 @@
+{
+  "site": {
+    "title": "중국어 메뉴판 번역 | 중국 여행 및 식사용 AI 시각 번역 도구"
+  },
+  "common": {
+    "appError": "애플리케이션 오류",
+    "appInitError": "애플리케이션을 초기화하는 중 오류가 발생했습니다. 페이지를 새로고침해 주세요.",
+    "uploadImage": "이미지 업로드",
+    "scanMenu": "메뉴 스캔",
+    "exploreSigns": "간판 탐색",
+    "readyToScan": "스캔 준비 완료",
+    "creditsExhausted": "크레딧 소진 · 지원하고 잠금 해제",
+    "loading": "로딩 중...",
+    "scanFailed": "스캔 실패",
+    "retryScan": "다시 시도",
+    "restart": "다시 시작",
+    "returnToMenu": "메뉴로 돌아가기",
+    "noAds": "광고 없음",
+    "noSignup": "가입 불필요",
+    "paypalSecurity": "PayPal 보안 결제",
+    "privacyFirst": "개인정보 보호 우선",
+    "selectPass": "패스 선택",
+    "cancelSelection": "선택 취소",
+    "securePayment": "PayPal을 통한 안전 결제",
+    "sendSupport": "지원하기",
+    "back": "뒤로",
+    "syncingCredits": "크레딧 동기화 중...",
+    "verifyingPayment": "결제 확인 중...",
+    "fullInfo": "전체 정보",
+    "details": "상세 정보",
+    "dailyReward": "일일 보상",
+    "shareForCredits": "공유하고 +50 크레딧 받기",
+    "share": "공유하기",
+    "communication": "커뮤니케이션",
+    "showToWaiter": "직원에게 보여주기",
+    "communicationTool": "여행자를 위한 대화 도구",
+    "yes": "예",
+    "no": "아니요",
+    "premiumActive": "프리미엄 활성화됨",
+    "creditsLeft": "남은 크레딧",
+    "itemsFound": "찾은 항목",
+    "shopIdentified": "상점 확인됨",
+    "yourChinaTravelMate": "당신의 중국 여행 파트너",
+    "menuScanner": "메뉴 스캐너",
+    "storefrontExplorer": "상점가 탐색기",
+    "essentialPhrases": "필수 표현",
+    "premiumPlans": "프리미엄 플랜",
+    "privacyPolicy": "개인정보 처리방침",
+    "termsOfService": "이용약관",
+    "contactUs": "문의하기",
+    "officialInquiries": "공식 문의",
+    "madeForExplorers": "탐험가를 위해 제작되었습니다",
+    "allRightsReserved": "All Rights Reserved.",
+    "stayConnected": "팔로우하기",
+    "saveAppHome": "홈 화면에 앱 저장",
+    "addiPhone": "iPhone에 추가",
+    "instantAccess": "네이티브 앱처럼 홈 화면에서 바로 접속하세요. 더 이상 링크를 찾을 필요가 없습니다.",
+    "addHomeScreen": "홈 화면에 추가",
+    "gotIt": "확인",
+    "creditsUpdated": "크레딧 업데이트됨",
+    "ok": "확인",
+    "rewardUnlocked": "보상 획득! +50 크레딧",
+    "milestone10": "마일스톤 10 달성! +50 크레딧",
+    "milestone20": "마일스톤 20 달성! +50 크레딧",
+    "boosted": "부스트 완료! +50 크레딧",
+    "plus10Credits": "+10 크레딧",
+    "masterMindBonus": "마스터 마인드 보너스",
+    "connectionError": "연결 오류",
+    "retry": "재시도",
+    "connecting": "연결 중...",
+    "paypalSecured": "PayPal 보안 적용",
+    "fairSimpleRefunds": "간편하고 공정한 환불",
+    "refundBridge": "우리는 당신의 미식 여행을 돕는 가교가 되고 싶습니다. 저희 도구가 도움이 되지 않았다면, 비용을 청구하지 않겠습니다.",
+    "understand": "이해했습니다",
+    "bonAppetit": "맛있게 드세요!",
+    "enjoyMeal": "중국에서 즐거운 식사 되세요",
+    "compressing": "이미지 압축 중...",
+    "sending": "AI 서버로 전송 중...",
+    "aiThinking": "AI 분석 중...",
+    "iAccept": "동의합니다",
+    "unlimited": "무제한",
+    "freeCredits": "무료 크레딧",
+    "left": "남음",
+    "currency": "위안",
+    "unknownDish": "알 수 없는 요리",
+    "errorNoDishes": "이미지에서 메뉴를 찾을 수 없습니다. 더 선명한 사진으로 시도해 주세요.",
+    "errorNoShop": "식당이나 매장을 식별할 수 없습니다. 다시 시도해 주세요.",
+    "errorUnexpected": "예기치 않은 오류가 발생했습니다. 나중에 다시 시도해 주세요.",
+    "purchaseSuccessPremium": "프리미엄 패스가 활성화되었습니다! 제한 없는 탐색을 즐겨보세요.",
+    "purchaseSuccessCredits": "크레딧이 성공적으로 충전되었습니다!",
+    "deductNote": "50학점이 차감되었습니다.",
+    "howItWorks": "사용 가이드 보기"
+  },
+  "home": {
+    "pageTitle": "Read Chinese Menu",
+    "chinaTravelMate": "당신의 중국 여행 파트너",
+    "understandMenus": "중국어 메뉴를 한눈에 이해하세요.",
+    "menuDetails": "재료, 알레르기 유발 항원 및 요리 상세 정보.",
+    "wantDaypass": "원데이 패스를 원하시나요?",
+    "unlockFeatures": "무제한 스캔 및 프리미엄 기능 해제",
+    "upgradeJourney": "여행을 업그레이드하세요",
+    "unlimitedAccess": "숨겨진 지방 탐지 및 가이드 무제한 이용.",
+    "menuMasterMind": "메뉴 마스터 마인드",
+    "gameDescription": "요리 맞히고 +10 크레딧 받기 (5/5)",
+    "survivalCards": "서바이벌 카드",
+    "commonPhrases": "주문 및 알레르기 관련 필수 표현.",
+    "gourmetFeed": "미식 피드",
+    "commonQuestions": "자주 묻는 질문",
+    "ourVision": "우리의 비전",
+    "visionQuote": "낯선 땅에서 누군가 나를 이해하고 배려해준다고 느낄 때 최고의 추억이 만들어집니다. 우리는 당신이 언어의 장벽을 넘어 현지인과 미소를 나눌 수 있도록 돕겠습니다.",
+    "visionFooter": "문화의 아름다움을 누구나 누릴 수 있다고 믿는 모든 탐험가에게 바칩니다.",
+    "moreThanReading": "단순한 메뉴 해독 그 이상",
+    "dishesDecoded": "요리 분석",
+    "regionsCovered": "지원 지역",
+    "orderFood": "음식 주문",
+    "storefront": "상점 정면",
+    "free": "무료",
+    "uploadMenu": "메뉴를 업로드하여 재료와 알레르기 성분을 확인하세요.",
+    "uploadSigns": "간판이나 상점 이름을 업로드하여 즉시 번역하세요.",
+    "initializingApp": "애플리케이션 초기화 중..."
+  },
+  "waiterCard": {
+    "containIngredient": "{{ingredient}}이(가) 들어있나요?",
+    "noIngredient": "{{ingredient}}은(는) 빼주세요.",
+    "isSpicy": "매운가요?",
+    "nonSpicy": "안 맵게/덜 맵게 가능한가요?",
+    "yesResponse": "好的，没问题 (네, 문제없습니다)",
+    "noResponse": "不好意思，不可以 (죄송하지만 안 됩니다)",
+    "englishTranslation": "영어 번역",
+    "playAudio": "음성 재생 / 播放语音",
+    "showScreenWaiter": "직원에게 이 화면을 보여주세요 • 请出示给服务员"
+  },
+  "dish": {
+    "aiInsight": "AI 심층 분석",
+    "coreComponents": "주요 구성",
+    "mainIngredients": "주재료",
+    "possibleAdditions": "추가 가능 재료",
+    "heatLevel": "매운 정도",
+    "dietaryFlags": "식단 주의사항",
+    "noAllergens": "검출된 알레르기 유발 항원이 없습니다. 심한 알레르기가 있는 경우 직원에게 다시 확인하세요.",
+    "searchPhotos": "사진 검색",
+    "containsAnimalFats": "동물성 지방 / 라드(猪油) 함유.",
+    "expertInsight": "전문가 가이드",
+    "houseSpecialties": "추천 메뉴",
+    "serviceContext": "서비스 컨텍스트"
+  },
+  "pricing": {
+    "threeDayPass": {
+      "name": "3일 패스",
+      "description": "3일 이용권"
+    },
+    "sevenDayPass": {
+      "name": "7일 패스",
+      "description": "7일 이용권",
+      "highlightText": "가장 인기"
+    },
+    "fifteenDayPass": {
+      "name": "15일 패스",
+      "description": "15일 이용권"
+    },
+    "refundPolicy": "환불 정책",
+    "twentyFourHour": "24시간 이내",
+    "refund24h": "구매 후 24시간 이내에 크레딧을 3개 이하로 사용한 경우 환불 요청이 가능합니다.",
+    "technicalGuarantee": "기술 보증",
+    "fullRefund": "AI가 선명한 메뉴 사진을 인식하지 못한 경우, 사용량과 관계없이 100% 전액 환불해 드립니다.",
+    "noFussProcess": "간편한 절차",
+    "refundProcess": "PayPal 거래 ID 또는 결제 캡처 화면을 support@readchinesemenu.com으로 보내주세요. 로그인이나 복잡한 서류는 필요 없습니다."
+  },
+  "game": {
+    "title": "메뉴 마스터 마인드",
+    "status": {
+      "finish": "게임 종료",
+      "next": "다음 요리",
+      "results": "결과 보기",
+      "score": "점수: {{score}} / 5",
+      "perfect": "만점입니다!",
+      "wellDone": "잘하셨어요!",
+      "reward": "10 크레딧 보상 획득",
+      "hint": "5/5점을 맞추면 크레딧 보상을 드립니다!",
+      "literalLabel": "직역",
+      "insight": "여행자 팁",
+      "ingredientsLabel": "주요 재료"
+    },
+    "questions": [
+      {
+        "id": 1,
+        "literal": "권총 다리",
+        "correct": "통닭다리 튀김",
+        "options": [
+          "치명적인 무기",
+          "통닭다리 튀김",
+          "말의 다리",
+          "경찰 장비"
+        ],
+        "ingredients": "닭다리, 밀가루, 향신료",
+        "note": "권총 모양처럼 생긴 커다란 닭다리 튀김일 뿐입니다. 총기 소지 허가는 필요 없어요!"
+      },
+      {
+        "id": 2,
+        "literal": "바바 케이크",
+        "correct": "찰떡 스펀지 케이크",
+        "options": [
+          "아기 음식",
+          "화장실 관련 용어",
+          "찰떡 스펀지 케이크",
+          "아빠의 선물"
+        ],
+        "ingredients": "쌀가루, 설탕, 달걀",
+        "note": "부드러운 식감(粑粑)에서 온 이름이지만, 외국인에게는 발음이 매우 '위험'하게 들릴 수 있어요!"
+      },
+      {
+        "id": 3,
+        "literal": "당나귀 고기 화구",
+        "correct": "당나귀 고기 샌드위치",
+        "options": [
+          "당나귀 고기 샌드위치",
+          "불난 곳의 당나귀",
+          "아주 매운 당나귀",
+          "사막 생존 도구"
+        ],
+        "ingredients": "당나귀 고기, 바삭한 페이스트리",
+        "note": "중국 북부의 전설적인 바삭한 샌드위치입니다. 당나귀가 불에 구워지는 장면을 상상하진 마세요!"
+      },
+      {
+        "id": 4,
+        "literal": "라인 치킨",
+        "correct": "거세된 닭 (캡폰)",
+        "options": [
+          "전선이 감긴 닭",
+          "마른 닭",
+          "거세된 닭 (캡폰)",
+          "전자 치킨"
+        ],
+        "ingredients": "거세한 수탉, 생강",
+        "note": "일부 방언에서 '라인'은 거세(骟)와 발음이 비슷합니다. 육질이 아주 부드럽기로 유명하죠."
+      },
+      {
+        "id": 5,
+        "literal": "밀을 태우다",
+        "correct": "샤오마이 (돼지고기 딤섬)",
+        "options": [
+          "불탄 밀밭",
+          "탄 빵",
+          "샤오마이 (돼지고기 딤섬)",
+          "농장 사고"
+        ],
+        "ingredients": "돼지고기, 새우, 얇은 피",
+        "note": "이것은 '샤오마이'입니다. 이름은 '뜨거울 때 판다' 혹은 모양이 '타오르는 밀' 같다는 데서 유래했습니다."
+      },
+      {
+        "id": 6,
+        "literal": "맛 새우",
+        "correct": "마라 롱샤 (민물 가재)",
+        "options": [
+          "영혼이 있는 새우",
+          "마라 롱샤 (민물 가재)",
+          "맛을 느끼는 새우",
+          "철학적인 해산물"
+        ],
+        "ingredients": "민물 가재, 강한 향신료, 마늘, 고추",
+        "note": "길거리 음식의 제왕입니다. 강렬한 양념 맛이 주인공이라 '맛 새우(口味虾)'라고 불립니다."
+      },
+      {
+        "id": 7,
+        "literal": "고양이 귀",
+        "correct": "귀 모양 파스타",
+        "options": [
+          "고양이 간식",
+          "귀 모양 파스타",
+          "고양이 귀 튀김",
+          "도청 장치"
+        ],
+        "ingredients": "밀가루, 물",
+        "note": "반죽을 손으로 튕겨 작은 고양이 귀 모양으로 만든 면 요리입니다. 항저우와 산시성에서 아주 인기 있죠!"
+      },
+      {
+        "id": 8,
+        "literal": "전분 피가 고기에 기대다",
+        "correct": "넙적 당면 돼지고기 찜",
+        "options": [
+          "로맨틱한 돼지고기",
+          "넙적 당면 돼지고기 찜",
+          "껍질 아래 숨은 돼지",
+          "끈적한 사고"
+        ],
+        "ingredients": "삼겹살, 넓은 당면",
+        "note": "여기서 '기대다(靠)'는 소스가 고기에 찰떡같이 붙을 때까지 졸이는 요리 기법을 뜻합니다."
+      },
+      {
+        "id": 9,
+        "literal": "금화 위",
+        "correct": "소 양 찜 (벌집양)",
+        "options": [
+          "고기로 만든 지갑",
+          "소 양 찜 (벌집양)",
+          "위 속의 동전",
+          "황금 돼지 배"
+        ],
+        "ingredients": "소 양, 간장 소스",
+        "note": "양의 벌집 모양 패턴이 중국의 옛 금화와 닮았다고 해서 붙여진 이름입니다."
+      },
+      {
+        "id": 10,
+        "literal": "소나무 꽃 달걀",
+        "correct": "피단 (송화단)",
+        "options": [
+          "소나무에서 딴 알",
+          "피단 (송화단)",
+          "달걀 모양 꽃",
+          "나무 맛 달걀"
+        ],
+        "ingredients": "오리알, 석회, 재",
+        "note": "숙성 과정에서 달걀 표면에 소나무 가지 같은 아름다운 무늬가 생겨서 '송화단'이라고 부릅니다."
+      },
+      {
+        "id": 11,
+        "literal": "개미가 나무에 오르다",
+        "correct": "다진 돼지고기 당면 볶음",
+        "options": [
+          "곤충 간식",
+          "다진 돼지고기 당면 볶음",
+          "나뭇가지 샐러드",
+          "산악 구조 키트"
+        ],
+        "ingredients": "당면, 다진 돼지고기",
+        "note": "당면에 붙어 있는 작은 고기 알갱이들이 마치 나무를 오르는 개미 떼처럼 보여서 붙여진 이름입니다."
+      },
+      {
+        "id": 12,
+        "literal": "다람쥐 쏘가리",
+        "correct": "탕수 쏘가리 튀김",
+        "options": [
+          "다람쥐와 물고기 혼종",
+          "탕수 쏘가리 튀김",
+          "야생 동물 고기",
+          "견과류 맛 물고기"
+        ],
+        "ingredients": "쏘가리, 잣",
+        "note": "물고기 살을 다람쥐 꼬리처럼 조각해 튀긴 요리입니다. 뜨거운 소스를 부을 때 '찍찍' 소리가 나는 것이 특징이에요!"
+      },
+      {
+        "id": 13,
+        "literal": "사자 머리",
+        "correct": "대형 돼지고기 완자",
+        "options": [
+          "아프리카 사파리 고기",
+          "대형 돼지고기 완자",
+          "용감한 자의 심장",
+          "십이지신 음식"
+        ],
+        "ingredients": "다진 돼지고기, 배추",
+        "note": "커다란 고기 완자는 사자 머리를, 주변의 배추는 사자의 갈기를 상징합니다."
+      },
+      {
+        "id": 14,
+        "literal": "봉황 발톱",
+        "correct": "닭발 딤섬",
+        "options": [
+          "신화 속 새의 부위",
+          "닭발 딤섬",
+          "황금 독수리 날개",
+          "매운 도마뱀 다리"
+        ],
+        "ingredients": "닭발, 블랙빈 소스",
+        "note": "중국 요리 문화에서 '봉황'은 닭을 부르는 우아한 명칭입니다."
+      },
+      {
+        "id": 15,
+        "literal": "용정 새우",
+        "correct": "찻잎 새우 볶음",
+        "options": [
+          "깊은 우물 속 새우",
+          "찻잎 새우 볶음",
+          "용 고기 튀김",
+          "해산물 차"
+        ],
+        "ingredients": "민물 새우, 용정차 찻잎",
+        "note": "항저우 특산물인 용정차 찻잎을 사용한 요리입니다. 우물 속에 진짜 용은 없으니 안심하세요!"
+      },
+      {
+        "id": 16,
+        "literal": "아내 케이크",
+        "correct": "동과 잼 중식 파이",
+        "options": [
+          "아내를 위한 선물",
+          "아내로 만든 케이크",
+          "동과 잼 중식 파이",
+          "혼인 신고 케이크"
+        ],
+        "ingredients": "동과(겨울멜론), 밀가루, 설탕",
+        "note": "전설에 따르면 한 여성이 시아버지를 구하기 위해 이 과자를 만들었다고 합니다. 진짜 아내가 들어있진 않아요!"
+      },
+      {
+        "id": 17,
+        "literal": "거지 닭",
+        "correct": "진흙 구이 통닭",
+        "options": [
+          "진흙 구이 통닭",
+          "먹다 남은 찌꺼기",
+          "노숙자식 수프",
+          "저가형 닭날개"
+        ],
+        "ingredients": "닭 한 마리, 연잎, 진흙",
+        "note": "옛날 거지가 진흙에 싸서 구워 먹던 방식에서 유래했지만, 지금은 아주 유명한 별미입니다."
+      },
+      {
+        "id": 18,
+        "literal": "당나귀 구르기",
+        "correct": "인절미 롤 (뤼다군)",
+        "options": [
+          "먼지 속의 당나귀",
+          "당나귀 찜",
+          "인절미 롤 (뤼다군)",
+          "구르는 가축"
+        ],
+        "ingredients": "찹쌀, 콩가루",
+        "note": "당나귀가 먼지 속에서 구르는 모습이 콩가루를 묻힌 떡과 닮았다고 해서 붙여진 이름입니다."
+      },
+      {
+        "id": 19,
+        "literal": "부부 폐 슬라이스",
+        "correct": "소고기 내장 마라 무침",
+        "options": [
+          "인간의 유해",
+          "소고기 내장 마라 무침",
+          "로맨틱한 저녁 식사",
+          "하트 모양 고기"
+        ],
+        "ingredients": "얇게 썬 소고기, 내장, 고추기름",
+        "note": "유명한 노점상 부부가 개발한 요리입니다. 내장은 들어있지만 폐나 부부는 들어있지 않아요!"
+      },
+      {
+        "id": 20,
+        "literal": "처녀 치킨",
+        "correct": "영계 찜 (동자계)",
+        "options": [
+          "순수한 치킨",
+          "영계 찜 (동자계)",
+          "수줍음 많은 새",
+          "금기시된 고기"
+        ],
+        "ingredients": "어린 닭, 생강",
+        "note": "중국어 '동자계'를 직역한 이름입니다. 단순히 아주 어리고 부드러운 영계를 뜻합니다."
+      },
+      {
+        "id": 21,
+        "literal": "침 치킨",
+        "correct": "요다레지 (구수계)",
+        "options": [
+          "입에 침이 고이는 치킨",
+          "비위생적인 치킨",
+          "닭의 침",
+          "매운 수프"
+        ],
+        "ingredients": "닭고기, 고추기름, 깨",
+        "note": "생각만 해도 입에 침(Saliva)이 고일 정도로 맛있다고 해서 붙여진 이름입니다."
+      },
+      {
+        "id": 22,
+        "literal": "오줌 싸는 소고기 완자",
+        "correct": "육즙 가득 소고기 완자",
+        "options": [
+          "더러운 소고기",
+          "육즙 가득 소고기 완자",
+          "오줌 맛 고기",
+          "화난 미트볼"
+        ],
+        "ingredients": "다진 소고기, 육수 젤리",
+        "note": "홍콩에서 유명하죠! 한 입 베어 물면 안의 뜨거운 육즙이 분수처럼 뿜어져 나와서 이런 이름이 붙었습니다."
+      },
+      {
+        "id": 23,
+        "literal": "부처님이 담장을 넘다",
+        "correct": "불도장 (고급 해산물 찜)",
+        "options": [
+          "종교적 사건",
+          "불도장 (고급 해산물 찜)",
+          "채식주의자의 악몽",
+          "사찰 담장 수리 키트"
+        ],
+        "ingredients": "전복, 해삼, 관자",
+        "note": "냄새가 너무 좋아서 참선하던 승려조차 담장을 넘어 먹으러 왔다는 전설의 최고급 요리입니다."
+      },
+      {
+        "id": 24,
+        "literal": "곰보 할머니 두부",
+        "correct": "마파두부",
+        "options": [
+          "피부병 두부",
+          "마파두부",
+          "할머니의 비밀",
+          "할머니의 얼굴"
+        ],
+        "ingredients": "두부, 고추기름, 다진 소고기",
+        "note": "19세기 사천성에서 얼굴에 곰보 자국(麻)이 있던 할머니(婆)가 개발해서 붙여진 이름입니다."
+      },
+      {
+        "id": 25,
+        "literal": "물에 삶은 생선",
+        "correct": "사천식 매운 생선 조림",
+        "options": [
+          "건강한 삶은 생선",
+          "사천식 매운 생선 조림",
+          "맑은 생선국",
+          "양념 없는 해산물"
+        ],
+        "ingredients": "생선 살, 건고추, 뜨거운 기름",
+        "note": "이름은 '물에 삶았다'고 하지만, 실제로는 엄청난 양의 뜨거운 고추기름에 담겨 나오는 매운 요리입니다!"
+      },
+      {
+        "id": 26,
+        "literal": "술 취한 새우",
+        "correct": "생새우 술 절임",
+        "options": [
+          "술 마시는 새우",
+          "생새우 술 절임",
+          "알코올 해산물 샐러드",
+          "취한 셰프의 특선"
+        ],
+        "ingredients": "생새우, 독한 백주",
+        "note": "살아있는 새우를 독한 술에 담가 만듭니다. 먹을 때 새우는 글자 그대로 취해 있는 상태죠."
+      },
+      {
+        "id": 27,
+        "literal": "냄새나는 두부",
+        "correct": "취두부",
+        "options": [
+          "썩은 쓰레기",
+          "취두부",
+          "발 냄새 스낵",
+          "유통기한 지난 치즈"
+        ],
+        "ingredients": "두부, 발효액",
+        "note": "냄새는 쓰레기 같지만 맛은 천국입니다. 진정한 미식 모험가를 위한 관문이죠."
+      },
+      {
+        "id": 28,
+        "literal": "나무 귀",
+        "correct": "목이버섯",
+        "options": [
+          "나무에서 자란 귀",
+          "목이버섯",
+          "귀머거리 숲",
+          "나무 조각상"
+        ],
+        "ingredients": "검은 목이버섯",
+        "note": "나무 기둥에서 자라며 사람의 귀와 놀랍도록 닮았다고 해서 '목이(木耳)'라고 불립니다."
+      },
+      {
+        "id": 29,
+        "literal": "은바늘",
+        "correct": "은침면 (짧은 쌀국수)",
+        "options": [
+          "금속 의료 도구",
+          "은침면 (짧은 쌀국수)",
+          "위험한 수프",
+          "번쩍이는 장신구"
+        ],
+        "ingredients": "쌀가루, 물",
+        "note": "양쪽 끝이 뾰족하고 짧은 쌀국수 면입니다. 진짜 바늘은 들어있지 않으니 안심하세요!"
+      },
+      {
+        "id": 30,
+        "literal": "차가운 피부",
+        "correct": "량피 (차가운 비빔면)",
+        "options": [
+          "사람의 피부",
+          "량피 (차가운 비빔면)",
+          "가죽 스낵",
+          "냉동된 신체 부위"
+        ],
+        "ingredients": "밀가루, 고추기름",
+        "note": "중국어 '량피'를 직역한 것입니다. 아주 시원하고 맛있는 면 요리예요. 진짜 피부가 아닙니다!"
+      }
+    ]
+  },
+  "reviews": {
+    "enjoyExperience": "앱이 마음에 드시나요?",
+    "leaveFeedback": "의견을 남기거나 경험을 공유해 주세요",
+    "review": "리뷰",
+    "suggestions": "제안",
+    "story": "이야기",
+    "tellUs": "어떻게 생각하시는지 알려주세요...",
+    "sendEmail": "이메일로 보내기",
+    "list": {
+      "rev1": {
+        "name": "Alex",
+        "role": "디지털 노마드",
+        "text": "청두 여행에서 정말 생명의 은인 같았어요. 드디어 볶음밥 말고 다른 것도 주문할 수 있게 됐거든요!"
+      },
+      "rev2": {
+        "name": "Sarah",
+        "role": "푸드 블로거",
+        "text": "알레르기 감지 기능이 가장 인상적이었어요. 평소 안전하다고 생각했던 요리에서 땅콩을 찾아내 주더라고요."
+      },
+      "rev3": {
+        "name": "Marco",
+        "role": "배낭여행자",
+        "text": "'직원에게 보여주기' 기능은 천재적이에요. 더 이상 어색하게 손가락으로 가리키며 짐작할 필요가 없어요."
+      }
+    }
+  },
+  "faq": {
+    "q1": "계정을 만들어야 하나요?",
+    "a1": "아니요. 페이지를 열고 바로 스캔하세요. 가입은 필요하지 않습니다.",
+    "q2": "무료인가요?",
+    "a2": "무료로 시작할 수 있습니다. 각 기기마다 처음에 200 크레딧(약 4회 스캔분)이 제공됩니다.",
+    "q3": "보상이 있나요?",
+    "a3": "계속 이용하실 수 있도록 4번째, 10번째, 20번째 스캔 시 50 크레딧씩 보너스를 드립니다!",
+    "q4": "사진이 저장되나요?",
+    "a4": "아니요. 사진은 즉시 처리되며 절대 저장되지 않습니다. 개인정보 보호가 저희의 최우선 순위입니다.",
+    "q5": "정보를 전적으로 신뢰해도 될까요?",
+    "a5": "레시피는 식당마다 다를 수 있습니다. 정보를 가이드로 활용하시되, 특히 심한 알레르기가 있는 경우 직원에게 꼭 확인하세요."
+  },
+  "support": {
+    "title": "지원하기",
+    "subtitle": "AI 운영을 돕고 여행에 필요한 추가 크레딧을 받으세요.",
+    "tiers": {
+      "soda": {
+        "name": "시원한 콜라 한 잔",
+        "meals": "약 3끼 식사분",
+        "description": "가벼운 점심 식사 스캔에 적합합니다."
+      },
+      "coffee": {
+        "name": "따뜻한 커피 한 잔",
+        "meals": "약 10끼 식사분",
+        "description": "미식 탐험가를 위한 최고의 동반자입니다."
+      },
+      "cheesecake": {
+        "name": "달콤한 치즈케이크",
+        "meals": "약 25끼 식사분",
+        "description": "중국 여행 내내 넉넉하게 이용하세요."
+      }
+    }
+  },
+  "loading": {
+    "status": {
+      "compressing": "이미지 압축 중...",
+      "uploading": "AI 서버로 전송 중...",
+      "analyzing": "AI 심층 분석 중...",
+      "success": "맛있게 드세요!"
+    },
+    "enjoy": "중국에서 즐거운 식사 되세요",
+    "menuMessages": [
+      "젓가락 준비 중... 🥢",
+      "요리 데이터베이스 조회 중... 📚",
+      "할머니의 비밀 레시피 해독 중... 👵",
+      "매운 정도 및 알레르기 성분 확인 중... 🔥",
+      "숨겨진 지방 확인 중... 🐄",
+      "거의 다 됐어요, 조금만 참으세요! 🥟"
+    ],
+    "streetMessages": [
+      "골목길 탐방 중... 🏘️",
+      "주변 지도 확인 중... 📍",
+      "현지 상점 주인에게 물어보는 중... 🏮",
+      "간판 닦는 중... ✨",
+      "숨겨진 보석 같은 맛집 찾는 중... 💎",
+      "거의 다 됐어요, 길 잃지 마세요! 🚶"
+    ]
+  },
+  "wordCloud": {
+    "badge": "여행자 피드",
+    "title": "최근 분석된 요리",
+    "dishes": [
+      "어향육슬 (鱼香肉丝)",
+      "마파두부 (麻婆豆腐)",
+      "북경오리 (北京烤鸭)",
+      "소롱포 (小笼包)",
+      "마라샹궈 (麻辣香锅)",
+      "회궈육 (回锅肉)",
+      "성젠바오 (生煎包)",
+      "마라롱샤 (麻辣小龙虾)",
+      "탄탄면 (担担面)",
+      "란주우육면 (兰州牛肉面)",
+      "총유병 (葱油饼)",
+      "당초배골 (糖醋排骨)",
+      "수조육 (小炒肉)",
+      "타교어두 (剁椒鱼头)",
+      "수주어 (水煮鱼)",
+      "훈툰 (馄饨)",
+      "차슈 (叉烧)",
+      "하이난 치킨라이스 (海南鸡饭)",
+      "짜장면 (炸酱面)",
+      "로가모 (肉夹馍)",
+      "취두부 (臭豆腐)",
+      "뱡뱡면 (油泼扯面)",
+      "사자두 (狮子头)",
+      "동파육 (东坡肉)",
+      "과교미선 (过桥米线)",
+      "보자판 (煲仔饭)",
+      "간초우하 (干炒牛河)",
+      "궁보계정 (宫保鸡丁)",
+      "홍소육 (红烧肉)",
+      "백절계 (白切鸡)",
+      "묘볶음 (清炒豆苗)",
+      "피단수육죽 (皮蛋瘦肉粥)",
+      "마라탕 (麻辣烫)"
+    ]
+  },
+  "survival": {
+    "title": "서바이벌 카드",
+    "badge": "커뮤니티 지혜",
+    "contribute": "기여하기",
+    "community": "커뮤니티",
+    "loading": "로딩 중...",
+    "form": {
+      "title": "지혜 공유하기",
+      "placeholder": "영어 문구",
+      "submit": "제출하기"
+    },
+    "overlay": {
+      "requestLabel": "영어 요청 사항",
+      "speakAlt": "말하기"
+    },
+    "categories": {
+      "Safety": "안전",
+      "Dining": "식사",
+      "Payment": "결제",
+      "Taxi": "택시",
+      "Health": "건강",
+      "Station": "역/공항",
+      "Street": "길거리",
+      "Sightseeing": "관광",
+      "Hotel": "호텔",
+      "Help": "도움"
+    },
+    "cards": {
+      "no_peanuts": "땅콩은 빼주세요.",
+      "no_nuts": "견과류 알레르기가 있어요.",
+      "fava_beans": "잠두콩(파바빈)이 들어있나요?",
+      "lactose": "유당불내증이 있어요.",
+      "seafood_allergy": "심한 해산물 알레르기가 있어요.",
+      "must_non_spicy": "전혀 안 맵게 해주세요.",
+      "no_msg": "화학 조미료(MSG)는 빼주세요.",
+      "no_pork": "돼지고기를 안 먹어요.",
+      "vegetarian": "채식주의자입니다.",
+      "no_cilantro": "고수(향채) 못 먹어요.",
+      "menu_please": "메뉴판 좀 주세요.",
+      "specialty": "이 집의 추천 메뉴는 뭔가요?",
+      "one_of_this": "이거 하나 주세요.",
+      "ice_water": "얼음물 좀 주시겠어요?",
+      "need_fork": "포크 좀 주실 수 있나요?",
+      "tissues": "휴지 좀 주세요.",
+      "restroom": "화장실이 어디인가요?",
+      "order_now": "지금 주문할게요.",
+      "too_salty": "음식이 너무 짜요.",
+      "doggy_bag": "남은 음식 포장해 주세요.",
+      "check_please": "계산해 주세요.",
+      "who_scans": "제가 스캔할까요, 아니면 보여드릴까요?",
+      "mobile_pay": "알리페이/위챗페이 되나요?",
+      "receipt": "영수증 주세요.",
+      "how_much": "이거 얼마예요?",
+      "cheaper": "좀 깎아주실 수 있나요?",
+      "no_cash": "현금이 없어요.",
+      "wifi": "와이파이 비밀번호가 뭔가요?",
+      "charge_phone": "여기서 충전할 수 있나요?",
+      "wrong_change": "거스름돈이 틀린 것 같아요.",
+      "go_here": "여기로 가주세요 (지도).",
+      "use_meter": "미터기 켜주세요.",
+      "how_long": "얼마나 걸릴까요?",
+      "pull_over": "여기서 내려주세요.",
+      "ac_up": "에어컨 좀 세게 틀어주세요.",
+      "open_trunk": "트렁크 좀 열어주세요.",
+      "wait_mins": "잠시만 기다려 주시겠어요?",
+      "subway": "지하철역이 어디인가요?",
+      "drive_slower": "천천히 운전해 주세요.",
+      "taxi_fare": "거기까지 요금이 얼마쯤 나올까요?",
+      "need_doctor": "의사가 필요해요.",
+      "pharmacy": "가장 가까운 약국이 어디인가요?",
+      "stomach_hurt": "배가 너무 아파요.",
+      "cold_med": "해열제/감기약 있나요?",
+      "dizzy": "어지러워요.",
+      "allergy_med": "알레르기 약 있나요?",
+      "hospital_reg": "접수 어디서 하나요?",
+      "buy_mask": "마스크 어디서 파나요?",
+      "med_frequency": "하루에 몇 번 먹는 건가요?",
+      "med_record": "진료 기록/보고서가 필요해요.",
+      "checkin_counter": "체크인 카운터가 어디인가요?",
+      "lost_luggage": "수하물을 분실했어요.",
+      "recent_ticket": "가장 빠른 표로 주세요.",
+      "ticket_time": "개찰 시간이 언제인가요?",
+      "airport_bus": "공항 가는 버스인가요?",
+      "earlier_departure": "더 이른 시간대 표가 있나요?",
+      "boarding_gate": "탑승구가 어디인가요?",
+      "train_delay": "기차가 지연됐나요?",
+      "print_itinerary": "티켓/여정을 출력해 주세요.",
+      "store_luggage": "짐 맡길 수 있는 곳 있나요?",
+      "address_direction": "이 주소로 어떻게 가나요?",
+      "walkable": "걸어서 갈 수 있나요?",
+      "convenience_store": "근처에 편의점 있나요?",
+      "power_bank": "보조배터리 대여할 수 있나요?",
+      "atm": "가장 가까운 ATM이 어디인가요?",
+      "unlock_bike": "공유 자전거 어떻게 잠금 해제하나요?",
+      "take_photo": "사진 찍어도 되나요?",
+      "sim_card": "SIM 카드 어디서 사나요?",
+      "get_delivery": "배달/택배 받는 것 좀 도와주세요.",
+      "thanks_help": "도와주셔서 감사합니다!",
+      "ticket_price": "표 한 장에 얼마인가요?",
+      "ticket_office": "매표소가 어디인가요?",
+      "audio_guide": "영어 오디오 가이드 있나요?",
+      "closing_time": "마감 시간이 언제인가요?",
+      "take_photo_us": "우리 사진 좀 찍어주시겠어요?",
+      "drinking_water": "마실 수 있는 물인가요?",
+      "last_bus": "막차 시간이 언제인가요?",
+      "rent_guide": "가이드 기기 대여하고 싶어요.",
+      "cable_car": "케이블카 표 어디서 사나요?",
+      "exit_location": "출구가 어디인가요?",
+      "passport_here": "제 여권 여기 있습니다.",
+      "ac_shower_fail": "따뜻한 물이 안 나오거나 에어컨이 안 돼요.",
+      "change_sheets": "시트 갈아주세요.",
+      "wifi_fail": "와이파이가 안 돼요.",
+      "breakfast_time": "조식 시간이 언제인가요?",
+      "laundry": "세탁 서비스 되나요?",
+      "checkout_now": "체크아웃할게요.",
+      "hotel_luggage": "짐 좀 맡아주실 수 있나요?",
+      "call_taxi": "택시 좀 불러주세요.",
+      "checkout_deadline": "체크아웃 마감 시간이 언제인가요?",
+      "speak_english": "영어 할 줄 아세요?",
+      "say_again": "다시 말씀해 주시겠어요?",
+      "type_phone": "제 휴대폰에 직접 써주세요.",
+      "not_understand": "이해하지 못했어요.",
+      "emergencies": "도와주세요! 긴급 상황이에요!",
+      "borrow_phone": "전화기 좀 빌릴 수 있을까요?",
+      "lost_friend": "일행을 잃어버렸어요.",
+      "police_station": "경찰서가 어디인가요?",
+      "ambulance": "구급차 좀 불러주세요!",
+      "lost_item": "가방/여권을 잃어버렸어요."
+    }
+  },
+  "dishDetail": {
+    "authenticSelection": "현지 정통 메뉴",
+    "approx": "발음 가이드",
+    "searchPhotos": "사진 검색",
+    "containsAnimalFat": "이 요리는 <1>동물성 지방 / 라드(猪油)</1>를 함유하고 있습니다.",
+    "aiInsight": "AI 심층 분석",
+    "defaultInsight": "이 요리는 정통적인 맛과 전통 조리법으로 유명합니다.",
+    "coreComponents": "주요 구성 요소",
+    "analyzing": "분석 중...",
+    "mainIngredients": "주재료",
+    "possibleAdditions": "추가 가능 재료",
+    "heatLevel": "매운 정도",
+    "dietaryFlags": "식단 정보",
+    "noAllergens": "검출된 알레르기 유발 항원이 없습니다. 심한 알레르기가 있는 경우 직원에게 확인하세요.",
+    "returnToMenu": "메뉴로 돌아가기",
+    "spicyLabels": {
+      "notSpicy": "안 매움",
+      "mild": "약간 매움",
+      "medium": "중간 매움",
+      "hot": "매움",
+      "extraSpicy": "아주 매움"
+    }
+  },
+  "effects": {
+    "rewardUnlocked": "보상 획득!",
+    "milestoneReached": "마일스톤 {{num}} 달성!",
+    "plusCredits": "+{{count}} 크레딧",
+    "boosted": "부스트 활성화!",
+    "masterMindBonus": "마스터 마인드 보너스"
+  },
+  "storeCard": {
+    "restaurantIdentified": "식당 확인됨",
+    "businessIdentified": "업체 확인됨",
+    "localShop": "지역 상점",
+    "establishment": "시설",
+    "fairPrice": "적정 가격",
+    "expertInsight": "전문가 인사이트",
+    "defaultDescription": "정통 서비스와 경험을 제공하는 주목할 만한 지역 시설입니다.",
+    "houseSpecialties": "대표 메뉴",
+    "serviceContext": "서비스 정보",
+    "showToStaff": "직원에게 보여주기",
+    "askForTable": "(빈 자리 문의)",
+    "askForAssistance": "(도움 요청)"
+  },
+  "refund": {
+    "title": "공정하고 간편한 환불",
+    "quote": "“우리는 당신의 미식 경험을 돕는 다리가 되고 싶을 뿐, 장애물이 되고 싶지 않습니다. 도움이 되지 않았다면 비용을 청구하지 않겠습니다.”",
+    "windowTitle": "24시간 이내 신청",
+    "windowContent": "구매 후 24시간 이내, 크레딧 사용량이 3회 이하인 경우 환불을 요청할 수 있습니다.",
+    "techTitle": "기술 보증",
+    "techContent": "선명한 사진임에도 AI가 메뉴를 전혀 읽지 못할 경우, 사용량에 관계없이 100% 전액 환불해 드립니다.",
+    "processTitle": "간편한 절차",
+    "processContent": "PayPal 거래 ID 또는 결제 캡처본을 ",
+    "processContentEnd": " 로 보내주세요. 로그인이나 복잡한 양식은 필요 없습니다.",
+    "understand": "확인했습니다"
+  },
+  "staffHelper": {
+    "headerLabel": "한국어 번역",
+    "messageEn": "여기서 식사하고 싶습니다. 빈 자리가 있나요?",
+    "playAudio": "음성 재생",
+    "playAudioCn": "播放语音",
+    "footerHint": "이 화면을 직원에게 보여주세요",
+    "footerHintCn": "请出示给服务员"
+  },
+  "creditUpdate": {
+    "title": "크레딧 업데이트됨",
+    "ok": "확인"
+  },
+  "legal": {
+    "privacyTitle": "개인정보 처리방침",
+    "tosTitle": "이용약관",
+    "accept": "동의함",
+    "lastUpdated": "최종 업데이트: 2026년 1월",
+    "privacy": {
+      "collectTitle": "수집 정보",
+      "collectContent": "원본 사진은 서버에 저장되지 않습니다. 분석 완료 후 즉시 폐기됩니다.",
+      "usageTitle": "데이터 사용",
+      "usageContent": "크레딧 관리를 위해 로컬 스토리지를 사용하며, 텍스트 인식을 위해 Google Gemini를 활용합니다.",
+      "cameraTitle": "카메라 권한",
+      "cameraContent": "메뉴 촬영 시에만 카메라에 액세스하며, 명시적인 작업 없이는 액세스하지 않습니다.",
+      "cookiesTitle": "쿠키",
+      "cookiesContent": "세션 유지와 크레딧 관리를 위한 필수 쿠키만 사용합니다."
+    },
+    "tos": {
+      "agreementTitle": "사용 동의",
+      "agreementContent": "본 도구는 개인적인 용도로만 사용해야 하며, 번역 결과를 바탕으로 한 결정의 책임은 사용자에게 있습니다.",
+      "accuracyTitle": "정확성 고지",
+      "accuracyContent": "AI 번역은 100% 정확하지 않을 수 있습니다. 알레르기 성분은 반드시 직원에게 다시 확인하십시오.",
+      "paymentTitle": "결제 및 크레딧",
+      "paymentContent": "구매한 크레딧은 양도할 수 없으며, 환불 규정은 환불 정책 섹션을 따릅니다.",
+      "abuseTitle": "서비스 남용",
+      "abuseContent": "비정상적인 크레딧 획득이나 데이터 수집 시 서비스 이용이 차단될 수 있습니다."
+    }
+  }
+}

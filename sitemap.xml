@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://www.readchinesemenu.com/</loc>
+    <lastmod>2026-01-30</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  
+  <url><loc>https://www.readchinesemenu.com/?lang=ja</loc><lastmod>2026-01-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://www.readchinesemenu.com/?lang=ko</loc><lastmod>2026-01-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://www.readchinesemenu.com/?lang=fr</loc><lastmod>2026-01-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://www.readchinesemenu.com/?lang=de</loc><lastmod>2026-01-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://www.readchinesemenu.com/?lang=it</loc><lastmod>2026-01-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://www.readchinesemenu.com/?lang=es</loc><lastmod>2026-01-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://www.readchinesemenu.com/?lang=ru</loc><lastmod>2026-01-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://www.readchinesemenu.com/?lang=th</loc><lastmod>2026-01-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://www.readchinesemenu.com/?lang=id</loc><lastmod>2026-01-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://www.readchinesemenu.com/?lang=ms</loc><lastmod>2026-01-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://www.readchinesemenu.com/?lang=ar</loc><lastmod>2026-01-30</lastmod><priority>0.8</priority></url>
+
+  <url>
+    <loc>https://www.readchinesemenu.com/privacy</loc>
+    <lastmod>2026-01-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://www.readchinesemenu.com/terms</loc>
+    <lastmod>2026-01-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+</urlset>

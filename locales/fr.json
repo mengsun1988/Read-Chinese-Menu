@@ -1,0 +1,924 @@
+{
+  "site": {
+    "title": "Lire les menus chinois | Outil de traduction visuelle IA pour les voyages en Chine"
+  },
+  "common": {
+    "appError": "Erreur d'application",
+    "appInitError": "Une erreur est survenue lors de l'initialisation. Veuillez rafraîchir la page.",
+    "uploadImage": "Charger une image",
+    "scanMenu": "Scanner le menu",
+    "exploreSigns": "Explorer les enseignes",
+    "readyToScan": "Prêt à scanner",
+    "creditsExhausted": "Crédits épuisés · Soutenez-nous pour débloquer",
+    "loading": "Chargement...",
+    "scanFailed": "Échec du scan",
+    "retryScan": "Réessayer le scan",
+    "restart": "Redémarrer",
+    "returnToMenu": "Retour au menu",
+    "noAds": "Sans publicité",
+    "noSignup": "Sans inscription",
+    "paypalSecurity": "Sécurité PayPal",
+    "privacyFirst": "Confidentialité prioritaire",
+    "selectPass": "Choisir un pass",
+    "cancelSelection": "Annuler la sélection",
+    "securePayment": "Paiement sécurisé via PayPal",
+    "sendSupport": "Soutenir le projet",
+    "back": "Retour",
+    "syncingCredits": "Synchronisation des crédits...",
+    "verifyingPayment": "Vérification du paiement...",
+    "fullInfo": "Infos complètes",
+    "details": "Détails",
+    "dailyReward": "Récompense quotidienne",
+    "shareForCredits": "Partager pour +50 Crédits",
+    "share": "Partager",
+    "communication": "Communication",
+    "showToWaiter": "Montrer au serveur",
+    "communicationTool": "Outil de communication pour voyageurs",
+    "yes": "OUI",
+    "no": "NON",
+    "premiumActive": "Premium Activé",
+    "creditsLeft": "Crédits restants",
+    "itemsFound": "Éléments trouvés",
+    "shopIdentified": "Boutique identifiée",
+    "yourChinaTravelMate": "Votre compagnon de voyage en Chine",
+    "menuScanner": "Scanneur de menu",
+    "storefrontExplorer": "Explorateur de devantures",
+    "essentialPhrases": "Phrases essentielles",
+    "premiumPlans": "Offres Premium",
+    "privacyPolicy": "Politique de confidentialité",
+    "termsOfService": "Conditions d'utilisation",
+    "contactUs": "Nous contacter",
+    "officialInquiries": "Demandes officielles",
+    "madeForExplorers": "Conçu pour les explorateurs",
+    "allRightsReserved": "Tous droits réservés.",
+    "stayConnected": "Restez connectés",
+    "saveAppHome": "Enregistrer l'App sur l'accueil",
+    "addiPhone": "Ajouter à l'iPhone",
+    "instantAccess": "Accédez instantanément depuis votre écran d'accueil comme une application native.",
+    "addHomeScreen": "Ajouter à l'écran d'accueil",
+    "gotIt": "J'ai compris",
+    "creditsUpdated": "CRÉDITS MIS À JOUR",
+    "ok": "OK",
+    "rewardUnlocked": "Récompense débloquée ! +50 Crédits",
+    "milestone10": "Palier 10 ! +50 Crédits",
+    "milestone20": "Palier 20 ! +50 Crédits",
+    "boosted": "Boosté ! +50 Crédits",
+    "plus10Credits": "+10 CRÉDITS",
+    "masterMindBonus": "Bonus Master Mind",
+    "connectionError": "Erreur de connexion",
+    "retry": "Réessayer",
+    "connecting": "Connexion...",
+    "paypalSecured": "Sécurisé par PayPal",
+    "fairSimpleRefunds": "Remboursement simple et équitable",
+    "refundBridge": "Nous voulons être votre pont vers les saveurs, pas un obstacle. Si notre outil ne vous aide pas, nous ne voulons pas de votre argent.",
+    "understand": "Je comprends",
+    "bonAppetit": "Bon Appétit !",
+    "enjoyMeal": "Profitez de votre repas en Chine",
+    "compressing": "Compression de l'image...",
+    "sending": "Envoi au serveur IA...",
+    "aiThinking": "Analyse IA approfondie...",
+    "iAccept": "J'accepte",
+    "unlimited": "Illimité",
+    "freeCredits": "Crédits gratuits",
+    "left": "restant",
+    "currency": "Yuan",
+    "unknownDish": "Plat inconnu",
+    "errorNoDishes": "Aucun plat trouvé dans cette image. Veuillez essayer avec une photo plus claire.",
+    "errorNoShop": "Impossible d'identifier le restaurant ou la boutique. Veuillez réessayer.",
+    "errorUnexpected": "Une erreur inattendue s'est produite. Veuillez réessayer plus tard.",
+    "purchaseSuccessPremium": "Pass Premium activé ! Profitez d'une exploration illimitée.",
+    "purchaseSuccessCredits": "Crédits ajoutés avec succès à votre solde !",
+    "deductNote": "50 crédits déduits.",
+    "howItWorks": "Voir comment ça marche"
+  },
+  "home": {
+    "pageTitle": "Lire Menu Chinois",
+    "chinaTravelMate": "Votre compagnon de voyage en Chine",
+    "understandMenus": "Comprenez les menus chinois en un coup d'œil.",
+    "menuDetails": "Ingrédients, allergènes et détails des plats.",
+    "wantDaypass": "Besoin d'un DAYPASS ?",
+    "unlockFeatures": "Débloquez les scans illimités et les fonctions premium",
+    "upgradeJourney": "Améliorez votre voyage",
+    "unlimitedAccess": "Accès illimité à la détection des graisses cachées et guides.",
+    "menuMasterMind": "Menu Master Mind",
+    "gameDescription": "Devinez le plat pour +10 Crédits (5/5)",
+    "survivalCards": "Cartes de Survie",
+    "commonPhrases": "Phrases courantes pour commander et allergies.",
+    "gourmetFeed": "Fil Gourmet",
+    "commonQuestions": "Questions Fréquentes",
+    "ourVision": "Notre Vision",
+    "visionQuote": "Dans un pays étranger, les meilleurs souvenirs naissent lorsqu'on se sent compris et entouré. Nous sommes là pour vous aider à briser la barrière de la langue.",
+    "visionFooter": "Dédié à chaque explorateur qui croit que personne ne devrait manquer la beauté d'une culture.",
+    "moreThanReading": "Bien plus que lire un menu",
+    "dishesDecoded": "Plats décryptés",
+    "regionsCovered": "Régions couvertes",
+    "orderFood": "Commander",
+    "storefront": "Devanture",
+    "free": "GRATUIT",
+    "uploadMenu": "Téléchargez un menu pour voir les ingrédients et allergènes.",
+    "uploadSigns": "Téléchargez des enseignes pour une traduction instantanée.",
+    "initializingApp": "Initialisation de l'application..."
+  },
+  "waiterCard": {
+    "containIngredient": "Contient du {{ingredient}} ?",
+    "noIngredient": "Sans {{ingredient}}, s'il vous plaît.",
+    "isSpicy": "Est-ce épicé ?",
+    "nonSpicy": "Non-épicé / Doux ?",
+    "yesResponse": "好的，没问题 (Oui, pas de problème)",
+    "noResponse": "不好意思，不可以 (Désolé, ce n'est pas possible)",
+    "englishTranslation": "Traduction anglaise",
+    "playAudio": "Lire l'audio / 播放语音",
+    "showScreenWaiter": "Montrez cet écran au serveur • 请出示给服务员"
+  },
+  "dish": {
+    "aiInsight": "Analyse IA",
+    "coreComponents": "Composants principaux",
+    "mainIngredients": "Ingrédients clés",
+    "possibleAdditions": "Ajouts possibles",
+    "heatLevel": "Niveau de piment",
+    "dietaryFlags": "Infos diététiques",
+    "noAllergens": "Aucun allergène détecté. Confirmez avec le serveur en cas d'allergie grave.",
+    "searchPhotos": "Chercher des photos",
+    "containsAnimalFats": "Contient des graisses animales / Saindoux (猪油).",
+    "expertInsight": "Avis d'expert",
+    "houseSpecialties": "Spécialités maison",
+    "serviceContext": "Contexte du service"
+  },
+  "pricing": {
+    "threeDayPass": {
+      "name": "Pass 3 Jours",
+      "description": "Pass 3 Jours"
+    },
+    "sevenDayPass": {
+      "name": "Pass 7 Jours",
+      "description": "Pass 7 Jours",
+      "highlightText": "Le plus populaire"
+    },
+    "fifteenDayPass": {
+      "name": "Pass 15 Jours",
+      "description": "Pass 15 Jours"
+    },
+    "refundPolicy": "Politique de remboursement",
+    "twentyFourHour": "Fenêtre de 24h",
+    "refund24h": "Demandez un remboursement dans les 24h suivant l'achat, si vous avez consommé 3 crédits ou moins.",
+    "technicalGuarantee": "Garantie Technique",
+    "fullRefund": "Si notre IA échoue totalement à lire une photo claire, vous avez droit à un remboursement à 100%.",
+    "noFussProcess": "Processus simple",
+    "refundProcess": "Envoyez simplement votre ID de transaction PayPal à support@readchinesemenu.com. Aucun formulaire requis."
+  },
+  "game": {
+    "title": "Menu Master Mind",
+    "status": {
+      "finish": "Terminer",
+      "next": "Plat suivant",
+      "results": "Voir résultats",
+      "score": "Score : {{score}} / 5",
+      "perfect": "Score Parfait !",
+      "wellDone": "Bien joué !",
+      "reward": "+10 Crédits offerts",
+      "hint": "Faites 5/5 pour gagner des crédits !",
+      "literalLabel": "Traduction littérale",
+      "insight": "Conseil voyageur",
+      "ingredientsLabel": "Ingrédients de base"
+    },
+    "questions": [
+      {
+        "id": 1,
+        "literal": "Jambe de Pistolet",
+        "correct": "Cuisse de poulet entière frite",
+        "options": [
+          "Une arme mortelle",
+          "Cuisse de poulet entière frite",
+          "Jambe de cheval",
+          "Équipement de police"
+        ],
+        "ingredients": "Cuisse de poulet, farine, épices",
+        "note": "C'est juste une grosse cuisse de poulet frite en forme de pistolet. Pas de permis requis !"
+      },
+      {
+        "id": 2,
+        "literal": "Gâteau Baba",
+        "correct": "Gâteau de riz gluant",
+        "options": [
+          "Nourriture pour bébé",
+          "Truc des toilettes",
+          "Gâteau de riz gluant",
+          "Cadeau d'un père"
+        ],
+        "ingredients": "Farine de riz, sucre, œufs",
+        "note": "Le nom vient de sa texture moelleuse (Baba), mais il sonne très 'dangereux' dans d'autres langues !"
+      },
+      {
+        "id": 3,
+        "literal": "Viande d'âne brûlée au feu",
+        "correct": "Sandwich à la viande d'âne",
+        "options": [
+          "Sandwich à la viande d'âne",
+          "Un âne dans un incendie",
+          "Un âne très épicé",
+          "Outil de survie"
+        ],
+        "ingredients": "Viande d'âne, pâte croustillante",
+        "note": "C'est un sandwich légendaire du nord de la Chine. Aucun âne n'a été blessé par le feu !"
+      },
+      {
+        "id": 4,
+        "literal": "Poulet de ligne",
+        "correct": "Poulet chapon (castré)",
+        "options": [
+          "Poulet avec des fils",
+          "Un poulet mince",
+          "Poulet chapon (castré)",
+          "Poulet électronique"
+        ],
+        "ingredients": "Chapon, gingembre",
+        "note": "Dans certains dialectes, 'Ligne' est homophone de 'Castrer'. Désigne un chapon, connu pour sa chair tendre."
+      },
+      {
+        "id": 5,
+        "literal": "Blé brûlé",
+        "correct": "Bouchées de porc à la vapeur (Shaomai)",
+        "options": [
+          "Champ de blé incendié",
+          "Pain brûlé",
+          "Bouchées de porc à la vapeur (Shaomai)",
+          "Accident de ferme"
+        ],
+        "ingredients": "Porc, crevettes, pâte fine",
+        "note": "C'est le 'Shaomai'. Le nom signifie littéralement 'vendre tant que c'est chaud'."
+      },
+      {
+        "id": 6,
+        "literal": "Goûter la crevette",
+        "correct": "Écrevisses épicées",
+        "options": [
+          "Crevette avec une âme",
+          "Écrevisses épicées",
+          "Crevette qui a du goût",
+          "Fruit de mer philosophe"
+        ],
+        "ingredients": "Écrevisses, épices fortes, ail, piment",
+        "note": "Une star de la street food. Appelé ainsi car l'assaisonnement est la star du plat."
+      },
+      {
+        "id": 7,
+        "literal": "Oreilles de chat",
+        "correct": "Pâtes en forme d'oreilles",
+        "options": [
+          "Snack pour chats",
+          "Pâtes en forme d'oreilles",
+          "Morceaux de chaton",
+          "Micro espion"
+        ],
+        "ingredients": "Farine de blé, eau",
+        "note": "Pâte façonnée à la main en forme de petites oreilles de chat. Très populaire à Hangzhou !"
+      },
+      {
+        "id": 8,
+        "literal": "Peau d'amidon sur viande",
+        "correct": "Porc braisé aux feuilles de gelée",
+        "options": [
+          "Porc romantique",
+          "Peau d'amidon sur viande",
+          "Porc caché sous la peau",
+          "Accident collant"
+        ],
+        "ingredients": "Poitrine de porc, feuilles d'amidon",
+        "note": "Le mot 'Kao' signifie une technique où la sauce mijote jusqu'à coller à la viande."
+      },
+      {
+        "id": 9,
+        "literal": "Ventre en pièce d'or",
+        "correct": "Tripes de bœuf braisées",
+        "options": [
+          "Un portefeuille en viande",
+          "Tripes de bœuf braisées",
+          "Argent trouvé dans l'estomac",
+          "Ventre de porc doré"
+        ],
+        "ingredients": "Tripes de bœuf, sauce soja",
+        "note": "Le motif en nid d'abeille des tripes ressemble aux anciennes pièces d'or chinoises."
+      },
+      {
+        "id": 10,
+        "literal": "Œuf à fleur de pin",
+        "correct": "Œuf de cent ans",
+        "options": [
+          "Œuf d'un pin",
+          "Œuf de cent ans",
+          "Fleur en forme d'œuf",
+          "Œuf goût bois"
+        ],
+        "ingredients": "Œuf de cane, chaux, cendre",
+        "note": "Nommé d'après les motifs de branches de pin qui se forment naturellement sur l'œuf."
+      },
+      {
+        "id": 11,
+        "literal": "Fourmis grimpant à un arbre",
+        "correct": "Nouilles épicées au porc haché",
+        "options": [
+          "Snack d'insectes",
+          "Nouilles épicées au porc haché",
+          "Salade d'écorce",
+          "Kit de survie"
+        ],
+        "ingredients": "Vermicelles, porc haché",
+        "note": "Le porc haché accroché aux nouilles ressemble à des fourmis sur des branches."
+      },
+      {
+        "id": 12,
+        "literal": "Poisson mandarin écureuil",
+        "correct": "Poisson frit aigre-doux",
+        "options": [
+          "Hybride écureuil-poisson",
+          "Poisson frit aigre-doux",
+          "Viande de forêt",
+          "Poisson goût noisette"
+        ],
+        "ingredients": "Poisson mandarin, pignons de pin",
+        "note": "Le poisson est sculpté pour ressembler à une queue d'écureuil et 'couine' avec la sauce chaude !"
+      },
+      {
+        "id": 13,
+        "literal": "Tête de Lion",
+        "correct": "Grosses boulettes de porc",
+        "options": [
+          "Viande de safari",
+          "Grosses boulettes de porc",
+          "Cœur de brave",
+          "Plat du zodiaque"
+        ],
+        "ingredients": "Porc haché, chou",
+        "note": "La boulette ressemble à une tête de lion et le chou autour à sa crinière."
+      },
+      {
+        "id": 14,
+        "literal": "Griffes de Phénix",
+        "correct": "Pattes de poulet braisées Dim Sum",
+        "options": [
+          "Parties d'oiseau mythique",
+          "Pattes de poulet braisées Dim Sum",
+          "Ailes d'aigle royal",
+          "Pattes de lézard"
+        ],
+        "ingredients": "Pattes de poulet, sauce haricots noirs",
+        "note": "En cuisine chinoise, 'Phénix' est le nom élégant du poulet."
+      },
+      {
+        "id": 15,
+        "literal": "Crevettes du Puits du Dragon",
+        "correct": "Crevettes aux feuilles de thé",
+        "options": [
+          "Crevettes d'un puits",
+          "Crevettes aux feuilles de thé",
+          "Viande de dragon",
+          "Thé aux fruits de mer"
+        ],
+        "ingredients": "Crevettes de rivière, thé Longjing",
+        "note": "Spécialité de Hangzhou utilisant le thé Longjing (Puits du Dragon)."
+      },
+      {
+        "id": 16,
+        "literal": "Gâteau de l'épouse",
+        "correct": "Pâtisserie au melon d'hiver",
+        "options": [
+          "Cadeau pour épouses",
+          "Gâteau fait d'épouses",
+          "Pâtisserie au melon d'hiver",
+          "Gâteau certificat de mariage"
+        ],
+        "ingredients": "Melon d'hiver, farine, sucre",
+        "note": "La légende dit qu'une femme créa cela pour sauver son beau-père. Aucune épouse n'a été cuisinée !"
+      },
+      {
+        "id": 17,
+        "literal": "Poulet du mendiant",
+        "correct": "Poulet entier cuit dans l'argile",
+        "options": [
+          "Poulet entier cuit dans l'argile",
+          "Restes de repas",
+          "Soupe style sans-abri",
+          "Ailes de poulet pas chères"
+        ],
+        "ingredients": "Poulet entier, feuilles de lotus, argile",
+        "note": "À l'origine cuit dans la boue par un mendiant, c'est devenu un mets raffiné."
+      },
+      {
+        "id": 18,
+        "literal": "Rouleaux d'âne",
+        "correct": "Rouleaux de riz à la farine de soja",
+        "options": [
+          "Âne dans la poussière",
+          "Âne braisé",
+          "Rouleaux de riz à la farine de soja",
+          "Animal qui roule"
+        ],
+        "ingredients": "Riz gluant, farine de soja",
+        "note": "Nommé ainsi car le soja évoque la poussière soulevée par un âne qui se roule par terre."
+      },
+      {
+        "id": 19,
+        "literal": "Tranches de poumon de couple",
+        "correct": "Bœuf et tripes à la sauce pimentée",
+        "options": [
+          "Restes humains",
+          "Bœuf et tripes à la sauce pimentée",
+          "Dîner romantique",
+          "Viande en forme de cœur"
+        ],
+        "ingredients": "Bœuf tranché, tripes, huile pimentée",
+        "note": "Créé par un couple célèbre. Zéro poumon à l'intérieur !"
+      },
+      {
+        "id": 20,
+        "literal": "Poulet vierge",
+        "correct": "Jeune poulet à la vapeur",
+        "options": [
+          "Poulet pur",
+          "Jeune poulet à la vapeur",
+          "Un oiseau timide",
+          "Viande interdite"
+        ],
+        "ingredients": "Jeune poulet, gingembre",
+        "note": "Traduction littérale de 'Tongzi Ji'. Désigne simplement un poulet de printemps très tendre."
+      },
+      {
+        "id": 21,
+        "literal": "Poulet à la salive",
+        "correct": "Poulet froid à la sauce pimentée",
+        "options": [
+          "Poulet qui fait saliver",
+          "Poulet insalubre",
+          "Crachat de poulet",
+          "Soupe épicée"
+        ],
+        "ingredients": "Poulet, huile pimentée, sésame",
+        "note": "Le plat est si savoureux qu'il fait immédiatement saliver (bouche d'eau)."
+      },
+      {
+        "id": 22,
+        "literal": "Boulettes de bœuf qui urinent",
+        "correct": "Boulettes de bœuf juteuses",
+        "options": [
+          "Bœuf sale",
+          "Boulettes de bœuf juteuses",
+          "Viande goût urine",
+          "Boulettes en colère"
+        ],
+        "ingredients": "Bœuf haché, bouillon intérieur",
+        "note": "Célèbre à Hong Kong ! Le bouillon jaillit quand on croque dedans."
+      },
+      {
+        "id": 23,
+        "literal": "Bouddha saute par-dessus le mur",
+        "correct": "Soupe de fruits de mer de luxe",
+        "options": [
+          "Incident religieux",
+          "Soupe de fruits de mer de luxe",
+          "Cauchemar de végan",
+          "Kit de réparation de mur"
+        ],
+        "ingredients": "Ormeau, concombre de mer, noix de Saint-Jacques",
+        "note": "Si parfumé qu'un moine végétarien sauterait un mur pour y goûter !"
+      },
+      {
+        "id": 24,
+        "literal": "Tofu de la vieille dame grêlée",
+        "correct": "Mapo Tofu",
+        "options": [
+          "Tofu état de peau",
+          "Mapo Tofu",
+          "Secret de vieille femme",
+          "Visage de grand-mère"
+        ],
+        "ingredients": "Tofu, huile pimentée, bœuf haché",
+        "note": "Nommé d'après l'inventrice, une dame grêlée (Mapo) au 19e siècle."
+      },
+      {
+        "id": 25,
+        "literal": "Poisson bouilli à l'eau",
+        "correct": "Poisson à l'huile pimentée",
+        "options": [
+          "Poisson bouilli sain",
+          "Poisson à l'huile pimentée",
+          "Soupe de poisson claire",
+          "Fruit de mer nature"
+        ],
+        "ingredients": "Filets de poisson, piment séché, huile brûlante",
+        "note": "Nom trompeur : c'est poché puis servi dans un bain d'huile pimentée !"
+      },
+      {
+        "id": 26,
+        "literal": "Crevette ivre",
+        "correct": "Crevettes vivantes dans l'alcool",
+        "options": [
+          "Crevette qui boit",
+          "Crevettes vivantes dans l'alcool",
+          "Salade alcoolisée",
+          "Spécial chef éméché"
+        ],
+        "ingredients": "Crevettes vivantes, alcool fort chinois",
+        "note": "Les crevettes marinent vivantes dans l'alcool. Elles sont littéralement pompettes."
+      },
+      {
+        "id": 27,
+        "literal": "Tofu puant",
+        "correct": "Tofu frit fermenté",
+        "options": [
+          "Déchet pourri",
+          "Tofu frit fermenté",
+          "Snack pieds sales",
+          "Fromage périmé"
+        ],
+        "ingredients": "Tofu, saumure fermentée",
+        "note": "Sent la poubelle, a un goût de paradis. Un défi pour les aventuriers."
+      },
+      {
+        "id": 28,
+        "literal": "Oreilles de bois",
+        "correct": "Champignons noirs",
+        "options": [
+          "Oreilles d'arbre",
+          "Champignons noirs",
+          "Forêt sourde",
+          "Sculpture en bois"
+        ],
+        "ingredients": "Champignon noir (oreille de Judas)",
+        "note": "Un champignon qui ressemble à une oreille humaine."
+      },
+      {
+        "id": 29,
+        "literal": "Aiguilles d'argent",
+        "correct": "Nouilles de riz courtes",
+        "options": [
+          "Kit médical",
+          "Nouilles de riz courtes",
+          "Soupe dangereuse",
+          "Bijou brillant"
+        ],
+        "ingredients": "Farine de riz",
+        "note": "Ce sont juste des nouilles courtes et pointues. Pas d'objets tranchants !"
+      },
+      {
+        "id": 30,
+        "literal": "Peau froide",
+        "correct": "Nouilles froides savoureuses",
+        "options": [
+          "Peau humaine",
+          "Nouilles froides savoureuses",
+          "Snack en cuir",
+          "Partie de corps frigo"
+        ],
+        "ingredients": "Farine de blé, huile pimentée",
+        "note": "Appelé 'Liangpi'. Un plat rafraîchissant. Pas de la vraie peau !"
+      }
+    ]
+  },
+  "reviews": {
+    "enjoyExperience": "Vous aimez l'expérience ?",
+    "leaveFeedback": "Partagez votre avis ou votre histoire",
+    "review": "Avis",
+    "suggestions": "Suggestions",
+    "story": "Histoire",
+    "tellUs": "Dites-nous ce que vous en pensez...",
+    "sendEmail": "Envoyer par email",
+    "list": {
+      "rev1": {
+        "name": "Alex",
+        "role": "Nomade Digital",
+        "text": "Un vrai sauveur à Chengdu. J'ai enfin pu commander autre chose que du riz sauté !"
+      },
+      "rev2": {
+        "name": "Sarah",
+        "role": "Blogueuse Food",
+        "text": "La détection d'allergènes est impressionnante. Elle a trouvé des arachides dans un plat que je pensais sûr."
+      },
+      "rev3": {
+        "name": "Marco",
+        "role": "Backpacker",
+        "text": "La fonction 'Montrer au serveur' est géniale. Plus besoin de pointer du doigt au hasard."
+      }
+    }
+  },
+  "faq": {
+    "q1": "Dois-je créer un compte ?",
+    "a1": "Non. Ouvrez la page et scannez. Aucune inscription requise.",
+    "q2": "Est-ce gratuit ?",
+    "a2": "Vous pouvez commencer gratuitement. Chaque appareil reçoit 200 crédits (env. 4 scans) au début.",
+    "q3": "Quelles sont les récompenses ?",
+    "a3": "Nous offrons 50 crédits bonus lors de vos 4e, 10e et 20e scans !",
+    "q4": "Mes photos sont-elles stockées ?",
+    "a4": "Non. Les photos sont traitées instantanément et jamais sauvegardées. Votre vie privée est notre priorité.",
+    "q5": "Puis-je m'y fier totalement ?",
+    "a5": "Les recettes varient. Utilisez ces infos comme guide, surtout en cas d'allergies graves."
+  },
+  "support": {
+    "title": "Nous soutenir",
+    "subtitle": "Aidez-nous à maintenir l'IA et recevez des crédits pour votre voyage.",
+    "tiers": {
+      "soda": {
+        "name": "Un Soda Frais",
+        "meals": "Environ 3 repas",
+        "description": "Parfait pour un scan rapide à midi."
+      },
+      "coffee": {
+        "name": "Un Café Chaud",
+        "meals": "Environ 10 repas",
+        "description": "Le meilleur compagnon pour un explorateur culinaire."
+      },
+      "cheesecake": {
+        "name": "Un Cheesecake",
+        "meals": "Environ 25 repas",
+        "description": "Accès complet pour tout votre voyage en Chine."
+      }
+    }
+  },
+  "loading": {
+    "status": {
+      "compressing": "Compression de l'image...",
+      "uploading": "Envoi au serveur IA...",
+      "analyzing": "Analyse IA approfondie...",
+      "success": "Bon Appétit !"
+    },
+    "enjoy": "Profitez de votre repas en Chine",
+    "menuMessages": [
+      "Préparation des baguettes... 🥢",
+      "Consultation de la base culinaire... 📚",
+      "Décodage de la recette secrète de Grand-mère... 👵",
+      "Vérification du piment et allergènes... 🔥",
+      "Recherche de graisses cachées... 🐄",
+      "Presque prêt, restez affamé ! 🥟"
+    ],
+    "streetMessages": [
+      "Errance dans les ruelles... 🏘️",
+      "Vérification du plan du quartier... 📍",
+      "Demande au commerçant local... 🏮",
+      "Nettoyage de l'enseigne... ✨",
+      "Identification de pépites cachées... 💎",
+      "Presque arrivé, ne vous perdez pas ! 🚶"
+    ]
+  },
+  "wordCloud": {
+    "badge": "Fil Voyageur",
+    "title": "Identifiés Récemment",
+    "dishes": [
+      "Porc effiloché saveur poisson (鱼香肉丝)",
+      "Mapo Tofu (麻婆豆腐)",
+      "Canard Laqué (北京烤鸭)",
+      "Xiao Long Bao (小笼包)",
+      "Mala Xiang Guo (麻辣香锅)",
+      "Porc doublement cuit (回锅肉)",
+      "Baozi grillés (生煎包)",
+      "Écrevisses épicées (麻辣小龙虾)",
+      "Nouilles Dan Dan (担担面)",
+      "Nouilles de bœuf de Lanzhou (兰州牛肉面)",
+      "Galette aux oignons verts (葱油饼)",
+      "Travers de porc aigre-doux (糖醋排骨)",
+      "Porc sauté du Hunan (小炒肉)",
+      "Tête de poisson pimentée (剁椒鱼头)",
+      "Poisson poché au piment (水煮鱼)",
+      "Soupe Wonton (馄饨)",
+      "Char Siu (叉烧)",
+      "Riz au poulet hainanais (海南鸡饭)",
+      "Zha Jiang Mian (炸酱面)",
+      "Rou Jia Mo (肉夹馍)",
+      "Tofu puant (臭豆腐)",
+      "Nouilles Biang Biang (油泼扯面)",
+      "Boulettes tête de lion (狮子头)",
+      "Porc Dongpo (东坡肉)",
+      "Nouilles traversant le pont (过桥米线)",
+      "Riz en marmite (煲仔饭)",
+      "Nouilles de riz au bœuf (干炒牛河)",
+      "Poulet Kung Pao (宫保鸡丁)",
+      "Poitrine de porc braisée (红烧肉)",
+      "Poulet coupé blanc (白切鸡)",
+      "Pousses de pois sautées (清炒豆苗)",
+      "Congee aux œufs de cent ans (皮蛋瘦肉粥)",
+      "Malatang (麻辣烫)"
+    ]
+  },
+  "survival": {
+    "title": "Cartes de Survie",
+    "badge": "Communautaire",
+    "contribute": "Contribuer",
+    "community": "Communauté",
+    "loading": "Chargement...",
+    "form": {
+      "title": "Partager son savoir",
+      "placeholder": "Phrase en anglais",
+      "submit": "Contribuer"
+    },
+    "overlay": {
+      "requestLabel": "Demande en anglais",
+      "speakAlt": "Parler"
+    },
+    "categories": {
+      "Safety": "Sécurité",
+      "Dining": "Repas",
+      "Payment": "Paiement",
+      "Taxi": "Taxi",
+      "Health": "Santé",
+      "Station": "Gare/Aéroport",
+      "Street": "Rue",
+      "Sightseeing": "Tourisme",
+      "Hotel": "Hôtel",
+      "Help": "Aide"
+    },
+    "cards": {
+      "no_peanuts": "Sans arachides, s'il vous plaît.",
+      "no_nuts": "Je ne peux pas manger de noix.",
+      "fava_beans": "Y a-t-il des fèves ?",
+      "lactose": "Intolérant au lactose.",
+      "seafood_allergy": "Allergie grave aux fruits de mer.",
+      "must_non_spicy": "Doit être non-épicé.",
+      "no_msg": "Sans glutamate (MSG), s'il vous plaît.",
+      "no_pork": "Je ne mange pas de porc.",
+      "vegetarian": "Je suis végétarien.",
+      "no_cilantro": "Allergique à la coriandre.",
+      "menu_please": "Le menu, s'il vous plaît.",
+      "specialty": "Quelle est la spécialité ?",
+      "one_of_this": "J'en voudrais un comme ça.",
+      "ice_water": "Avez-vous de l'eau glacée ?",
+      "need_fork": "Puis-je avoir une fourchette ?",
+      "tissues": "Des mouchoirs, s'il vous plaît.",
+      "restroom": "Où sont les toilettes ?",
+      "order_now": "Pouvons-nous commander ?",
+      "too_salty": "C'est trop salé.",
+      "doggy_bag": "Un sac pour emporter, s'il vous plaît.",
+      "check_please": "L'addition, s'il vous plaît.",
+      "who_scans": "Qui scanne qui ?",
+      "mobile_pay": "Alipay / WeChat Pay ?",
+      "receipt": "Reçu numérique, s'il vous plaît.",
+      "how_much": "C'est combien ?",
+      "cheaper": "Un peu moins cher ?",
+      "no_cash": "Je n'ai pas d'espèces.",
+      "wifi": "Mot de passe Wi-Fi ?",
+      "charge_phone": "Puis-je charger ici ?",
+      "wrong_change": "La monnaie est incorrecte.",
+      "go_here": "Aller ici (Carte).",
+      "use_meter": "Mettez le compteur, s'il vous plaît.",
+      "how_long": "Combien de temps ça prendra ?",
+      "pull_over": "Arrêtez-vous ici.",
+      "ac_up": "Montez la clim.",
+      "open_trunk": "Ouvrez le coffre.",
+      "wait_mins": "Attendre quelques minutes ?",
+      "subway": "Où est le métro ?",
+      "drive_slower": "Roulez plus doucement.",
+      "taxi_fare": "Combien pour aller là-bas ?",
+      "need_doctor": "J'ai besoin d'un médecin.",
+      "pharmacy": "Pharmacie la plus proche ?",
+      "stomach_hurt": "J'ai très mal au ventre.",
+      "cold_med": "Médicament contre la fièvre/rhume ?",
+      "dizzy": "Je me sens étourdi.",
+      "allergy_med": "Médicament contre les allergies ?",
+      "hospital_reg": "Où s'enregistrer ?",
+      "buy_mask": "Où acheter des masques ?",
+      "med_frequency": "Combien de fois par jour ?",
+      "med_record": "Dossier/Rapport médical.",
+      "checkin_counter": "Comptoir d'enregistrement ?",
+      "lost_luggage": "Bagage perdu.",
+      "recent_ticket": "Ticket pour le prochain.",
+      "ticket_time": "Heure du contrôle ?",
+      "airport_bus": "Bus pour l'aéroport ?",
+      "earlier_departure": "Un départ plus tôt ?",
+      "boarding_gate": "Porte d'embarquement ?",
+      "train_delay": "Train retardé ?",
+      "print_itinerary": "Avoir le ticket/itinéraire.",
+      "store_luggage": "Consigne à bagages ?",
+      "address_direction": "Comment aller ici ?",
+      "walkable": "Peut-on y aller à pied ?",
+      "convenience_store": "Épicerie ouverte ?",
+      "power_bank": "Batterie externe partagée ?",
+      "atm": "Distributeur (ATM) le plus proche ?",
+      "unlock_bike": "Comment débloquer le vélo ?",
+      "take_photo": "D'accord pour une photo ?",
+      "sim_card": "Acheter une carte SIM ?",
+      "get_delivery": "Aide pour la livraison.",
+      "thanks_help": "Merci pour votre aide !",
+      "ticket_price": "Prix d'un ticket ?",
+      "ticket_office": "Guichet ?",
+      "audio_guide": "Audio-guide en anglais ?",
+      "closing_time": "Heure de fermeture ?",
+      "take_photo_us": "Photo pour nous ?",
+      "drinking_water": "Eau potable ?",
+      "last_bus": "Dernière navette ?",
+      "rent_guide": "Louer un guide.",
+      "cable_car": "Tickets téléphérique ?",
+      "exit_location": "Où est la sortie ?",
+      "passport_here": "Voici mon passeport.",
+      "ac_shower_fail": "Pas d'eau chaude / Clim en panne.",
+      "change_sheets": "Changer les draps.",
+      "wifi_fail": "Wi-Fi ne fonctionne pas.",
+      "breakfast_time": "Heure du petit-déjeuner ?",
+      "laundry": "Service de blanchisserie ?",
+      "checkout_now": "Je voudrais partir (Check-out).",
+      "hotel_luggage": "Garder les bagages ?",
+      "call_taxi": "Appeler un taxi pour moi.",
+      "checkout_deadline": "Heure limite de départ ?",
+      "speak_english": "Parlez-vous anglais ?",
+      "say_again": "Répétez, s'il vous plaît.",
+      "type_phone": "Tapez sur mon téléphone.",
+      "not_understand": "Je ne comprends pas.",
+      "emergencies": "Aidez-moi ! Urgence !",
+      "borrow_phone": "Puis-je utiliser votre téléphone ?",
+      "lost_friend": "J'ai perdu mon ami.",
+      "police_station": "Commissariat ?",
+      "ambulance": "Appelez une ambulance !",
+      "lost_item": "Sac/Passeport perdu."
+    }
+  },
+  "dishDetail": {
+    "authenticSelection": "Sélection Authentique",
+    "approx": "Env.",
+    "searchPhotos": "Chercher des photos",
+    "containsAnimalFat": "Contient des <1>graisses animales / saindoux (猪油)</1>.",
+    "aiInsight": "Analyse IA",
+    "defaultInsight": "Cette spécialité est connue pour son goût authentique.",
+    "coreComponents": "Composants principaux",
+    "analyzing": "Analyse...",
+    "mainIngredients": "Ingrédients clés",
+    "possibleAdditions": "Ajouts possibles",
+    "heatLevel": "Niveau de piment",
+    "dietaryFlags": "Infos diététiques",
+    "noAllergens": "Aucun allergène détecté. Confirmez avec le serveur.",
+    "returnToMenu": "Retour au menu",
+    "spicyLabels": {
+      "notSpicy": "Non-épicé",
+      "mild": "Doux",
+      "medium": "Moyen",
+      "hot": "Fort",
+      "extraSpicy": "Extrême"
+    }
+  },
+  "effects": {
+    "rewardUnlocked": "Récompense débloquée !",
+    "milestoneReached": "Palier {{num}} atteint !",
+    "plusCredits": "+{{count}} Crédits",
+    "boosted": "Boosté !",
+    "masterMindBonus": "Bonus Master Mind"
+  },
+  "storeCard": {
+    "restaurantIdentified": "Restaurant Identifié",
+    "businessIdentified": "Établissement Identifié",
+    "localShop": "Boutique Locale",
+    "establishment": "Établissement",
+    "fairPrice": "Prix Juste",
+    "expertInsight": "Aperçu de l'Expert",
+    "defaultDescription": "Un établissement local notable offrant des services et des expériences authentiques.",
+    "houseSpecialties": "Spécialités de la Maison",
+    "serviceContext": "Contexte du Service",
+    "showToStaff": "Montrer au Personnel",
+    "askForTable": "(Demander une Table)",
+    "askForAssistance": "(Demander de l'Aide)"
+  },
+  "refund": {
+    "title": "Remboursements Simples et Équitables",
+    "quote": "\"Nous voulons être votre pont vers les saveurs, pas un obstacle. Si notre outil ne vous aide pas, nous ne voulons pas de votre argent.\"",
+    "windowTitle": "Fenêtre de 24h",
+    "windowContent": "Demandez un remboursement dans les 24h suivant l'achat, si vous avez consommé 3 crédits ou moins.",
+    "techTitle": "Garantie Technique",
+    "techContent": "Si notre IA échoue complètement à lire une photo claire, vous avez droit à un remboursement à 100%.",
+    "processTitle": "Processus Sans Tracas",
+    "processContent": "Envoyez simplement votre ID de transaction PayPal par email à ",
+    "processContentEnd": ". Aucun formulaire requis.",
+    "understand": "Je Comprends"
+  },
+  "staffHelper": {
+    "headerLabel": "Traduction Française",
+    "messageEn": "Je voudrais manger ici. Y a-t-il une table disponible ?",
+    "playAudio": "Lire l'Audio",
+    "playAudioCn": "播放语音",
+    "footerHint": "Montrez cet écran au serveur",
+    "footerHintCn": "请出示给服务员"
+  },
+  "creditUpdate": {
+    "title": "CRÉDITS MIS À JOUR",
+    "ok": "OK"
+  },
+  "legal": {
+    "privacyTitle": "Politique de Confidentialité",
+    "tosTitle": "Conditions d'Utilisation",
+    "accept": "J'accepte",
+    "lastUpdated": "Dernière mise à jour : Janvier 2026",
+    "privacy": {
+      "collectTitle": "Informations collectées",
+      "collectContent": "Nous ne stockons pas vos photos originales sur nos serveurs. Les images traitées par notre IA sont utilisées uniquement pour la conversion en temps réel des menus et des façades. Une fois l'analyse terminée, les images sont supprimées.",
+      "usageTitle": "Utilisation des données",
+      "usageContent": "Nous utilisons le stockage local pour suivre vos crédits restants et vos récompenses quotidiennes. Ces données résident sur votre appareil. Nous utilisons des services tiers comme Google Gemini pour la reconnaissance et l'analyse de texte.",
+      "cameraTitle": "Autorisations de la caméra",
+      "cameraContent": "L'application demande l'accès à la caméra pour vous permettre de prendre des photos des menus. Nous n'accédons pas à votre caméra sans action explicite de votre part (clic sur l'icône de la caméra).",
+      "cookiesTitle": "Cookies",
+      "cookiesContent": "Nous utilisons des cookies essentiels et le stockage local pour maintenir votre session utilisateur et votre solde de crédits. Nous n'utilisons pas de cookies de suivi à des fins publicitaires."
+    },
+    "tos": {
+      "agreementTitle": "Accord d'utilisation",
+      "agreementContent": "En utilisant Read Chinese Menu, vous acceptez d'utiliser l'outil pour une exploration personnelle et non commerciale. Vous êtes responsable de toute décision prise sur la base des traductions générées par l'IA.",
+      "accuracyTitle": "Clause de non-responsabilité relative à l'exactitude",
+      "accuracyContent": "La traduction et l'analyse par l'IA ne sont pas précises à 100 %. Nous ne pouvons garantir que tous les ingrédients, allergènes ou prix sont correctement identifiés. Confirmez toujours avec le personnel du restaurant avant de consommer des aliments si vous avez des allergies graves.",
+      "paymentTitle": "Paiements et Crédits",
+      "paymentContent": "Les crédits achetés sont non transférables. Les abonnements expirent selon la période choisie. Les politiques de remboursement sont détaillées dans la section spécifique du module de tarification.",
+      "abuseTitle": "Abus de service",
+      "abuseContent": "Nous nous réservons le droit de bloquer les utilisateurs qui tentent de contourner les limites de crédit, d'extraire des données ou d'utiliser le service pour un traitement automatisé à grande échelle."
+    }
+  }
+}

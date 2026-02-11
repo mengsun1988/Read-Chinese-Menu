@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>How to Use | Read Chinese Menu</title>
+    <meta name="description"
+        content="Master Chinese menus with AI. Translate dishes, identify ingredients, and find restaurant names instantly.">
+    <link rel="canonical" href="https://www.readchinesemenu.com/intro.html" />
+    <style>
+        :root {
+            --color-primary: #e11d48;
+            --radius-card: 2.5rem;
+        }
+
+        .intro-bg {
+            background-color: #F8FAFC;
+        }
+
+        /* 极简截图容器 */
+        .mockup-container {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            /* 极细浅色边框 */
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+            margin-top: 1rem;
+            cursor: zoom-in;
+            /* 提示可点击放大 */
+            transition: all 0.2s ease;
+        }
+
+        .mockup-container:hover {
+            border-color: #cbd5e1;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        }
+
+        .screenshot-img {
+            width: 100%;
+            height: auto;
+            display: block;
+            -o-object-fit: cover;
+               object-fit: cover;
+        }
+
+        .step-badge {
+            background: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            width: 2.2rem;
+            height: 2.2rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        /* 全屏放大遮罩层 */
+        #lightbox {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(8px);
+            align-items: center;
+            justify-content: center;
+            cursor: zoom-out;
+        }
+
+        #lightbox img {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 1rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+  <link rel="stylesheet" crossorigin href="/assets/main-CwiC-aQh.css">
+</head>
+
+<body class="intro-bg min-h-screen text-[#0F172A] antialiased pb-12">
+
+    <div id="lightbox" onclick="closeLightbox()">
+        <img id="lightbox-img" src="" alt="Zoomed view">
+    </div>
+
+    <nav class="p-6 max-w-7xl mx-auto flex justify-between items-center">
+        <a href="/"
+            class="text-xl font-black tracking-tighter text-rose-600 hover:opacity-80 transition-opacity inline-block">
+            Read Chinese Menu
+        </a>
+        <a href="https://www.instagram.com/readchinesemenu/" target="_blank"
+            class="text-slate-400 hover:text-rose-600 transition-colors">
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <path
+                    d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+            </svg>
+        </a>
+    </nav>
+
+    <header class="pt-12 pb-12 px-6 text-center max-w-4xl mx-auto">
+        <h1 class="text-4xl md:text-5xl mb-6 tracking-tighter font-black leading-tight">One Tool. <br /> Two ways to
+            <span class="text-rose-600">explore</span>.
+        </h1>
+        <p class="text-xl text-slate-500 max-w-xl mx-auto font-medium">Decode authentic Chinese dining with deep AI
+            analysis or fast street lookup.</p>
+    </header>
+
+    <div id="gift-card" class="max-w-5xl mx-auto px-6 mb-12 hidden">
+        <div
+            class="bg-emerald-600 rounded-[2rem] p-5 pr-8 relative overflow-hidden shadow-xl flex items-center justify-between border border-white/10">
+            <div class="absolute -right-4 -top-4 w-24 h-24 bg-white/10 blur-2xl rounded-full"></div>
+            <div class="relative z-10 flex items-center gap-5 ml-2">
+                <span class="text-3xl">🎁</span>
+                <div>
+                    <h3 class="text-white text-lg font-black tracking-tight leading-none mb-1">Welcome Gift!</h3>
+                    <p class="text-emerald-100 text-xs font-medium uppercase tracking-wider">Claim 50 free points for
+                        your first scan</p>
+                </div>
+            </div>
+            <button onclick="claimGift()"
+                class="relative z-10 bg-white text-emerald-600 px-8 py-3 rounded-full font-black uppercase tracking-tighter text-xs transition-all active:scale-95 shadow-md hover:shadow-lg">
+                Claim Now
+            </button>
+        </div>
+    </div>
+
+    <main class="max-w-7xl mx-auto px-6 space-y-32">
+        <section id="menu-scanner">
+            <div
+                class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12 border-b border-slate-200 pb-10">
+                <div>
+                    <h2 class="text-3xl font-black tracking-tight mb-3">1. Deep Menu Scan</h2>
+                    <p class="text-slate-500 max-w-2xl text-lg">Advanced AI analysis for complex menus. Identifies
+                        ingredients, allergens, and hidden dietary risks.</p>
+                </div>
+                <div class="text-rose-600 font-black text-sm bg-rose-50 px-6 py-3 rounded-2xl border border-rose-100">
+                    Cost: 50 pts / scan</div>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="flex flex-col">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="step-badge text-rose-600">1</div>
+                        <h4 class="font-black text-lg">Upload Menu</h4>
+                    </div>
+                    <p class="text-[13px] leading-relaxed text-slate-400 mb-6">Take a photo or upload an existing menu
+                        image from your library.</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="mockup-container" onclick="openLightbox('/public/images/Mstep1.PNG')"><img
+                                src="/public/images/Mstep1.PNG" class="screenshot-img" alt="Step 1a"></div>
+                        <div class="mockup-container" onclick="openLightbox('/public/images/Mstep2.PNG')"><img
+                                src="/public/images/Mstep2.PNG" class="screenshot-img" alt="Step 1b"></div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="step-badge text-rose-600">2</div>
+                        <h4 class="font-black text-lg">Dish List</h4>
+                    </div>
+                    <p class="text-[13px] leading-relaxed text-slate-400 mb-6">Wait for a minute, view a clearly
+                        recognized list of all dishes translated.</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="mockup-container" onclick="openLightbox('/public/images/Mstep3.PNG')"><img
+                                src="/public/images/Mstep3.PNG" class="screenshot-img" alt="Step 2a"></div>
+                        <div class="mockup-container" onclick="openLightbox('/public/images/Mstep4.PNG')"><img
+                                src="/public/images/Mstep4.PNG" class="screenshot-img" alt="Step 2b"></div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="step-badge text-rose-600">3</div>
+                        <h4 class="font-black text-lg">Deep Analysis</h4>
+                    </div>
+                    <p class="text-[13px] leading-relaxed text-slate-400 mb-6">Click any dish to see ingredients and
+                        precise allergen warnings.</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="mockup-container" onclick="openLightbox('/public/images/Mstep5.PNG')"><img
+                                src="/public/images/Mstep5.PNG" class="screenshot-img" alt="Step 3a"></div>
+                        <div class="mockup-container" onclick="openLightbox('/public/images/Mstep6.PNG')"><img
+                                src="/public/images/Mstep6.PNG" class="screenshot-img" alt="Step 3b"></div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="step-badge text-rose-600">4</div>
+                        <h4 class="font-black text-lg">Waiter Card</h4>
+                    </div>
+                    <p class="text-[13px] leading-relaxed text-slate-400 mb-6">Tap <span
+                            class="font-bold text-rose-600">"Ingredient"</span> to generate a card for waiters.</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="mockup-container" onclick="openLightbox('/public/images/Mstep7.PNG')"><img
+                                src="/public/images/Mstep7.PNG" class="screenshot-img" alt="Step 4a"></div>
+                        <div class="mockup-container" onclick="openLightbox('/public/images/Mstep8.PNG')"><img
+                                src="/public/images/Mstep8.PNG" class="screenshot-img" alt="Step 4b"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-20 text-center">
+                <a href="/?action=upload"
+                    class="bg-rose-600 text-white px-8 py-3 rounded-full text-lg font-black active-spring shadow-xl inline-block hover:bg-rose-500 hover:-translate-y-1 transition-all">
+                    Start Menu Scan
+                </a>
+            </div>
+        </section>
+
+        <section id="storefront-scanner">
+            <div
+                class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-12 border-b border-slate-200 pb-10">
+                <div>
+                    <h2 class="text-3xl font-black tracking-tight mb-3">2. Storefront Lookup</h2>
+                    <p class="text-slate-500 max-w-2xl text-lg">Instantly recognize restaurant names and cuisines from
+                        street signboards.</p>
+                </div>
+                <div
+                    class="text-slate-900 font-black text-sm bg-slate-100 px-6 py-3 rounded-2xl border border-slate-200">
+                    Cost: Always Free</div>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8 max-w-4xl">
+                <div class="flex flex-col">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="step-badge text-slate-900">1</div>
+                        <h4 class="font-black text-lg">Snap the Sign</h4>
+                    </div>
+                    <p class="text-sm leading-relaxed text-slate-400 mb-6">Snap a photo of the restaurant entrance or
+                        signboard.</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="mockup-container" onclick="openLightbox('/public/images/Sstep1.PNG')"><img
+                                src="/assets/Sstep1-tV1SOt9N.PNG" class="screenshot-img" alt="Store Step 1"></div>
+                        <div class="mockup-container" onclick="openLightbox('/public/images/Sstep2.PNG')"><img
+                                src="/assets/Sstep2-IPoQEvx7.PNG" class="screenshot-img" alt="Store Step 2"></div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col justify-center">
+                    <h4 class="font-black text-2xl mb-4">Instant Insight</h4>
+                    <p class="text-slate-500 leading-relaxed mb-6">Our street mode helps you filter through busy
+                        streets. Identify seafood-only spots or high-end dining in seconds before you even step inside.
+                    </p>
+                    <ul class="space-y-3">
+                        <li class="flex items-center gap-3 font-bold text-slate-700">✅ Translate shop names</li>
+                        <li class="flex items-center gap-3 font-bold text-slate-700">✅ Identify cuisine style</li>
+                        <li class="flex items-center gap-3 font-bold text-slate-700">✅ Zero point cost</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mt-20 text-center">
+                <a href="/?action=store"
+                    class="bg-slate-900 text-white px-8 py-3 rounded-full text-lg font-black active-spring shadow-xl inline-block hover:bg-slate-800 hover:-translate-y-1 transition-all">
+                    Try Storefront Scan
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <footer class="mt-40 border-t border-slate-200 py-20 px-6 text-center">
+        <p class="text-slate-300 text-xs font-bold tracking-[0.4em] uppercase leading-loose">
+            &copy; 2026 MENU AI. ALL RIGHTS RESERVED. <br />
+            Precise Chinese Menu Analysis for Global Travelers.
+        </p>
+    </footer>
+
+    <script>
+        const GIFT_KEY = 'menuai_intro_gift_claimed';
+        if (!localStorage.getItem(GIFT_KEY)) {
+            document.getElementById('gift-card').classList.remove('hidden');
+        }
+
+        function claimGift() {
+            localStorage.setItem(GIFT_KEY, 'true');
+            window.location.href = "/?action=upload&reward=50";
+        }
+
+        // Lightbox 逻辑
+        function openLightbox(src) {
+            const lb = document.getElementById('lightbox');
+            const lbImg = document.getElementById('lightbox-img');
+            lbImg.src = src;
+            lb.style.display = 'flex';
+            document.body.style.overflow = 'hidden'; // 禁止滚动
+        }
+
+        function closeLightbox() {
+            const lb = document.getElementById('lightbox');
+            lb.style.display = 'none';
+            document.body.style.overflow = 'auto'; // 恢复滚动
+        }
+
+        // 按 ESC 退出放大
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeLightbox();
+        });
+    </script>
+</body>
+
+</html>
