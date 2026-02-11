@@ -6,101 +6,96 @@ import posts from '../data/posts.json';
 const BlogDetail = () => {
   const { postId } = useParams();
   const navigate = useNavigate();
-  const post = posts.find((p) => p.id === postId);
+  
+  // 兼顾数据结构健壮性
+  const allPosts = Array.isArray(posts) ? posts.flat(Infinity) : [];
+  const post = allPosts.find((p) => p.id === postId);
 
   if (!post) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center bg-white font-body">
-        <h1 className="text-xl text-slate-400 font-light">Content unavailable</h1>
-        <button onClick={() => navigate(-1)} className="mt-6 text-[10px] tracking-[0.2em] font-bold border-b border-slate-900 pb-1">BACK TO LIST</button>
+      <div className="flex flex-col items-center justify-center min-h-screen p-10 text-center bg-white font-body">
+        <p className="text-slate-400 mb-4">Post not found in the culinary archive.</p>
+        <button onClick={() => navigate(-1)} className="text-sm font-bold text-emerald-600 border-b border-emerald-600">RETURN TO MENU</button>
       </div>
     );
   }
 
-  // 这里的搜索逻辑依然保留中文（为了精准度），但 UI 上完全看不到中文
   const handleImageSearch = () => {
     const searchKeyword = post.dish || post.title;
-    const query = encodeURIComponent(`${searchKeyword} authentic dish photography`);
+    const query = encodeURIComponent(`${searchKeyword} authentic Chinese dish`);
     window.open(`https://www.bing.com/images/search?q=${query}`, '_blank');
   };
 
   return (
-    <div className="min-h-screen bg-white pb-20 font-body antialiased text-slate-900">
-      {/* 极简导航 - 针对移动端优化高度 */}
-      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md px-6 py-5 flex items-center justify-between">
-        <button onClick={() => navigate(-1)} className="text-xl font-light scale-x-125">←</button>
-        <span className="text-[10px] uppercase tracking-[0.4em] font-medium text-slate-400">Archives</span>
-        <div className="w-6"></div>
+    <div className="min-h-screen bg-white pb-20 font-body antialiased text-slate-800">
+      {/* 极简导航 */}
+      <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm px-6 py-4 flex items-center justify-between border-b border-slate-50">
+        <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-2xl font-light">←</button>
+        <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-slate-400">Read Chinese Menu</span>
+        <div className="w-10"></div>
       </nav>
 
-      <main className="max-w-screen-sm mx-auto px-6 pt-8">
-        {/* 文章头部 - 全英文布局 */}
-        <header className="mb-14">
-          <div className="flex items-center gap-3 mb-6">
-            <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-emerald-600">Culinary History</span>
-            <div className="h-[1px] flex-1 bg-slate-100"></div>
-            <span className="text-[10px] text-slate-400 tabular-nums">
-              {new Date(post.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+      <main className="max-w-screen-sm mx-auto px-6 pt-10">
+        <header className="mb-12">
+          {/* SEO 元数据展示 */}
+          <div className="flex items-center gap-2 mb-4 text-[10px] font-bold text-emerald-600 uppercase tracking-widest">
+            <span>Authentic Guide</span>
+            <span className="text-slate-200">/</span>
+            <span className="text-slate-400 uppercase">
+              {new Date(post.date).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
             </span>
           </div>
           
-          <h1 className="text-4xl leading-[1.1] mb-10 font-title font-bold tracking-tight text-slate-900">
+          <h1 className="text-3xl md:text-5xl leading-tight mb-8 font-title font-bold text-slate-900 tracking-tight">
             {post.title}
           </h1>
 
-          {/* 视觉搜索按钮 - 极致简约设计 */}
-          <div className="bg-slate-50 rounded-2xl p-6 md:p-8 flex flex-col items-center text-center">
-            <p className="text-[12px] leading-relaxed text-slate-500 mb-6 max-w-[280px]">
-              Explore the authentic presentation of this legacy dish through curated field photography.
+          {/* 转化组件：引导用户看图 */}
+          <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100">
+            <p className="text-sm text-slate-500 mb-5 leading-relaxed">
+              Curious about how this dish looks in a real Chinese kitchen? View our curated image gallery.
             </p>
             <button 
               onClick={handleImageSearch}
-              className="w-full py-4 bg-slate-900 text-white text-[11px] font-bold tracking-[0.2em] rounded-full active:scale-95 transition-all shadow-sm"
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold tracking-widest py-4 rounded-xl transition-colors shadow-md shadow-emerald-100"
             >
-              VIEW GALLERY →
+              BROWSE DISH PHOTOS
             </button>
           </div>
         </header>
 
-        {/* 正文内容 - 针对移动端优化字体大小与间距 */}
-        <section className="prose prose-slate prose-img:rounded-3xl max-w-none">
+        {/* 文章主体：SEO 友好的长白排版 */}
+        <section className="prose prose-slate max-w-none">
           <ReactMarkdown 
             remarkPlugins={[remarkGfm]}
             components={{
-              // 段落：使用 17px 兼顾阅读与美感，行高 1.8 
-              p: ({node, ...props}) => <p className="mb-10 text-[17px] leading-[1.8] text-slate-600 text-left font-light" {...props} />,
+              // 段落：17px 字号，1.8 倍行高，最适合手机阅读
+              p: ({node, ...props}) => <p className="mb-8 text-[17px] leading-[1.8] text-slate-600 font-normal" {...props} />,
               
-              // 标题：移除多余修饰，保持整洁
+              // 标题：清晰的层级
               h2: ({node, ...props}) => (
-                <h2 className="text-xl mt-16 mb-6 text-slate-900 font-title font-bold tracking-tight uppercase" {...props} />
-              ),
-              
-              // 引用文字：去掉背景，改用简洁线条
-              blockquote: ({node, ...props}) => (
-                <blockquote className="border-l-2 border-slate-200 pl-6 italic text-slate-500 my-10 mx-0 font-light" {...props} />
-              ),
-              
-              // 列表
-              ul: ({node, ...props}) => <ul className="list-none p-0 mb-10 space-y-4" {...props} />,
-              li: ({node, ...props}) => (
-                <li className="flex gap-3 text-[16px] text-slate-600 leading-relaxed font-light">
-                  <span className="text-emerald-500 font-bold">•</span>
-                  <span>{props.children}</span>
-                </li>
+                <h2 className="text-xl mt-12 mb-6 text-slate-900 font-title font-bold border-l-4 border-emerald-500 pl-4" {...props} />
               ),
 
-              // 粗体：不再高亮背景，只加重颜色
-              strong: ({node, ...props}) => <strong className="font-semibold text-slate-900" {...props} />,
+              // 强调：加粗但不花哨
+              strong: ({node, ...props}) => <strong className="font-bold text-slate-900" {...props} />,
+
+              // 链接：如果有的话
+              a: ({node, ...props}) => <a className="text-emerald-600 underline underline-offset-4" {...props} />,
             }}
           >
             {post.content}
           </ReactMarkdown>
         </section>
 
-        {/* 极简页脚 */}
-        <footer className="mt-32 pb-20 text-center border-t border-slate-50 pt-16">
-          <div className="w-1 h-8 bg-slate-100 mx-auto mb-8"></div>
-          <p className="text-slate-300 text-[9px] tracking-[0.6em] uppercase">Historical Archive</p>
+        {/* 底部引导 */}
+        <footer className="mt-24 pt-12 border-t border-slate-100 text-center">
+          <p className="text-slate-400 text-xs mb-8">
+            © 2026 Read Chinese Menu. All rights reserved.
+          </p>
+          <div className="inline-block px-6 py-2 bg-slate-900 text-white text-[10px] tracking-widest rounded-full uppercase">
+            Taste China In Person
+          </div>
         </footer>
       </main>
     </div>
